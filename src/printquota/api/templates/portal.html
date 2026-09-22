@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% set active = 'portal' %}
+{% block title %}My print balance - printquota{% endblock %}
+{% block content %}
+<h1>Hello, {{ user.display_name or user.username }}</h1>
+<p class="sub">Your allowance resets on {{ period_end|dt('%d %B %Y') }} ({{ period_days }}-day rolling period).</p>
+
+<div class="card">
+  <div class="grid cols-4">
+    <div class="stat"><div class="label">Pages used</div><div class="value">{{ user.pages_used }}</div></div>
+    <div class="stat"><div class="label">Allowance</div><div class="value">{{ user.quota_limit }}</div></div>
+    <div class="stat"><div class="label">Remaining</div>
+      <div class="value">{% if user.remaining <= 0 %}<span class="pill bad">0</span>{% else %}{{ user.remaining }}{% endif %}</div></div>
+    <div class="stat"><div class="label">Group pool</div>
+      <div class="value" style="font-size:18px">
+        {% if state.group_remaining is none %}-{% else %}{{ state.group_remaining }} left{% endif %}</div></div>
+  </div>
+  <div class="meter {{ 'bad' if used_pct >= 100 else ('warn' if used_pct >= 80 else '') }}">
+    <span style="width: {{ used_pct }}%"></span>
+  </div>
+  <p class="muted" style="margin-top:8px">{{ used_pct }}% of your allowance used.</p>
+</div>
+
+<div class="card">
+  <h2>My recent jobs <a href="/me/history.csv" style="font-weight:400;font-size:13px">download CSV</a></h2>
+  <table>
+    <tr><th>When</th><th>Printer</th><th>Title</th><th>Status</th><th class="num">Pages</th><th>Note</th></tr>
+    {% for j in jobs %}
+    <tr><td>{{ j.submitted_at|dt }}</td><td>{{ j.printer }}</td><td>{{ (j.title or '')[:40] }}</td>
+        <td>{% if j.status == 'denied' %}<span class="pill bad">denied</span>
+            {% elif j.status == 'completed' %}<span class="pill ok">printed</span>
+            {% else %}<span class="pill">{{ j.status }}</span>{% endif %}</td>
+        <td class="num">{{ j.charged_pages }}</td>
+        <td class="muted">{{ (j.denial_reason or '')[:40] }}</td></tr>
+    {% else %}<tr><td colspan="6" class="muted">You have not printed anything yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% set active = 'users' %}
+{% block title %}{{ user.username }} - printquota{% endblock %}
+{% block content %}
+<h1>{{ user.username }}</h1>
+<p class="sub">{{ user.display_name or '' }} &middot; period ends {{ period_end|dt('%Y-%m-%d') }}</p>
+
+<div class="grid cols-4">
+  <div class="stat"><div class="label">Used</div><div class="value">{{ user.pages_used }}</div></div>
+  <div class="stat"><div class="label">Quota</div><div class="value">{{ user.quota_limit }}</div></div>
+  <div class="stat"><div class="label">Remaining</div><div class="value">{{ user.remaining }}</div></div>
+  <div class="stat"><div class="label">Group</div><div class="value" style="font-size:18px">{{ user.group_name or '-' }}</div></div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <h2>Settings</h2>
+  <form method="post" action="/admin/users/{{ user.username }}/update" class="inline">
+    <div><label for="q">Quota (pages)</label><input id="q" name="quota_limit" type="number" min="0" value="{{ user.quota_limit }}" required></div>
+    <div><label for="t">Low-balance threshold</label><input id="t" name="low_balance_threshold" type="number" min="0" value="{{ user.low_balance_threshold }}" required></div>
+    <div><label for="e">Email</label><input id="e" name="email" type="email" value="{{ user.email or '' }}"></div>
+    <div><label for="g">Group</label>
+      <select id="g" name="group_name"><option value="">(none)</option>
+      {% for gr in groups %}<option value="{{ gr.name }}" {{ 'selected' if gr.name == user.group_name }}>{{ gr.name }}</option>{% endfor %}</select></div>
+    <div><label for="p">New password</label><input id="p" name="password" type="password" placeholder="leave blank to keep"></div>
+    <div><label for="a">Active</label><input id="a" name="is_active" type="checkbox" value="true" {{ 'checked' if user.is_active }}></div>
+    <div><label for="ad">Admin</label><input id="ad" name="is_admin" type="checkbox" value="true" {{ 'checked' if user.is_admin }}></div>
+    <button type="submit">Save</button>
+  </form>
+  <form method="post" action="/admin/users/{{ user.username }}/reset" style="margin-top:12px">
+    <button type="submit" class="danger">Reset usage and restart period</button>
+  </form>
+</div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2>Policies targeting this user</h2>
+    <table>
+      <tr><th>Rule</th><th>Value</th><th>Active</th></tr>
+      {% for p in policies %}
+      <tr><td>{{ p.rule_type }}</td><td>{{ p.rule_value }}</td><td>{{ 'yes' if p.is_active else 'no' }}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">None. <a href="/admin/policies">Add one</a>.</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Recent alerts</h2>
+    <table>
+      <tr><th>When</th><th>Type</th><th>Delivered</th></tr>
+      {% for a in alerts %}
+      <tr><td>{{ a.sent_at|dt }}</td><td>{{ a.alert_type }}</td><td>{{ 'yes' if a.delivered else 'no' }}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">No alerts sent.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Recent jobs</h2>
+  <table>
+    <tr><th>When</th><th>Printer</th><th>Title</th><th>Status</th><th class="num">Est.</th><th class="num">Actual</th>
+        <th class="num">Cost {{ currency }}</th><th>Reason</th></tr>
+    {% for j in jobs %}
+    <tr><td>{{ j.submitted_at|dt }}</td><td>{{ j.printer }}</td><td>{{ (j.title or '')[:36] }}</td>
+      <td>{% if j.status == 'denied' %}<span class="pill bad">denied</span>
+          {% elif j.status == 'completed' %}<span class="pill ok">completed</span>
+          {% else %}<span class="pill">{{ j.status }}</span>{% endif %}</td>
+      <td class="num">{{ j.estimated_pages if j.estimated_pages is not none else '-' }}</td>
+      <td class="num">{{ j.actual_pages if j.actual_pages is not none else '-' }}</td>
+      <td class="num">{{ '%.2f'|format(j.cost or 0) }}</td>
+      <td class="muted">{{ (j.denial_reason or '')[:40] }}</td></tr>
+    {% else %}<tr><td colspan="8" class="muted">No jobs yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

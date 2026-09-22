@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% set active = 'groups' %}
+{% block title %}Groups - printquota{% endblock %}
+{% block content %}
+<h1>Groups</h1>
+<p class="sub">A shared budget is enforced <em>in addition to</em> each member's own quota: a job must fit both.</p>
+
+<div class="card">
+  <table>
+    <tr><th>Group</th><th>Description</th><th class="num">Members</th><th class="num">Budget</th>
+        <th class="num">Used</th><th class="num">Remaining</th><th>Update</th></tr>
+    {% for g in groups %}
+    <tr>
+      <td>{{ g.name }}</td><td class="muted">{{ g.description or '-' }}</td>
+      <td class="num">{{ g.users|length }}</td>
+      <td class="num">{{ g.shared_quota if g.shared_quota is not none else 'unlimited' }}</td>
+      <td class="num">{{ g.pages_used }}</td>
+      <td class="num">{% if g.remaining is none %}-{% elif g.remaining <= 0 %}<span class="pill bad">{{ g.remaining }}</span>{% else %}{{ g.remaining }}{% endif %}</td>
+      <td>
+        <form method="post" action="/admin/groups/{{ g.name }}/update" class="inline">
+          <input name="shared_quota" style="width:110px" value="{{ g.shared_quota if g.shared_quota is not none else '' }}" placeholder="unlimited">
+          <input name="description" style="width:150px" value="{{ g.description or '' }}" placeholder="description">
+          <label style="margin:0">reset <input name="reset" type="checkbox" value="true"></label>
+          <button type="submit" class="secondary">Save</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="7" class="muted">No groups defined.</td></tr>{% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>Add a group</h2>
+  <form method="post" action="/admin/groups/create" class="inline">
+    <div><label for="gn">Name</label><input id="gn" name="name" required></div>
+    <div><label for="gd">Description</label><input id="gd" name="description"></div>
+    <div><label for="gq">Shared budget (pages)</label><input id="gq" name="shared_quota" placeholder="blank = unlimited"></div>
+    <button type="submit">Create</button>
+  </form>
+</div>
+{% endblock %}

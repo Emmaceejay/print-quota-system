@@ -1,0 +1,33 @@
+[Unit]
+Description=printquota accounting daemon (reconciles CUPS page_log against quotas)
+Documentation=file:///opt/printquota/share/docs/architecture.md
+After=network.target cups.service
+Wants=cups.service
+
+[Service]
+Type=simple
+User=printquota
+Group=printquota
+SupplementaryGroups=lp
+EnvironmentFile=/etc/printquota/env
+ExecStart=/opt/printquota/bin/printquota-accounting --interval 15
+Restart=on-failure
+RestartSec=5
+# Hardening: the daemon only needs to read page_log and write its own state.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ReadWritePaths=/var/lib/printquota
+ReadOnlyPaths=/var/log/cups /etc/printquota
+
+[Install]
+WantedBy=multi-user.target

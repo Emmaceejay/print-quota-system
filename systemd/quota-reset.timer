@@ -1,0 +1,15 @@
+[Unit]
+Description=Roll elapsed printquota periods daily
+Documentation=file:///opt/printquota/share/docs/architecture.md
+
+[Timer]
+# Periods are per-user rolling windows, so the job runs daily and rolls
+# whichever users are due. Persistent=true catches a missed run after the
+# VM has been off.
+OnCalendar=*-*-* 00:30:00
+RandomizedDelaySec=300
+Persistent=true
+Unit=quota-reset.service
+
+[Install]
+WantedBy=timers.target

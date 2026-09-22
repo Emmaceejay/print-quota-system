@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% set active = 'policies' %}
+{% block title %}Policies - printquota{% endblock %}
+{% block content %}
+<h1>Policies</h1>
+<p class="sub">The most specific scope wins per rule: user &gt; group &gt; printer &gt; global.</p>
+
+<div class="card">
+  <table>
+    <tr><th class="num">#</th><th>Scope</th><th>Applies to</th><th>Rule</th><th>Value</th><th>Active</th><th></th></tr>
+    {% for p in policies %}
+    <tr><td class="num">{{ p.id }}</td><td>{{ p.scope_type }}</td><td>{{ p.scope_value or 'everyone' }}</td>
+        <td>{{ p.rule_type }}</td><td>{{ p.rule_value }}</td>
+        <td>{{ 'yes' if p.is_active else 'no' }}</td>
+        <td class="right"><form method="post" action="/admin/policies/{{ p.id }}/delete">
+          <button type="submit" class="danger">Remove</button></form></td></tr>
+    {% else %}<tr><td colspan="7" class="muted">No policies defined.</td></tr>{% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>Add a policy</h2>
+  <form method="post" action="/admin/policies/create" class="inline">
+    <div><label for="st">Scope</label>
+      <select id="st" name="scope_type">{% for s in scopes %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select></div>
+    <div><label for="sv">Applies to</label>
+      <input id="sv" name="scope_value" list="targets" placeholder="username / group / printer"></div>
+    <datalist id="targets">
+      {% for u in users %}<option value="{{ u }}">{% endfor %}
+      {% for g in groups %}<option value="{{ g }}">{% endfor %}
+      {% for p in printers %}<option value="{{ p }}">{% endfor %}
+    </datalist>
+    <div><label for="rt">Rule</label>
+      <select id="rt" name="rule_type">{% for r in rules %}<option value="{{ r }}">{{ r }}</option>{% endfor %}</select></div>
+    <div><label for="rv">Value</label><input id="rv" name="rule_value" value="true" placeholder="true, 20, pdf,docx"></div>
+    <button type="submit">Add</button>
+  </form>
+  <p class="muted" style="margin-top:12px">
+    <code>block_color</code>, <code>force_duplex</code>, <code>deny_printer</code> take <code>true</code>/<code>false</code>.
+    <code>max_pages_per_job</code> and <code>max_copies_per_job</code> take a number.
+    <code>block_filetype</code> takes a comma-separated extension list.
+  </p>
+</div>
+{% endblock %}

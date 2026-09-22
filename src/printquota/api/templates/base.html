@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}printquota{% endblock %}</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+{% if admin is defined or user is defined %}
+<header class="top">
+  <span class="brand">printquota</span>
+  <nav>
+    {% if admin is defined and admin %}
+      <a href="/admin" class="{{ 'active' if active == 'dashboard' }}">Dashboard</a>
+      <a href="/admin/users" class="{{ 'active' if active == 'users' }}">Users</a>
+      <a href="/admin/groups" class="{{ 'active' if active == 'groups' }}">Groups</a>
+      <a href="/admin/printers" class="{{ 'active' if active == 'printers' }}">Printers</a>
+      <a href="/admin/policies" class="{{ 'active' if active == 'policies' }}">Policies</a>
+      <a href="/admin/reports" class="{{ 'active' if active == 'reports' }}">Reports</a>
+      <a href="/admin/audit" class="{{ 'active' if active == 'audit' }}">Audit</a>
+    {% endif %}
+    <a href="/me" class="{{ 'active' if active == 'portal' }}">My balance</a>
+  </nav>
+  <span class="spacer"></span>
+  <nav><a href="/logout">Sign out</a></nav>
+</header>
+{% endif %}
+<main>
+  {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+  {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

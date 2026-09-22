@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% set active = 'reports' %}
+{% block title %}Reports - printquota{% endblock %}
+{% block content %}
+<h1>Usage report</h1>
+<p class="sub">Showing up to 500 rows; the CSV export contains every matching job.</p>
+
+<div class="card">
+  <form method="get" class="inline">
+    <div><label for="d">Days</label><input id="d" name="days" type="number" min="1" value="{{ days }}" style="width:90px"></div>
+    <div><label for="u">User</label><input id="u" name="username" value="{{ username }}"></div>
+    <div><label for="p">Printer</label>
+      <select id="p" name="printer"><option value="">(any)</option>
+      {% for name in printers %}<option value="{{ name }}" {{ 'selected' if name == printer }}>{{ name }}</option>{% endfor %}</select></div>
+    <div><label for="s">Status</label>
+      <select id="s" name="status"><option value="">(any)</option>
+      {% for st in ['allowed','denied','completed','error'] %}<option value="{{ st }}" {{ 'selected' if st == status }}>{{ st }}</option>{% endfor %}</select></div>
+    <button type="submit" class="secondary">Apply</button>
+    <a href="/admin/reports.csv?days={{ days }}&username={{ username }}&printer={{ printer }}&status={{ status }}"
+       style="padding-bottom:8px">Download CSV</a>
+  </form>
+</div>
+
+<div class="grid cols-4">
+  <div class="stat"><div class="label">Jobs</div><div class="value">{{ totals.jobs }}</div></div>
+  <div class="stat"><div class="label">Pages</div><div class="value">{{ totals.pages }}</div></div>
+  <div class="stat"><div class="label">Cost {{ currency }}</div><div class="value">{{ '%.2f'|format(totals.cost) }}</div></div>
+  <div class="stat"><div class="label">Denied</div><div class="value">{{ totals.denied }}</div></div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <table>
+    <tr><th>When</th><th>User</th><th>Printer</th><th>Title</th><th>Status</th>
+        <th class="num">Pages</th><th class="num">Cost {{ currency }}</th><th>Reason</th></tr>
+    {% for j in jobs %}
+    <tr><td>{{ j.submitted_at|dt }}</td>
+        <td><a href="/admin/users/{{ j.username }}">{{ j.username }}</a></td>
+        <td>{{ j.printer }}</td><td>{{ (j.title or '')[:34] }}</td>
+        <td>{% if j.status == 'denied' %}<span class="pill bad">denied</span>
+            {% elif j.status == 'completed' %}<span class="pill ok">completed</span>
+            {% else %}<span class="pill">{{ j.status }}</span>{% endif %}</td>
+        <td class="num">{{ j.charged_pages }}</td>
+        <td class="num">{{ '%.2f'|format(j.cost or 0) }}</td>
+        <td class="muted">{{ (j.denial_reason or '')[:36] }}</td></tr>
+    {% else %}<tr><td colspan="8" class="muted">No jobs match these filters.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

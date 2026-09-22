@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% set active = 'users' %}
+{% block title %}Users - printquota{% endblock %}
+{% block content %}
+<h1>Users</h1>
+<p class="sub">Quotas are counted in pages over a rolling {{ period_days }}-day period.</p>
+
+<div class="card">
+  <form method="get" class="inline">
+    <div><label for="q">Search</label><input id="q" name="q" value="{{ q }}" placeholder="username or name"></div>
+    <button type="submit" class="secondary">Search</button>
+    {% if q %}<a href="/admin/users" class="muted" style="padding-bottom:8px">clear</a>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <table>
+    <tr><th>Username</th><th>Name</th><th>Group</th><th class="num">Used</th><th class="num">Quota</th>
+        <th class="num">Remaining</th><th>Status</th></tr>
+    {% for u in users %}
+    <tr>
+      <td><a href="/admin/users/{{ u.username }}">{{ u.username }}</a></td>
+      <td>{{ u.display_name or '-' }}</td>
+      <td>{{ u.group_name or '-' }}</td>
+      <td class="num">{{ u.pages_used }}</td>
+      <td class="num">{{ u.quota_limit }}</td>
+      <td class="num">{% if u.remaining <= 0 %}<span class="pill bad">{{ u.remaining }}</span>
+        {% elif u.remaining <= u.low_balance_threshold %}<span class="pill warn">{{ u.remaining }}</span>
+        {% else %}{{ u.remaining }}{% endif %}</td>
+      <td>{% if not u.is_active %}<span class="pill bad">disabled</span>
+          {% elif u.is_admin %}<span class="pill ok">admin</span>
+          {% else %}<span class="pill">active</span>{% endif %}</td>
+    </tr>
+    {% else %}<tr><td colspan="7" class="muted">No users match.</td></tr>{% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>Add a user</h2>
+  <form method="post" action="/admin/users/create" class="inline">
+    <div><label for="nu">Username</label><input id="nu" name="username" required></div>
+    <div><label for="nd">Display name</label><input id="nd" name="display_name"></div>
+    <div><label for="ne">Email</label><input id="ne" name="email" type="email"></div>
+    <div><label for="ng">Group</label>
+      <select id="ng" name="group_name"><option value="">(none)</option>
+      {% for g in groups %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}</select></div>
+    <div><label for="nq">Quota (pages)</label><input id="nq" name="quota_limit" type="number" min="0" value="500" required></div>
+    <div><label for="np">Portal password</label><input id="np" name="password" type="password"></div>
+    <div><label for="na">Admin</label><input id="na" name="is_admin" type="checkbox" value="true"></div>
+    <button type="submit">Create</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% set active = 'dashboard' %}
+{% block title %}Dashboard - printquota{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<p class="sub">Last 30 days across {{ user_count }} active users and {{ printer_count }} printers.</p>
+
+<div class="grid cols-4">
+  <div class="stat"><div class="label">Jobs</div><div class="value">{{ totals.jobs }}</div></div>
+  <div class="stat"><div class="label">Pages charged</div><div class="value">{{ totals.pages }}</div></div>
+  <div class="stat"><div class="label">Cost {{ currency }}</div><div class="value">{{ '%.2f'|format(totals.cost) }}</div></div>
+  <div class="stat"><div class="label">Denied</div><div class="value">{{ totals.denied }}</div></div>
+</div>
+
+<div class="grid cols-2" style="margin-top:18px">
+  <div class="card">
+    <h2>Users at or below their alert threshold</h2>
+    <table>
+      <tr><th>User</th><th class="num">Remaining</th><th class="num">Quota</th></tr>
+      {% for u in low_users %}
+      <tr><td><a href="/admin/users/{{ u.username }}">{{ u.username }}</a></td>
+          <td class="num">{% if u.remaining <= 0 %}<span class="pill bad">{{ u.remaining }}</span>{% else %}<span class="pill warn">{{ u.remaining }}</span>{% endif %}</td>
+          <td class="num">{{ u.quota_limit }}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">Nobody is low right now.</td></tr>{% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Top users by pages (30 days)</h2>
+    <table>
+      <tr><th>User</th><th class="num">Pages</th></tr>
+      {% for username, pages in top %}
+      <tr><td><a href="/admin/users/{{ username }}">{{ username }}</a></td><td class="num">{{ pages or 0 }}</td></tr>
+      {% else %}<tr><td colspan="2" class="muted">No jobs recorded yet.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Recent denials</h2>
+  <table>
+    <tr><th>When</th><th>User</th><th>Printer</th><th>Title</th><th>Reason</th></tr>
+    {% for j in denied %}
+    <tr><td>{{ j.submitted_at|dt }}</td><td>{{ j.username }}</td><td>{{ j.printer }}</td>
+        <td>{{ (j.title or '')[:40] }}</td><td class="muted">{{ j.denial_reason }}</td></tr>
+    {% else %}<tr><td colspan="5" class="muted">No denials recorded.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

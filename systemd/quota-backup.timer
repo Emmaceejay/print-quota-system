@@ -1,0 +1,11 @@
+[Unit]
+Description=Back up the printquota datastore nightly
+
+[Timer]
+OnCalendar=*-*-* 23:30:00
+RandomizedDelaySec=600
+Persistent=true
+Unit=quota-backup.service
+
+[Install]
+WantedBy=timers.target

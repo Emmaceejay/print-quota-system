@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Sign in - printquota{% endblock %}
+{% block content %}
+<div class="login">
+  <h1>printquota</h1>
+  <p class="sub">Sign in to check your balance or manage the system.</p>
+  {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+  <form method="post" action="/login" class="card">
+    <input type="hidden" name="next_url" value="{{ next_url }}">
+    <p><label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" autofocus required style="width:100%"></p>
+    <p><label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required style="width:100%"></p>
+    <button type="submit" style="width:100%">Sign in</button>
+  </form>
+</div>
+{% endblock %}
