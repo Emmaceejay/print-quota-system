@@ -1,0 +1,58 @@
+# printquota configuration. Every value here can be overridden by the
+# matching PRINTQUOTA_* environment variable (see .env.example).
+
+database:
+  url: "sqlite:////var/lib/printquota/printquota.db"
+  echo: false
+
+quota:
+  # Quota is counted in PAGES on a rolling period per user.
+  default_limit: 500
+  period_days: 30
+  default_low_balance_threshold: 50
+  # When a job's estimate exceeds the remaining balance, deny it outright.
+  # 'soft' allows the job through and lets the balance go negative.
+  enforcement: strict          # strict | soft
+  # Enforce a group's shared pool in addition to the user's own quota.
+  enforce_group_budget: true
+
+printing:
+  # Fallback per-page costs used when a printer has no explicit cost row.
+  default_cost_per_page_mono: 1.0
+  default_cost_per_page_color: 5.0
+  default_duplex_discount: 0.0
+  currency: "NGN"
+  # Real CUPS backend the quota wrapper hands allowed jobs to, resolved from
+  # the queue's real-device-uri (see docs/architecture.md).
+  real_backend_dir: "/usr/lib/cups/backend"
+  page_log: "/var/log/cups/page_log"
+  # pdfinfo timeout, seconds
+  estimator_timeout: 15
+
+alerts:
+  enabled: true
+  channel: email               # email | webhook | none
+  webhook_url: ""
+  # Do not re-send the same alert type to the same user more often than this.
+  cooldown_hours: 24
+  smtp:
+    host: ""
+    port: 25
+    user: ""
+    password: ""
+    from_address: "printquota@localhost"
+    use_tls: false
+
+api:
+  host: "0.0.0.0"
+  port: 8080
+  session_cookie: "printquota_session"
+  session_max_age: 28800
+  # 'local' validates against the password hash stored in the users table.
+  # 'pam' and 'ldap' are Phase 9 hooks.
+  auth_backend: local
+
+logging:
+  level: INFO
+  # journald when available, else stderr
+  use_journald: true

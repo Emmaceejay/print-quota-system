@@ -1,0 +1,7 @@
+[Unit]
+Description=printquota database backup
+
+[Service]
+Type=oneshot
+ExecStart=/opt/printquota/share/scripts/backup.sh /var/backups/printquota
+Environment=PRINTQUOTA_CONFIG=/etc/printquota/settings.yaml

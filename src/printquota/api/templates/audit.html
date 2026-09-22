@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% set active = 'audit' %}
+{% block title %}Audit log - printquota{% endblock %}
+{% block content %}
+<h1>Admin audit log</h1>
+<p class="sub">Every privileged action, from the console and the CLI alike.</p>
+<div class="card">
+  <table>
+    <tr><th>When</th><th>Admin</th><th>Action</th><th>Target</th><th>Details</th><th>Source</th></tr>
+    {% for e in entries %}
+    <tr><td>{{ e.timestamp|dt('%Y-%m-%d %H:%M:%S') }}</td><td>{{ e.admin_user }}</td><td>{{ e.action }}</td>
+        <td>{{ e.target or '-' }}</td><td class="muted">{{ (e.details or '')[:70] }}</td><td>{{ e.source or '-' }}</td></tr>
+    {% else %}<tr><td colspan="6" class="muted">Nothing recorded yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+[Unit]
+Description=printquota web console and self-service portal
+After=network.target
+Wants=quota-accounting.service
+
+[Service]
+Type=simple
+User=printquota
+Group=printquota
+EnvironmentFile=/etc/printquota/env
+ExecStart=/opt/printquota/bin/uvicorn printquota.api.main:app --host 0.0.0.0 --port 8080 --proxy-headers
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+ReadWritePaths=/var/lib/printquota
+ReadOnlyPaths=/etc/printquota
+
+[Install]
+WantedBy=multi-user.target

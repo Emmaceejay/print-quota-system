@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% set active = 'printers' %}
+{% block title %}Printers - printquota{% endblock %}
+{% block content %}
+<h1>Printers</h1>
+<p class="sub">The queue name must match the CUPS queue exactly. The device URI is the real backend the wrapper hands allowed jobs to.</p>
+
+<div class="card">
+  <table>
+    <tr><th>Queue</th><th>Device URI</th><th class="num">Mono</th><th class="num">Colour</th>
+        <th>Duplex</th><th class="num">Discount</th><th>Status</th></tr>
+    {% for p in printers %}
+    <tr><td>{{ p.name }}</td><td class="muted">{{ p.real_device_uri or '-' }}</td>
+        <td class="num">{{ '%g'|format(p.cost_per_page_mono) }}</td>
+        <td class="num">{{ '%g'|format(p.cost_per_page_color) }}</td>
+        <td>{{ 'yes' if p.supports_duplex else 'no' }}</td>
+        <td class="num">{{ '%g'|format(p.duplex_discount) }}</td>
+        <td>{% if p.is_active %}<span class="pill ok">active</span>{% else %}<span class="pill bad">disabled</span>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="7" class="muted">No printers registered.</td></tr>{% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>Add or update a printer</h2>
+  <form method="post" action="/admin/printers/save" class="inline">
+    <div><label for="pn">Queue name</label><input id="pn" name="name" required></div>
+    <div><label for="pu">Real device URI</label><input id="pu" name="real_device_uri" placeholder="socket://10.0.0.5:9100" style="width:220px"></div>
+    <div><label for="pm">Cost / mono page</label><input id="pm" name="cost_per_page_mono" type="number" step="0.01" min="0" value="0"></div>
+    <div><label for="pc">Cost / colour page</label><input id="pc" name="cost_per_page_color" type="number" step="0.01" min="0" value="0"></div>
+    <div><label for="pd">Duplex discount</label><input id="pd" name="duplex_discount" type="number" step="0.05" min="0" max="0.95" value="0"></div>
+    <div><label for="ps">Supports duplex</label><input id="ps" name="supports_duplex" type="checkbox" value="true"></div>
+    <div><label for="pa">Active</label><input id="pa" name="is_active" type="checkbox" value="true" checked></div>
+    <button type="submit">Save</button>
+  </form>
+</div>
+{% endblock %}
