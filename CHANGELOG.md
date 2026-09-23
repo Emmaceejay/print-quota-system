@@ -46,6 +46,16 @@ Initial release: Phases 1-8 of the build plan.
   post-login redirects.
 - Every privileged action recorded in `admin_audit_log`.
 
+## [0.1.1] - 2026-09-23
+
+### Fixed
+
+- Lowered the supported Python floor from 3.11 to 3.10 so the package
+  installs on Ubuntu 22.04 LTS, whose stock interpreter is 3.10. The full
+  test suite passes on 3.10 and 3.11; no 3.11-only syntax was in use.
+- `install.sh` now checks the interpreter version up front and fails with a
+  clear message instead of letting pip reject the package mid-install.
+
 ## Unreleased
 
 ### Planned

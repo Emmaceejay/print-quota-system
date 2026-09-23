@@ -22,7 +22,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="printquota",
         description="Self-hosted CUPS print quota, policy and accounting system",
-        version="0.1.0",
+        version="0.1.1",
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
     )

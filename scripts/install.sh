@@ -20,6 +20,12 @@ fail() { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || fail "run this as root (sudo $0)"
 
+log "Checking the Python interpreter"
+PY_VER="$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' || \
+    fail "Python 3.10 or newer is required; this host has $PY_VER"
+log "Using Python $PY_VER"
+
 log "Installing OS dependencies"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq

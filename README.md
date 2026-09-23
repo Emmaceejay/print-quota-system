@@ -56,7 +56,8 @@ needed; neither is sufficient alone.
 ## Requirements
 
 - Ubuntu Server 22.04 LTS or newer (tested on a Hyper-V guest)
-- CUPS, `poppler-utils` (for `pdfinfo`), Python 3.11+
+- CUPS, `poppler-utils` (for `pdfinfo`), Python 3.10+ (the stock
+  interpreter on Ubuntu 22.04 and 24.04 — no PPA needed)
 - SQLite by default; PostgreSQL by changing one setting
 
 ## Install
