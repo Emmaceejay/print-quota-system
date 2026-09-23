@@ -49,3 +49,43 @@ def test_require_rejects_empty_values(tmp_path, monkeypatch):
     settings = load_settings()
     with pytest.raises(ConfigError):
         settings.require("secret_key")
+
+
+def test_console_overrides_sit_between_the_file_and_the_environment(tmp_path, monkeypatch):
+    path = tmp_path / "settings.yaml"
+    path.write_text(yaml.safe_dump({"quota": {"default_limit": 42}, "alerts": {"smtp": {"port": 25}}}))
+    monkeypatch.delenv("PRINTQUOTA_SMTP_PORT", raising=False)
+
+    settings = load_settings(path, overrides={"quota.default_limit": 99, "alerts.smtp.port": 587})
+    assert settings.get("quota.default_limit") == 99
+    assert settings.get("alerts.smtp.port") == 587
+
+    monkeypatch.setenv("PRINTQUOTA_SMTP_PORT", "2525")
+    settings = load_settings(path, overrides={"alerts.smtp.port": 587})
+    assert settings.get("alerts.smtp.port") == 2525
+
+
+def test_overrides_cannot_touch_infrastructure_settings(tmp_path):
+    path = tmp_path / "settings.yaml"
+    path.write_text(yaml.safe_dump({"database": {"url": "sqlite:///a.db"}}))
+    settings = load_settings(
+        path, overrides={"database.url": "sqlite:///evil.db", "secret_key": "x", "api.auth_backend": "pam"}
+    )
+    assert settings.get("database.url") == "sqlite:///a.db"
+    assert settings.get("secret_key") == ""
+    assert settings.get("api.auth_backend") == "local"
+
+
+def test_runtime_keys_and_console_fields_stay_in_step():
+    from printquota.core.config import RUNTIME_KEYS
+    from printquota.services.runtime_settings import FIELDS
+
+    assert {f.key for f in FIELDS} == set(RUNTIME_KEYS)
+    kinds = {"int": int, "float": float, "bool": bool}
+    for spec in FIELDS:
+        expected = kinds.get(spec.kind, str)
+        assert RUNTIME_KEYS[spec.key] is expected, spec.key
+        default = DEFAULTS
+        for part in spec.key.split("."):
+            default = default[part]
+        assert isinstance(default, expected), spec.key

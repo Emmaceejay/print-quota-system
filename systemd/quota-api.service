@@ -7,6 +7,8 @@ Wants=quota-accounting.service
 Type=simple
 User=printquota
 Group=printquota
+# lpadmin: the console enforces, releases and creates CUPS queues via lpadmin.
+SupplementaryGroups=lpadmin
 EnvironmentFile=/etc/printquota/env
 ExecStart=/opt/printquota/bin/uvicorn printquota.api.main:app --host 0.0.0.0 --port 8080 --proxy-headers
 Restart=on-failure

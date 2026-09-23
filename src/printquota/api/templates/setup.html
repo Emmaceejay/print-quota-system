@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Set up printquota{% endblock %}
+{% block content %}
+<div class="setup">
+  <h1>Welcome to printquota</h1>
+  <p class="sub">Create the first administrator account. You will be signed in straight away and can
+    set up everything else &mdash; users, groups, printers and settings &mdash; from the console.</p>
+
+  <form method="post" action="/setup" class="card stack">
+    {% if token_required %}
+      {% if token_valid %}
+        <input type="hidden" name="token" value="{{ token }}">
+        <div class="callout info">Setup token accepted.</div>
+      {% else %}
+        <div>
+          <label for="token">Setup token</label>
+          <input id="token" name="token" value="{{ token }}" required autocomplete="off" style="width:100%">
+          <div class="hint">Printed at the end of the installer's output. It is also
+            <code>PRINTQUOTA_SETUP_TOKEN</code> in <code>/etc/printquota/env</code> on the server.</div>
+        </div>
+      {% endif %}
+    {% else %}
+      <input type="hidden" name="token" value="">
+      <div class="callout">No setup token is configured, so this page only works when opened on the
+        server itself (for example <code>http://localhost:8080/setup</code>).</div>
+    {% endif %}
+
+    <div>
+      <label for="username">Username</label>
+      <input id="username" name="username" value="{{ form.username or '' }}" required autofocus
+             autocomplete="username" style="width:100%">
+      <div class="hint">Use the same name as the account people print from, if the administrator also prints.</div>
+    </div>
+    <div>
+      <label for="display_name">Full name</label>
+      <input id="display_name" name="display_name" value="{{ form.display_name or '' }}" style="width:100%">
+    </div>
+    <div>
+      <label for="email">Email <span class="muted">(optional, used for alerts)</span></label>
+      <input id="email" name="email" type="email" value="{{ form.email or '' }}" style="width:100%">
+    </div>
+    <div>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" minlength="{{ min_length }}" required
+             autocomplete="new-password" style="width:100%">
+      <div class="hint">At least {{ min_length }} characters.</div>
+    </div>
+    <div>
+      <label for="password_confirm">Confirm password</label>
+      <input id="password_confirm" name="password_confirm" type="password" minlength="{{ min_length }}"
+             required autocomplete="new-password" style="width:100%">
+    </div>
+    <button type="submit" style="width:100%">Create administrator and sign in</button>
+  </form>
+</div>
+{% endblock %}

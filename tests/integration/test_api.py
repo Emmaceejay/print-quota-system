@@ -74,7 +74,7 @@ def test_admin_can_create_and_edit_a_user(admin_client):
     response = admin_client.post(
         "/admin/users/create",
         data={"username": "newbie", "display_name": "New Bie", "email": "n@example.com",
-              "group_name": "finance", "quota_limit": "250", "password": "pw"},
+              "group_name": "finance", "quota_limit": "250", "password": "long-enough-pw"},
         follow_redirects=True,
     )
     assert response.status_code == 200

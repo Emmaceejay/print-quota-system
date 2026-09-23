@@ -39,6 +39,12 @@ install -d -m 0750 -o "$LOG_USER" -g "$LOG_USER" "$STATE_DIR"
 install -d -m 0750 -o root -g "$LOG_USER" "$CONFIG_DIR"
 # The accounting daemon must be able to read CUPS' page_log.
 usermod -a -G lp "$LOG_USER" || true
+# The web console manages CUPS queues (enforce / release / add). CUPS lets
+# members of its SystemGroup do that over the local socket; on Ubuntu that
+# group is lpadmin. CUPS checks /etc/group, so the unit's
+# SupplementaryGroups alone is not enough.
+getent group lpadmin >/dev/null || groupadd --system lpadmin
+usermod -a -G lpadmin "$LOG_USER" || true
 
 log "Building the virtualenv at $PREFIX"
 python3 -m venv "$PREFIX"
@@ -66,10 +72,17 @@ ENVEOF
     chown root:"$LOG_USER" "$CONFIG_DIR/env"
     chmod 0640 "$CONFIG_DIR/env"
 fi
+if ! grep -q '^PRINTQUOTA_SETUP_TOKEN=' "$CONFIG_DIR/env"; then
+    log "Generating a one-time setup token for the web console"
+    echo "PRINTQUOTA_SETUP_TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')" >> "$CONFIG_DIR/env"
+fi
+SETUP_TOKEN="$(sed -n 's/^PRINTQUOTA_SETUP_TOKEN=//p' "$CONFIG_DIR/env" | tail -n 1)"
 
 log "Applying database migrations"
-install -d -m 0755 "$PREFIX/share"
+install -d -m 0755 "$PREFIX/share" "$PREFIX/share/scripts" "$PREFIX/share/docs"
 cp -r "$REPO_DIR/alembic.ini" "$PREFIX/share/alembic.ini"
+install -m 0755 "$REPO_DIR/scripts/backup.sh" "$PREFIX/share/scripts/backup.sh"
+install -m 0644 "$REPO_DIR"/docs/*.md "$PREFIX/share/docs/"
 ( cd "$REPO_DIR" && PRINTQUOTA_CONFIG="$CONFIG_DIR/settings.yaml" "$PREFIX/bin/alembic" upgrade head )
 chown "$LOG_USER":"$LOG_USER" "$STATE_DIR"/printquota.db* 2>/dev/null || true
 
@@ -81,26 +94,32 @@ install -m 0644 "$REPO_DIR"/systemd/*.service "$REPO_DIR"/systemd/*.timer /etc/s
 systemctl daemon-reload
 systemctl enable --now quota-accounting.service
 systemctl enable --now quota-reset.timer
-systemctl enable --now quota-api.service
+systemctl enable --now quota-backup.timer
+# restart (not just start) so an upgrade picks up new code and group membership
+systemctl restart quota-accounting.service quota-api.service
 
+SERVER_IP="$(hostname -I | awk '{print $1}')"
 cat <<SUMMARY
 
 printquota is installed.
 
+  Web console : http://$SERVER_IP:8080
   Config      : $CONFIG_DIR/settings.yaml
   Database    : $STATE_DIR/printquota.db
-  CLI         : $PREFIX/bin/quotactl
-  Web console : http://$(hostname -I | awk '{print $1}'):8080
 
-Next steps:
+Next steps (everything else is done in the browser):
 
-  1. Create your administrator:
-       $PREFIX/bin/quotactl db init --admin <you>
-  2. Register each printer and its real device URI:
-       $PREFIX/bin/quotactl printer add <queue> --device-uri <real-uri> --mono 2 --color 10
-  3. Point the queue at the wrapper backend:
-       sudo $REPO_DIR/scripts/register_backend.sh <queue>
-  4. Require authenticated users in /etc/cups/cupsd.conf so the user name
-     on a job cannot be spoofed (see docs/architecture.md).
+  1. Open the setup page and create your administrator account:
+
+       http://$SERVER_IP:8080/setup?token=$SETUP_TOKEN
+
+     The link works only until the first administrator exists. The token
+     is also stored as PRINTQUOTA_SETUP_TOKEN in $CONFIG_DIR/env.
+
+  2. Follow the "Getting started" checklist on the dashboard: groups,
+     users (single or CSV import), printers & quota enforcement, alerts.
+
+  3. Require authenticated users in /etc/cups/cupsd.conf so the user name
+     on a job cannot be spoofed (README section 20).
 
 SUMMARY

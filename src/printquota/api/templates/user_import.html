@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% set active = 'users' %}
+{% block title %}Import users - printquota{% endblock %}
+{% block content %}
+<h1>Import users</h1>
+<p class="sub">Add or update many accounts at once from a CSV file or rows copied out of a spreadsheet.
+  You will see a preview before anything is saved.</p>
+
+{% if plan %}
+<div class="card">
+  <h2>Preview</h2>
+  <div class="grid cols-4" style="margin-bottom:14px">
+    <div class="stat"><div class="label">Create</div><div class="value">{{ plan.count('create') }}</div></div>
+    <div class="stat"><div class="label">Update</div><div class="value">{{ plan.count('update') }}</div></div>
+    <div class="stat"><div class="label">Skip</div><div class="value">{{ plan.count('skip') }}</div></div>
+    <div class="stat"><div class="label">Errors</div><div class="value">{{ plan.count('error') }}</div></div>
+  </div>
+  {% if plan.groups_to_create %}
+  <div class="callout info">These groups will be created: <strong>{{ plan.groups_to_create|join(', ') }}</strong>.</div>
+  {% endif %}
+  {% if plan.count('error') %}
+  <div class="callout">Rows with errors are left out. Fix them and preview again, or apply the rest now.</div>
+  {% endif %}
+  <table>
+    <tr><th class="num">Line</th><th>Username</th><th>Result</th><th>Details</th></tr>
+    {% for row in plan.rows %}
+    <tr class="{{ 'row-error' if row.action == 'error' }}">
+      <td class="num">{{ row.line }}</td><td>{{ row.username }}</td>
+      <td>{% if row.action == 'create' %}<span class="pill ok">create</span>
+          {% elif row.action == 'update' %}<span class="pill warn">update</span>
+          {% elif row.action == 'error' %}<span class="pill bad">error</span>
+          {% else %}<span class="pill">skip</span>{% endif %}</td>
+      <td class="muted">{{ row.message }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <form method="post" action="/admin/users/import" class="actions">
+    <textarea name="text" hidden>{{ text }}</textarea>
+    <input type="hidden" name="step" value="apply">
+    <input type="hidden" name="default_quota" value="{{ options.default_quota }}">
+    <input type="hidden" name="default_threshold" value="{{ options.default_threshold }}">
+    <input type="hidden" name="default_group" value="{{ options.default_group or '' }}">
+    {% if options.create_missing_groups %}<input type="hidden" name="create_missing_groups" value="true">{% endif %}
+    {% if options.update_existing %}<input type="hidden" name="update_existing" value="true">{% endif %}
+    <button type="submit" {{ 'disabled' if not plan.has_changes }}>
+      Apply: create {{ plan.count('create') }}, update {{ plan.count('update') }}</button>
+    <a href="#edit">Change the data or options</a>
+  </form>
+</div>
+{% endif %}
+
+<form method="post" action="/admin/users/import" enctype="multipart/form-data" class="card stack" id="edit">
+  <input type="hidden" name="step" value="preview">
+  <h2>1. Your data</h2>
+  <div>
+    <label for="upload">Upload a CSV file</label>
+    <input id="upload" name="upload" type="file" accept=".csv,.txt,text/csv">
+    <div class="hint">Save a spreadsheet as <em>CSV</em>. Up to 2 MB / 5,000 users.
+      <a href="/admin/users/import/template.csv">Download a template</a>.</div>
+  </div>
+  <div>
+    <label for="text">&hellip;or paste rows</label>
+    <textarea id="text" name="text" placeholder="username,display_name,email,group,quota&#10;ada,Ada Obi,ada@example.com,finance,500&#10;tunde,Tunde Bello,tunde@example.com,engineering,800">{{ text }}</textarea>
+    <div class="hint">A plain list of usernames, one per line, also works.</div>
+  </div>
+
+  <details>
+    <summary>Column reference</summary>
+    <table>
+      <tr><th>Column</th><th>Meaning</th></tr>
+      <tr><td><code>username</code></td><td>Required. The name people print as (letters, digits, <code>. _ @ \ -</code>).</td></tr>
+      <tr><td><code>display_name</code></td><td>Full name.</td></tr>
+      <tr><td><code>email</code></td><td>Where alerts are sent.</td></tr>
+      <tr><td><code>group</code></td><td>Group (department) name.</td></tr>
+      <tr><td><code>quota</code></td><td>Pages per period. Blank uses the default below.</td></tr>
+      <tr><td><code>threshold</code></td><td>Low-balance alert level in pages.</td></tr>
+      <tr><td><code>password</code></td><td>Portal password, at least 8 characters. Blank means none (or keep the current one).</td></tr>
+      <tr><td><code>admin</code></td><td><code>yes</code> to make the user an administrator.</td></tr>
+      <tr><td><code>active</code></td><td><code>no</code> to create the account disabled.</td></tr>
+    </table>
+    <p class="hint">With a header row the columns can be in any order and extra columns are ignored.
+      Without one, columns are read in the order above. Comma, semicolon and tab separators all work.</p>
+  </details>
+
+  <h2 style="margin-top:22px">2. Options</h2>
+  <div class="form-grid">
+    <div><label for="dq">Default quota (pages)</label>
+      <input id="dq" name="default_quota" type="number" min="0" value="{{ options.default_quota }}"></div>
+    <div><label for="dt">Default low-balance alert at</label>
+      <input id="dt" name="default_threshold" type="number" min="0" value="{{ options.default_threshold }}"></div>
+    <div><label for="dg">Default group</label>
+      <select id="dg" name="default_group"><option value="">(none)</option>
+      {% for g in groups %}<option value="{{ g }}" {{ 'selected' if g == options.default_group }}>{{ g }}</option>{% endfor %}</select>
+      <div class="hint">For rows with no group.</div></div>
+    <div class="wide"><label class="check"><input type="checkbox" name="create_missing_groups" value="true"
+        {{ 'checked' if options.create_missing_groups }}> Create groups that do not exist yet</label></div>
+    <div class="wide"><label class="check"><input type="checkbox" name="update_existing" value="true"
+        {{ 'checked' if options.update_existing }}> Update users who already exist (blank cells leave a field unchanged)</label></div>
+  </div>
+  <div class="actions"><button type="submit">Preview import</button>
+    <a href="/admin/users">Cancel</a></div>
+</form>
+{% endblock %}
