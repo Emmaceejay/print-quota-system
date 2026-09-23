@@ -3,51 +3,113 @@
 {% block title %}Users - printquota{% endblock %}
 {% block content %}
 <h1>Users</h1>
-<p class="sub">Quotas are counted in pages over a rolling {{ period_days }}-day period.</p>
+<p class="sub">Quotas are counted in pages over a rolling {{ period_days }}-day period.
+  Usernames must match the name people print as.</p>
 
 <div class="card">
   <form method="get" class="inline">
-    <div><label for="q">Search</label><input id="q" name="q" value="{{ q }}" placeholder="username or name"></div>
-    <button type="submit" class="secondary">Search</button>
-    {% if q %}<a href="/admin/users" class="muted" style="padding-bottom:8px">clear</a>{% endif %}
+    <div><label for="q">Search</label><input id="q" name="q" value="{{ q }}" placeholder="username, name or email"></div>
+    <div><label for="fg">Group</label>
+      <select id="fg" name="group">
+        <option value="">(all)</option>
+        <option value="-" {{ 'selected' if group_filter == '-' }}>(no group)</option>
+        {% for g in groups %}<option value="{{ g.name }}" {{ 'selected' if g.name == group_filter }}>{{ g.name }}</option>{% endfor %}
+      </select></div>
+    <div><label for="fs">Status</label>
+      <select id="fs" name="status">
+        <option value="">(all)</option>
+        {% for value, label in [('active','Active'),('disabled','Disabled'),('admin','Administrators')] %}
+        <option value="{{ value }}" {{ 'selected' if status_filter == value }}>{{ label }}</option>{% endfor %}
+      </select></div>
+    <button type="submit" class="secondary">Filter</button>
+    {% if q or group_filter or status_filter %}<a href="/admin/users" class="muted" style="padding-bottom:8px">clear</a>{% endif %}
+    <span class="spacer" style="margin-left:auto"></span>
+    <a href="/admin/users/import" style="padding-bottom:8px">Import users&hellip;</a>
+    <a href="/admin/users.csv" style="padding-bottom:8px">Export CSV</a>
   </form>
 </div>
 
 <div class="card">
-  <table>
-    <tr><th>Username</th><th>Name</th><th>Group</th><th class="num">Used</th><th class="num">Quota</th>
-        <th class="num">Remaining</th><th>Status</th></tr>
-    {% for u in users %}
-    <tr>
-      <td><a href="/admin/users/{{ u.username }}">{{ u.username }}</a></td>
-      <td>{{ u.display_name or '-' }}</td>
-      <td>{{ u.group_name or '-' }}</td>
-      <td class="num">{{ u.pages_used }}</td>
-      <td class="num">{{ u.quota_limit }}</td>
-      <td class="num">{% if u.remaining <= 0 %}<span class="pill bad">{{ u.remaining }}</span>
-        {% elif u.remaining <= u.low_balance_threshold %}<span class="pill warn">{{ u.remaining }}</span>
-        {% else %}{{ u.remaining }}{% endif %}</td>
-      <td>{% if not u.is_active %}<span class="pill bad">disabled</span>
-          {% elif u.is_admin %}<span class="pill ok">admin</span>
-          {% else %}<span class="pill">active</span>{% endif %}</td>
-    </tr>
-    {% else %}<tr><td colspan="7" class="muted">No users match.</td></tr>{% endfor %}
-  </table>
+  <form method="post" action="/admin/users/bulk" id="bulk">
+    <input type="hidden" name="return_to" value="{{ return_to }}">
+    <div class="bulkbar">
+      <div class="count"><span id="selcount">0</span> selected</div>
+      <div><label for="ba">Action</label>
+        <select id="ba" name="action" required>
+          <option value="">Choose&hellip;</option>
+          {% for key, label in bulk_actions.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select></div>
+      <div data-for="set_group" hidden><label for="bg">Group</label>
+        <select id="bg" name="group_name"><option value="">(no group)</option>
+        {% for g in groups %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}</select></div>
+      <div data-for="set_quota" hidden><label for="bq">Pages</label>
+        <input id="bq" name="quota_limit" type="number" min="0" style="width:110px"></div>
+      <div data-for="delete" hidden><label class="check"><input type="checkbox" name="confirm" value="true">
+        I understand their job history is deleted too</label></div>
+      <button type="submit">Apply</button>
+    </div>
+
+    <table>
+      <tr><th class="sel"><input type="checkbox" id="selall" aria-label="Select all"></th>
+          <th>Username</th><th>Name</th><th>Group</th><th class="num">Used</th><th class="num">Quota</th>
+          <th class="num">Remaining</th><th>Status</th></tr>
+      {% for u in users %}
+      <tr>
+        <td class="sel"><input type="checkbox" name="usernames" value="{{ u.username }}" class="rowsel"
+                               aria-label="Select {{ u.username }}"></td>
+        <td><a href="/admin/users/{{ u.username }}">{{ u.username }}</a></td>
+        <td>{{ u.display_name or '-' }}</td>
+        <td>{{ u.group_name or '-' }}</td>
+        <td class="num">{{ u.pages_used }}</td>
+        <td class="num">{{ u.quota_limit }}</td>
+        <td class="num">{% if u.remaining <= 0 %}<span class="pill bad">{{ u.remaining }}</span>
+          {% elif u.remaining <= u.low_balance_threshold %}<span class="pill warn">{{ u.remaining }}</span>
+          {% else %}{{ u.remaining }}{% endif %}</td>
+        <td>{% if not u.is_active %}<span class="pill bad">disabled</span>
+            {% elif u.is_admin %}<span class="pill ok">admin</span>
+            {% else %}<span class="pill">active</span>{% endif %}</td>
+      </tr>
+      {% else %}<tr><td colspan="8" class="muted">No users match. <a href="/admin/users/import">Import users</a> or add one below.</td></tr>{% endfor %}
+    </table>
+  </form>
+  <p class="muted" style="margin:12px 0 0">{{ users|length }} user(s) shown.</p>
 </div>
 
 <div class="card">
-  <h2>Add a user</h2>
-  <form method="post" action="/admin/users/create" class="inline">
+  <h2>Add a user or administrator</h2>
+  <form method="post" action="/admin/users/create" class="form-grid">
     <div><label for="nu">Username</label><input id="nu" name="username" required></div>
-    <div><label for="nd">Display name</label><input id="nd" name="display_name"></div>
+    <div><label for="nd">Full name</label><input id="nd" name="display_name"></div>
     <div><label for="ne">Email</label><input id="ne" name="email" type="email"></div>
     <div><label for="ng">Group</label>
       <select id="ng" name="group_name"><option value="">(none)</option>
       {% for g in groups %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}</select></div>
-    <div><label for="nq">Quota (pages)</label><input id="nq" name="quota_limit" type="number" min="0" value="500" required></div>
-    <div><label for="np">Portal password</label><input id="np" name="password" type="password"></div>
-    <div><label for="na">Admin</label><input id="na" name="is_admin" type="checkbox" value="true"></div>
-    <button type="submit">Create</button>
+    <div><label for="nq">Quota (pages)</label><input id="nq" name="quota_limit" type="number" min="0" value="{{ default_quota }}" required></div>
+    <div><label for="nt">Low-balance alert at</label><input id="nt" name="low_balance_threshold" type="number" min="0" value="{{ default_threshold }}"></div>
+    <div><label for="np">Password</label><input id="np" name="password" type="password" minlength="{{ min_password }}" autocomplete="new-password">
+      <div class="hint">For the self-service portal. Required for administrators.</div></div>
+    <div><label for="npc">Confirm password</label><input id="npc" name="password_confirm" type="password" autocomplete="new-password"></div>
+    <div class="wide"><label class="check"><input id="na" name="is_admin" type="checkbox" value="true">
+      Administrator &mdash; can use this console and change everything</label></div>
+    <div class="wide"><button type="submit">Create</button></div>
   </form>
 </div>
+
+<script>
+(function () {
+  var all = document.getElementById('selall');
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.rowsel'));
+  var count = document.getElementById('selcount');
+  var action = document.getElementById('ba');
+  function update() { count.textContent = boxes.filter(function (b) { return b.checked; }).length; }
+  if (all) all.addEventListener('change', function () { boxes.forEach(function (b) { b.checked = all.checked; }); update(); });
+  boxes.forEach(function (b) { b.addEventListener('change', update); });
+  action.addEventListener('change', function () {
+    document.querySelectorAll('[data-for]').forEach(function (el) { el.hidden = el.getAttribute('data-for') !== action.value; });
+  });
+  document.getElementById('bulk').addEventListener('submit', function (e) {
+    if (action.value === 'delete' && !confirm('Delete the selected users and all of their job history?')) e.preventDefault();
+  });
+})();
+</script>
 {% endblock %}

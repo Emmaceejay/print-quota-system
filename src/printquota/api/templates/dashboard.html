@@ -5,6 +5,23 @@
 <h1>Dashboard</h1>
 <p class="sub">Last 30 days across {{ user_count }} active users and {{ printer_count }} printers.</p>
 
+{% if checklist %}
+<div class="card">
+  <h2>Getting started</h2>
+  <ol class="checklist">
+    {% for step in checklist %}
+    <li class="{{ 'done' if step.done }}">
+      <span class="mark">{{ '&#10003;'|safe if step.done else loop.index }}</span>
+      <div><div class="title">{{ step.title }}</div>
+        <div class="muted" style="font-size:14px">{{ step.text }} <a href="{{ step.href }}">{{ step.link }} &rarr;</a></div></div>
+    </li>
+    {% endfor %}
+  </ol>
+  <p class="hint" style="margin-top:10px">Before you rely on the numbers, make CUPS require a login for printing
+    (<code>Require valid-user</code>) so nobody can print under someone else's name &mdash; see the README, section 20.</p>
+</div>
+{% endif %}
+
 <div class="grid cols-4">
   <div class="stat"><div class="label">Jobs</div><div class="value">{{ totals.jobs }}</div></div>
   <div class="stat"><div class="label">Pages charged</div><div class="value">{{ totals.pages }}</div></div>

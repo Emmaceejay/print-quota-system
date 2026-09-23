@@ -270,3 +270,20 @@ class AdminAuditLog(Base):
     )
 
     __table_args__ = (Index("ix_audit_timestamp", "timestamp"),)
+
+
+class AppSetting(Base):
+    """A configuration value saved from the web console.
+
+    Only keys in :data:`printquota.core.config.RUNTIME_KEYS` are honoured.
+    ``value`` is JSON so each value keeps its type.
+    """
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(128), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_by: Mapped[Optional[str]] = mapped_column(String(128))
+    updated_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )

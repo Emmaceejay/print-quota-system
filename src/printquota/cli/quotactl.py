@@ -30,6 +30,7 @@ from ..db.models import (
     utcnow,
 )
 from ..policies.engine import validate_rule
+from ..services.accounts import delete_user
 from ..services.audit import record_audit
 from ..services.quota import reset_expired_periods, reset_user, usage_rows
 
@@ -335,8 +336,8 @@ def user_delete(username: str) -> None:
         record = session.get(User, username)
         if record is None:
             raise click.ClickException(f"no such user: {username}")
-        session.delete(record)
-        record_audit(session, _actor(), "user.delete", username)
+        jobs = delete_user(session, record)
+        record_audit(session, _actor(), "user.delete", username, {"jobs_deleted": jobs})
     click.echo(f"deleted {username}")
 
 

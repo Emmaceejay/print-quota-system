@@ -15,7 +15,8 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from ..core.config import get_settings
+from ..core import config as _config
+from ..core.config import get_base_settings
 from .models import Base
 
 _engine: Optional[Engine] = None
@@ -35,7 +36,7 @@ def _apply_sqlite_pragmas(engine: Engine) -> None:
 
 def build_engine(url: str | None = None, echo: bool | None = None) -> Engine:
     """Create a new engine for ``url`` (defaults to the configured URL)."""
-    settings = get_settings()
+    settings = get_base_settings()
     url = url or settings.get("database.url")
     echo = settings.get("database.echo", False) if echo is None else echo
     kwargs: dict = {"echo": echo, "future": True}
@@ -73,6 +74,7 @@ def configure(engine: Engine) -> None:
     global _engine, _SessionFactory
     _engine = engine
     _SessionFactory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
+    _config.invalidate_settings()
 
 
 def reset() -> None:
@@ -82,6 +84,7 @@ def reset() -> None:
         _engine.dispose()
     _engine = None
     _SessionFactory = None
+    _config.invalidate_settings()
 
 
 @contextmanager
@@ -105,3 +108,16 @@ def create_all(engine: Engine | None = None) -> None:
     ``alembic upgrade head`` on an empty database.
     """
     Base.metadata.create_all(engine or get_engine())
+
+
+def _read_runtime_overrides() -> dict:
+    """Settings saved from the web console (see ``core.config``)."""
+    from ..services.runtime_settings import read_overrides
+
+    return read_overrides(get_engine())
+
+
+# Every process that can reach the database (backend, daemon, web app, CLI)
+# imports this module, so this is where console-saved settings get layered
+# into ``get_settings()``.
+_config.register_override_provider(_read_runtime_overrides)

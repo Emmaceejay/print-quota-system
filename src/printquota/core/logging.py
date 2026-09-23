@@ -37,9 +37,9 @@ class _KeyValueFormatter(logging.Formatter):
 def setup_logging(component: str, level: str | None = None, use_journald: bool | None = None) -> logging.Logger:
     """Configure root logging once and return the component logger."""
     global _CONFIGURED
-    from .config import get_settings
+    from .config import get_base_settings
 
-    settings = get_settings()
+    settings = get_base_settings()
     level_name = (level or os.environ.get("PRINTQUOTA_LOG_LEVEL") or settings.get("logging.level", "INFO")).upper()
     want_journald = settings.get("logging.use_journald", True) if use_journald is None else use_journald
 

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% set active = 'settings' %}
+{% block title %}Settings - printquota{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+<p class="sub">Changes apply straight away: new print jobs use them immediately and the accounting service picks
+  them up within 15 seconds. Every change is recorded in the audit log.</p>
+
+<form method="post" action="/admin/settings">
+  {% for section, fields in sections.items() %}
+  <div class="card">
+    <h2>{{ section }}</h2>
+    <div class="form-grid">
+      {% for f in fields %}
+      {% set spec = f.spec %}
+      <div>
+        {% if spec.kind == 'bool' %}
+          <label class="check" style="margin-top:22px">
+            <input type="checkbox" name="{{ spec.key }}" value="true" {{ 'checked' if f.value }} {{ 'disabled' if f.locked }}>
+            {{ spec.label }}</label>
+        {% else %}
+          <label for="{{ spec.key }}">{{ spec.label }}</label>
+          {% if spec.kind == 'choice' %}
+            <select id="{{ spec.key }}" name="{{ spec.key }}" {{ 'disabled' if f.locked }} style="width:100%">
+              {% for c in spec.choices %}<option value="{{ c }}" {{ 'selected' if c == f.value }}>{{ c }}</option>{% endfor %}
+            </select>
+          {% elif spec.kind == 'secret' %}
+            <input id="{{ spec.key }}" name="{{ spec.key }}" type="password" autocomplete="new-password"
+                   placeholder="{{ '•••••••• (set)' if f.value else 'not set' }}" {{ 'disabled' if f.locked }}>
+          {% elif spec.kind in ('int', 'float') %}
+            <input id="{{ spec.key }}" name="{{ spec.key }}" type="number" value="{{ f.value }}"
+                   step="{{ '1' if spec.kind == 'int' else 'any' }}"
+                   {% if spec.minimum is not none %}min="{{ spec.minimum }}"{% endif %}
+                   {% if spec.maximum is not none and not spec.maximum_exclusive %}max="{{ spec.maximum }}"{% endif %}
+                   {{ 'disabled' if f.locked }} required>
+          {% else %}
+            <input id="{{ spec.key }}" name="{{ spec.key }}" value="{{ f.value or '' }}"
+                   type="{{ 'email' if spec.kind == 'email' else ('url' if spec.kind == 'url' else 'text') }}"
+                   {{ 'disabled' if f.locked }}>
+          {% endif %}
+        {% endif %}
+        <div class="hint">
+          {% if f.origin == 'environment' %}<span class="badge environment">set by environment</span>
+            Change it in <code>/etc/printquota/env</code> on the server.
+          {% elif f.origin == 'console' %}<span class="badge console">set here</span>
+          {% elif f.origin == 'file' %}<span class="badge">config file</span>
+          {% else %}<span class="badge">default</span>{% endif %}
+          {{ spec.help }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <div class="actions" style="margin-bottom:18px"><button type="submit">Save settings</button></div>
+</form>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2>Test alert delivery</h2>
+    <p class="muted">Sends a test message to you ({{ admin.email or 'no email address on your account' }})
+      using the saved settings above.</p>
+    <form method="post" action="/admin/settings/test-alert"><button type="submit" class="secondary">Send test alert</button></form>
+  </div>
+  <div class="card">
+    <h2>Values set here</h2>
+    {% set overridden = [] %}
+    {% for section, fields in sections.items() %}{% for f in fields %}{% if f.saved %}{% set _ = overridden.append(f) %}{% endif %}{% endfor %}{% endfor %}
+    {% if overridden %}
+    <table>
+      {% for f in overridden %}
+      <tr><td>{{ f.spec.label }}</td>
+          <td class="right"><form method="post" action="/admin/settings/revert">
+            <input type="hidden" name="key" value="{{ f.spec.key }}">
+            <button type="submit" class="secondary">Use file value</button></form></td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="muted">Nothing yet &mdash; everything comes from the configuration file or the defaults.</p>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Server configuration <span class="muted" style="font-weight:400">(read-only)</span></h2>
+  <dl class="facts">
+    {% for label, value in summary.items() %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
+  </dl>
+  <p class="hint" style="margin-top:12px">These decide how the services start and reach the database, so they are
+    changed in <code>/etc/printquota/settings.yaml</code> or <code>/etc/printquota/env</code> on the server,
+    followed by <code>sudo systemctl restart quota-api quota-accounting</code>.</p>
+</div>
+{% endblock %}

@@ -56,6 +56,55 @@ Initial release: Phases 1-8 of the build plan.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.2.0] - 2026-09-23
+
+Everything after installation can now be done in the web console; the CLI
+is optional.
+
+### Added
+
+- **Setup wizard** (`/setup`): creates the first administrator in the
+  browser. Guarded by a one-time `PRINTQUOTA_SETUP_TOKEN` that `install.sh`
+  generates and prints; closes itself once an administrator exists.
+- **Printers & queues** page: lists CUPS queues, turns quota enforcement on
+  and off per queue, creates new CUPS queues (IPP Everywhere or raw), and
+  edits each printer's cost model. The printer row is always written before
+  a queue is wrapped, and rolled back if `lpadmin` fails.
+- **User import** from an uploaded CSV or pasted rows, with a preview
+  before anything is saved, a downloadable template, optional creation of
+  missing groups and optional updates of existing users. **User export** to
+  CSV in the same format.
+- **Bulk user actions**: move to group, set quota, reset usage,
+  enable/disable, grant/revoke admin, delete. The acting administrator
+  can never disable, demote or delete themselves.
+- Create administrators from the Users page; edit full name; password
+  confirmation; delete a single user; delete a group.
+- **Settings** page for quotas, enforcement mode, costs, currency and
+  alert/SMTP delivery, stored in the new `app_settings` table (Alembic
+  migration `5c1e7a9d2b44`), with a "send test alert" button. Values set by
+  environment variables stay locked; infrastructure settings (database,
+  secret key, ports, paths) stay file/env only.
+- "Getting started" checklist on the dashboard.
+
+### Changed
+
+- Configuration precedence is now environment > console > file > defaults.
+- The web service runs with the `lpadmin` group, which `install.sh` grants
+  to the `printquota` account so the console can administer CUPS queues.
+- Passwords set from the console must be at least 8 characters.
+- `install.sh` restarts the services on upgrade and prints the setup link
+  instead of CLI steps.
+
+### Fixed
+
+- Deleting a user who had printed failed with `NOT NULL constraint failed:
+  print_jobs.username` (affected `quotactl user delete`). Their job history
+  and user-scoped policies are now removed with them.
+- The nightly backup never ran: `install.sh` now installs `backup.sh` and
+  the docs under `/opt/printquota/share` and enables `quota-backup.timer`.
+- Unauthenticated requests to `/admin/api/*` now get a JSON 401 instead of
+  a redirect to the sign-in page.
+
 ## Unreleased
 
 ### Planned

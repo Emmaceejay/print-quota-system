@@ -83,7 +83,47 @@ def dashboard(
         top=top,
         user_count=len(users),
         printer_count=session.scalar(select(func.count()).select_from(Printer)),
+        checklist=_setup_checklist(session, admin),
     )
+
+
+def _setup_checklist(session: Session, admin: User) -> Optional[list[dict]]:
+    """First-run steps, or ``None`` once the essentials are done."""
+    from ...services import cups_queues
+
+    settings = get_settings()
+    other_users = session.scalar(
+        select(func.count()).select_from(User).where(User.username != admin.username)
+    )
+    groups = session.scalar(select(func.count()).select_from(Group))
+    try:
+        enforced = sum(1 for q in cups_queues.list_queues() if q.enforced)
+    except cups_queues.CupsError:
+        enforced = 0
+    channel = str(settings.get("alerts.channel", "email"))
+    alerts_ready = (
+        not settings.get("alerts.enabled", True)
+        or channel == "none"
+        or (channel == "email" and bool(str(settings.get("alerts.smtp.host") or "").strip()))
+        or (channel == "webhook" and bool(str(settings.get("alerts.webhook_url") or "").strip()))
+    )
+    steps = [
+        {"done": groups > 0, "title": "Create your departments",
+         "text": "Groups share a page budget and can have their own policies.",
+         "href": "/admin/groups", "link": "Groups"},
+        {"done": other_users > 0, "title": "Add your users",
+         "text": "Add them one by one or import a CSV/spreadsheet in one go.",
+         "href": "/admin/users/import", "link": "Import users"},
+        {"done": enforced > 0, "title": "Turn on quota enforcement",
+         "text": "Pick the CUPS queues that should count pages and enforce quotas.",
+         "href": "/admin/printers", "link": "Printers & queues"},
+        {"done": alerts_ready, "title": "Set up alerts",
+         "text": "Enter your mail server (or a webhook) so users hear when they run low.",
+         "href": "/admin/settings", "link": "Settings"},
+    ]
+    if all(step["done"] for step in steps):
+        return None
+    return steps
 
 
 # ------------------------------------------------------------------------ users
@@ -94,14 +134,53 @@ def users_page(
     admin: User = Depends(require_admin),
     session: Session = Depends(get_db),
 ):
-    """Searchable user list with inline quota editing."""
+    """Searchable, filterable user list with bulk actions."""
+    from .users import BULK_ACTIONS
+
+    group = request.query_params.get("group", "")
+    status = request.query_params.get("status", "")
     stmt = select(User).order_by(User.username)
     if q:
         like = f"%{q}%"
-        stmt = stmt.where((User.username.like(like)) | (User.display_name.like(like)))
+        stmt = stmt.where(
+            (User.username.like(like)) | (User.display_name.like(like)) | (User.email.like(like))
+        )
+    if group == "-":
+        stmt = stmt.where(User.group_name.is_(None))
+    elif group:
+        stmt = stmt.where(User.group_name == group)
+    if status == "active":
+        stmt = stmt.where(User.is_active.is_(True))
+    elif status == "disabled":
+        stmt = stmt.where(User.is_active.is_(False))
+    elif status == "admin":
+        stmt = stmt.where(User.is_admin.is_(True))
     users = session.scalars(stmt).all()
     groups = session.scalars(select(Group).order_by(Group.name)).all()
-    return render(request, "users.html", admin=admin, users=users, groups=groups, q=q)
+    settings = get_settings()
+    return render(
+        request, "users.html", admin=admin, users=users, groups=groups, q=q,
+        group_filter=group, status_filter=status, bulk_actions=BULK_ACTIONS,
+        default_quota=int(settings.get("quota.default_limit", 500)),
+        default_threshold=int(settings.get("quota.default_low_balance_threshold", 50)),
+        return_to=str(request.url.path) + (f"?{request.url.query}" if request.url.query else ""),
+        min_password=MIN_PASSWORD_LENGTH,
+    )
+
+
+#: Minimum length for passwords set from the console.
+MIN_PASSWORD_LENGTH = 8
+
+
+def _password_problem(password: str, confirm: Optional[str], *, required: bool) -> Optional[str]:
+    """Why a console-submitted password is unacceptable, or ``None``."""
+    if not password:
+        return "Set a password so this administrator can sign in." if required else None
+    if len(password) < MIN_PASSWORD_LENGTH:
+        return f"Passwords must be at least {MIN_PASSWORD_LENGTH} characters."
+    if confirm is not None and password != confirm:
+        return "The two passwords do not match."
+    return None
 
 
 @router.post("/users/create", include_in_schema=False)
@@ -111,18 +190,35 @@ def users_create(
     email: str = Form(""),
     group_name: str = Form(""),
     quota_limit: int = Form(...),
+    low_balance_threshold: Optional[int] = Form(None),
     password: str = Form(""),
+    password_confirm: Optional[str] = Form(None),
     is_admin: bool = Form(False),
     admin: User = Depends(require_admin),
     session: Session = Depends(get_db),
 ):
-    """Create a print account from the console."""
+    """Create a print account (or another administrator) from the console."""
+    from ...services.user_import import USERNAME_RE
+
     username = username.strip()
     if not username:
         return redirect("/admin/users", error="Username is required.")
+    if not USERNAME_RE.fullmatch(username):
+        return redirect("/admin/users", error="Usernames may use letters, digits and . _ @ \\ - (no spaces).")
     if session.get(User, username) is not None:
         return redirect("/admin/users", error=f"User '{username}' already exists.")
+    if group_name and session.get(Group, group_name) is None:
+        return redirect("/admin/users", error=f"No such group: {group_name}")
     settings = get_settings()
+    local_auth = str(settings.get("api.auth_backend", "local")) == "local"
+    problem = _password_problem(password, password_confirm, required=bool(is_admin) and local_auth)
+    if problem:
+        return redirect("/admin/users", error=problem)
+    threshold = (
+        low_balance_threshold
+        if low_balance_threshold is not None
+        else int(settings.get("quota.default_low_balance_threshold", 50))
+    )
     session.add(
         User(
             username=username,
@@ -130,13 +226,17 @@ def users_create(
             email=email.strip() or None,
             group_name=group_name or None,
             quota_limit=max(int(quota_limit), 0),
-            low_balance_threshold=int(settings.get("quota.default_low_balance_threshold", 50)),
+            low_balance_threshold=max(int(threshold), 0),
             is_admin=bool(is_admin),
             password_hash=hash_password(password) if password else None,
         )
     )
-    record_audit(session, admin.username, "user.add", username, {"quota": quota_limit}, source="web")
-    return redirect("/admin/users", message=f"Created {username}.")
+    record_audit(
+        session, admin.username, "user.add", username,
+        {"quota": quota_limit, "group": group_name or None, "admin": bool(is_admin)}, source="web",
+    )
+    kind = "administrator" if is_admin else "user"
+    return redirect("/admin/users", message=f"Created {kind} {username}.")
 
 
 @router.get("/users/{username}", include_in_schema=False)
@@ -183,23 +283,40 @@ def user_update(
     low_balance_threshold: int = Form(...),
     email: str = Form(""),
     group_name: str = Form(""),
+    display_name: Optional[str] = Form(None),
     is_active: bool = Form(False),
     is_admin: bool = Form(False),
     password: str = Form(""),
+    password_confirm: Optional[str] = Form(None),
     admin: User = Depends(require_admin),
     session: Session = Depends(get_db),
 ):
-    """Update a user's quota, group and flags."""
+    """Update a user's details, quota, group, flags and password."""
     user = session.get(User, username)
     if user is None:
         return redirect("/admin/users", error=f"No such user: {username}")
+    back = f"/admin/users/{username}"
     if user.username == admin.username and not is_admin:
-        return redirect(f"/admin/users/{username}", error="You cannot remove your own admin rights.")
-    before = {"quota": user.quota_limit, "group": user.group_name, "active": user.is_active}
+        return redirect(back, error="You cannot remove your own admin rights.")
+    if user.username == admin.username and not is_active:
+        return redirect(back, error="You cannot disable your own account.")
+    if group_name and session.get(Group, group_name) is None:
+        return redirect(back, error=f"No such group: {group_name}")
+    local_auth = str(get_settings().get("api.auth_backend", "local")) == "local"
+    needs_password = bool(is_admin) and local_auth and not user.password_hash
+    problem = _password_problem(password, password_confirm, required=needs_password)
+    if problem:
+        return redirect(back, error=problem)
+    before = {
+        "quota": user.quota_limit, "group": user.group_name,
+        "active": user.is_active, "admin": user.is_admin,
+    }
     user.quota_limit = max(int(quota_limit), 0)
     user.low_balance_threshold = max(int(low_balance_threshold), 0)
     user.email = email.strip() or None
     user.group_name = group_name or None
+    if display_name is not None:
+        user.display_name = display_name.strip() or user.username
     user.is_active = bool(is_active)
     user.is_admin = bool(is_admin)
     if password:
@@ -209,7 +326,14 @@ def user_update(
         admin.username,
         "user.update",
         username,
-        {"before": before, "after": {"quota": user.quota_limit, "group": user.group_name}},
+        {
+            "before": before,
+            "after": {
+                "quota": user.quota_limit, "group": user.group_name,
+                "active": user.is_active, "admin": user.is_admin,
+            },
+            "password_changed": bool(password),
+        },
         source="web",
     )
     return redirect(f"/admin/users/{username}", message="Saved.")
@@ -288,17 +412,6 @@ def groups_update(
 
 
 # --------------------------------------------------------------------- printers
-@router.get("/printers", include_in_schema=False)
-def printers_page(
-    request: Request,
-    admin: User = Depends(require_admin),
-    session: Session = Depends(get_db),
-):
-    """Printers and their cost model."""
-    printers = session.scalars(select(Printer).order_by(Printer.name)).all()
-    return render(request, "printers.html", admin=admin, printers=printers)
-
-
 @router.post("/printers/save", include_in_schema=False)
 def printers_save(
     name: str = Form(...),

@@ -16,8 +16,12 @@ log = get_logger("api.auth")
 
 
 @router.get("/login", include_in_schema=False)
-def login_form(request: Request):
-    """Render the sign-in page."""
+def login_form(request: Request, session: Session = Depends(get_db)):
+    """Render the sign-in page (or the setup wizard on a fresh install)."""
+    from .setup import needs_setup
+
+    if needs_setup(session):
+        return RedirectResponse("/setup", status_code=303)
     return render(request, "login.html", next_url=request.query_params.get("next", "/"))
 
 

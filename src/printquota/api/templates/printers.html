@@ -1,36 +1,100 @@
 {% extends "base.html" %}
 {% set active = 'printers' %}
-{% block title %}Printers - printquota{% endblock %}
+{% block title %}Printers &amp; queues - printquota{% endblock %}
 {% block content %}
-<h1>Printers</h1>
-<p class="sub">The queue name must match the CUPS queue exactly. The device URI is the real backend the wrapper hands allowed jobs to.</p>
+<h1>Printers &amp; queues</h1>
+<p class="sub">Turn quota enforcement on for a CUPS queue and every job on it is checked against the user's
+  quota and your policies before it prints. Turning it off makes the queue print directly again.</p>
+
+{% if cups_error %}
+<div class="callout"><strong>Could not read the CUPS queues.</strong> {{ cups_error }}<br>
+  Registered printers are listed below, but queues cannot be enforced from here until this is fixed.</div>
+{% endif %}
+{% if not backend_ok %}
+<div class="callout"><strong>The quota backend is not installed</strong> at <code>{{ backend_path }}</code>.
+  Run <code>sudo ./scripts/install.sh</code> on the server once; after that everything is done from this page.</div>
+{% endif %}
 
 <div class="card">
   <table>
-    <tr><th>Queue</th><th>Device URI</th><th class="num">Mono</th><th class="num">Colour</th>
-        <th>Duplex</th><th class="num">Discount</th><th>Status</th></tr>
-    {% for p in printers %}
-    <tr><td>{{ p.name }}</td><td class="muted">{{ p.real_device_uri or '-' }}</td>
-        <td class="num">{{ '%g'|format(p.cost_per_page_mono) }}</td>
-        <td class="num">{{ '%g'|format(p.cost_per_page_color) }}</td>
-        <td>{{ 'yes' if p.supports_duplex else 'no' }}</td>
-        <td class="num">{{ '%g'|format(p.duplex_discount) }}</td>
-        <td>{% if p.is_active %}<span class="pill ok">active</span>{% else %}<span class="pill bad">disabled</span>{% endif %}</td></tr>
-    {% else %}<tr><td colspan="7" class="muted">No printers registered.</td></tr>{% endfor %}
+    <tr><th>Queue</th><th>Device</th><th>Quota enforcement</th><th class="num">Mono</th><th class="num">Colour</th>
+        <th class="num">Duplex discount</th><th>Accounting</th><th></th></tr>
+    {% for row in rows %}
+    <tr>
+      <td><strong>{{ row.name }}</strong>
+        {% if row.cups %}<div class="muted" style="font-size:12px">{{ row.cups.state }}</div>{% endif %}</td>
+      <td class="muted" style="word-break:break-all;max-width:260px">
+        {% if row.cups %}{{ row.cups.real_uri }}{% elif row.printer %}{{ row.printer.real_device_uri or '-' }}{% endif %}</td>
+      <td>
+        {% if not row.cups %}
+          <span class="pill">not in CUPS</span>
+        {% elif row.enforced %}
+          <span class="pill ok">on</span>
+          <form method="post" action="/admin/printers/{{ row.name }}/release" class="inline" style="margin-top:6px">
+            <label class="check" style="font-size:12px"><input type="checkbox" name="confirm" value="true" required> confirm</label>
+            <button type="submit" class="danger">Turn off</button>
+          </form>
+        {% else %}
+          <span class="pill warn">off</span>
+          <form method="post" action="/admin/printers/{{ row.name }}/enforce" style="margin-top:6px">
+            <button type="submit" {{ 'disabled' if not backend_ok }}>Turn on</button>
+          </form>
+        {% endif %}
+      </td>
+      {% if row.printer %}
+      <td class="num">{{ '%g'|format(row.printer.cost_per_page_mono) }}</td>
+      <td class="num">{{ '%g'|format(row.printer.cost_per_page_color) }}</td>
+      <td class="num">{{ '%g'|format(row.printer.duplex_discount) }}</td>
+      <td>{% if row.printer.is_active %}<span class="pill ok">accepting</span>{% else %}<span class="pill bad">jobs denied</span>{% endif %}</td>
+      <td>
+        <details>
+          <summary>Edit costs</summary>
+          <form method="post" action="/admin/printers/save" class="stack" style="min-width:220px">
+            <input type="hidden" name="name" value="{{ row.name }}">
+            <input type="hidden" name="real_device_uri" value="{{ row.printer.real_device_uri or '' }}">
+            <div><label>Cost / mono page</label><input name="cost_per_page_mono" type="number" step="0.01" min="0" value="{{ row.printer.cost_per_page_mono }}"></div>
+            <div><label>Cost / colour page</label><input name="cost_per_page_color" type="number" step="0.01" min="0" value="{{ row.printer.cost_per_page_color }}"></div>
+            <div><label>Duplex discount (0&ndash;0.95)</label><input name="duplex_discount" type="number" step="0.05" min="0" max="0.95" value="{{ row.printer.duplex_discount }}"></div>
+            <label class="check"><input name="supports_duplex" type="checkbox" value="true" {{ 'checked' if row.printer.supports_duplex }}> Supports duplex</label>
+            <label class="check"><input name="is_active" type="checkbox" value="true" {{ 'checked' if row.printer.is_active }}> Accept jobs</label>
+            <button type="submit" class="secondary">Save</button>
+          </form>
+        </details>
+      </td>
+      {% else %}
+      <td class="num muted">-</td><td class="num muted">-</td><td class="num muted">-</td>
+      <td class="muted">default rates</td>
+      <td class="muted" style="font-size:12px">Registered automatically when you turn enforcement on.</td>
+      {% endif %}
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="muted">No printers yet. Add one below.</td></tr>
+    {% endfor %}
   </table>
+  <p class="hint" style="margin-top:12px">Costs are in {{ currency }}. A rate of 0 falls back to the default rate on the
+    <a href="/admin/settings">Settings</a> page. Jobs on a queue whose accounting is off are denied.</p>
 </div>
 
 <div class="card">
-  <h2>Add or update a printer</h2>
-  <form method="post" action="/admin/printers/save" class="inline">
-    <div><label for="pn">Queue name</label><input id="pn" name="name" required></div>
-    <div><label for="pu">Real device URI</label><input id="pu" name="real_device_uri" placeholder="socket://10.0.0.5:9100" style="width:220px"></div>
-    <div><label for="pm">Cost / mono page</label><input id="pm" name="cost_per_page_mono" type="number" step="0.01" min="0" value="0"></div>
-    <div><label for="pc">Cost / colour page</label><input id="pc" name="cost_per_page_color" type="number" step="0.01" min="0" value="0"></div>
-    <div><label for="pd">Duplex discount</label><input id="pd" name="duplex_discount" type="number" step="0.05" min="0" max="0.95" value="0"></div>
-    <div><label for="ps">Supports duplex</label><input id="ps" name="supports_duplex" type="checkbox" value="true"></div>
-    <div><label for="pa">Active</label><input id="pa" name="is_active" type="checkbox" value="true" checked></div>
-    <button type="submit">Save</button>
+  <h2>Add a new printer to CUPS</h2>
+  <form method="post" action="/admin/printers/add-queue" class="form-grid">
+    <div><label for="qn">Queue name</label><input id="qn" name="name" required pattern="[A-Za-z0-9_][A-Za-z0-9_.\-]{0,126}"
+      title="Letters, digits, '.', '_' and '-'; no spaces" placeholder="finance-mfp"></div>
+    <div class="wide"><label for="qu">Device URI</label><input id="qu" name="device_uri" required placeholder="ipp://10.0.0.6/ipp/print">
+      <div class="hint">Examples: <code>ipp://10.0.0.6/ipp/print</code>, <code>ipps://printer.local/ipp/print</code>,
+        <code>socket://10.0.0.5:9100</code>, <code>lpd://10.0.0.7/queue</code>.</div></div>
+    <div><label for="qd">Driver</label>
+      <select id="qd" name="driver">{% for key, label in drivers.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+    <div><label for="qdesc">Description</label><input id="qdesc" name="description" placeholder="Finance office MFP"></div>
+    <div><label for="qloc">Location</label><input id="qloc" name="location" placeholder="2nd floor"></div>
+    <div><label for="qm">Cost / mono page</label><input id="qm" name="cost_per_page_mono" type="number" step="0.01" min="0" value="{{ settings.get('printing.default_cost_per_page_mono') }}"></div>
+    <div><label for="qc">Cost / colour page</label><input id="qc" name="cost_per_page_color" type="number" step="0.01" min="0" value="{{ settings.get('printing.default_cost_per_page_color') }}"></div>
+    <div><label for="qx">Duplex discount</label><input id="qx" name="duplex_discount" type="number" step="0.05" min="0" max="0.95" value="0"></div>
+    <div class="wide"><label class="check"><input name="supports_duplex" type="checkbox" value="true"> Printer supports duplex</label></div>
+    <div class="wide"><label class="check"><input name="enforce" type="checkbox" value="true" checked {{ 'disabled' if not backend_ok }}>
+      Turn on quota enforcement straight away</label></div>
+    <div class="wide"><button type="submit">Add printer</button>
+      <span class="hint">IPP Everywhere asks the printer for its capabilities, which can take up to a minute.</span></div>
   </form>
 </div>
 {% endblock %}
