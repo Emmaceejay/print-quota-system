@@ -1279,7 +1279,7 @@ deliberately does not edit `cupsd.conf`. Restart CUPS after changing it.
 | Lost the setup link | — | The token is `PRINTQUOTA_SETUP_TOKEN` in `/etc/printquota/env`. Open `/setup` and paste it |
 | Locked out (no administrator can sign in) | Forgotten password or disabled account | `sudo /opt/printquota/bin/quotactl db init --admin <name>` (§6) |
 
-More detail is in [docs/operations.md](docs/operations.md).
+More detail is in [docs/operations.md](docs/operations.md), and every issue met so far, with its fix, is in [docs/setup-and-issues.md](docs/setup-and-issues.md).
 
 ---
 
@@ -1391,6 +1391,7 @@ native mobile apps, document watermarking, and MFP scan/copy tracking.
 - [docs/architecture.md](docs/architecture.md): why a custom system, the
   enforcement mechanism, the data model, the policy engine, the security
   model, and scaling.
+- [docs/setup-and-issues.md](docs/setup-and-issues.md): **start here for a new server or a problem.** A step-by-step setup runbook, plus a log of every issue met in the real deployment (symptom, cause, fix, version).
 - [docs/operations.md](docs/operations.md): rollout, troubleshooting,
   backup and restore, upgrades, monitoring.
 - [CHANGELOG.md](CHANGELOG.md): release history.
