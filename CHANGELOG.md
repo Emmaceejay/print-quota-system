@@ -56,6 +56,16 @@ Initial release: Phases 1-8 of the build plan.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.2.3] - 2026-09-24
+
+### Fixed
+
+- `install.sh` aborted before upgrading anything when `apt-get update`
+  failed, e.g. while an Ubuntu mirror was mid-sync or a third-party apt
+  repository was broken. It now skips the package step when everything is
+  already installed, and treats an `apt-get update` error as a warning. Only
+  failing to install a package that is actually needed stops the install.
+
 ## [0.2.2] - 2026-09-24
 
 ### Fixed

@@ -28,10 +28,21 @@ log "Using Python $PY_VER"
 
 log "Installing OS dependencies"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y --no-install-recommends \
-    python3 python3-venv python3-dev build-essential \
-    poppler-utils cups libsystemd-dev pkg-config >/dev/null
+OS_PACKAGES=(python3 python3-venv python3-dev build-essential poppler-utils cups libsystemd-dev pkg-config)
+MISSING=()
+for pkg in "${OS_PACKAGES[@]}"; do
+    dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed" || MISSING+=("$pkg")
+done
+if [[ ${#MISSING[@]} -eq 0 ]]; then
+    log "All OS packages are already installed"
+else
+    # A mirror mid-sync or an unrelated broken third-party repository makes
+    # 'apt-get update' fail; that must not stop an upgrade. Only a failure to
+    # install a package we actually need is fatal.
+    apt-get update -qq || log "WARNING: 'apt-get update' reported errors; continuing with the existing package lists"
+    apt-get install -y --no-install-recommends "${MISSING[@]}" >/dev/null || \
+        fail "could not install: ${MISSING[*]} (check your internet connection / apt sources and re-run)"
+fi
 
 log "Creating the service account and directories"
 id -u "$LOG_USER" >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin "$LOG_USER"

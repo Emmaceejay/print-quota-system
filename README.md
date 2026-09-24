@@ -10,7 +10,7 @@ understand in full.
 
 | | |
 |---|---|
-| **Version** | 0.2.2 (see [CHANGELOG.md](CHANGELOG.md)) |
+| **Version** | 0.2.3 (see [CHANGELOG.md](CHANGELOG.md)) |
 | **Language** | Python 3.10+ |
 | **Platform** | Ubuntu Server 22.04 LTS / 24.04 LTS with CUPS |
 | **Datastore** | SQLite (default) or PostgreSQL |
@@ -223,8 +223,10 @@ sudo ./scripts/install.sh
 The installer is idempotent, so running it again performs an upgrade.
 
 1. Checks it is running as root and that `python3` is 3.10 or newer.
-2. Installs OS packages: `python3 python3-venv python3-dev build-essential
-   poppler-utils cups libsystemd-dev pkg-config`.
+2. Installs any missing OS packages: `python3 python3-venv python3-dev
+   build-essential poppler-utils cups libsystemd-dev pkg-config`. If they are
+   all present, this step is skipped. An `apt-get update` error (e.g. a mirror
+   mid-sync) is only a warning.
 3. Creates the system user `printquota` (no login shell) and adds it to
    the `lp` group (to read `page_log`) and the `lpadmin` group (so the web
    console can manage CUPS queues).
