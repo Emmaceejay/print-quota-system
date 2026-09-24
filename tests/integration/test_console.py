@@ -302,13 +302,82 @@ def test_settings_page_saves_and_takes_effect(admin_client):
         assert decision.allowed
 
 
-def test_invalid_settings_save_nothing(admin_client):
-    response = admin_client.post("/admin/settings", data={
-        "quota.default_limit": "lots", "printing.default_duplex_discount": "1.5", "printing.currency": "EUR"},
-        follow_redirects=True)
-    assert "Nothing was saved" in response.text and "whole number" in response.text
+def settings_form(admin_client) -> dict:
+    """Every field exactly as the Settings page currently shows it."""
+    import re
+
+    body = admin_client.get("/admin/settings").text
+    form = {}
+    for match in re.finditer(r'<input id="([a-z_.]+)" name="\1" type="text"\s+value="([^"]*)"', body):
+        form[match.group(1)] = match.group(2)
+    for match in re.finditer(r'<select id="([a-z_.]+)" name="\1".*?<option value="([^"]*)" selected', body, re.S):
+        form[match.group(1)] = match.group(2)
+    for match in re.finditer(r'<input type="checkbox" name="([a-z_.]+)" value="true" checked', body):
+        form[match.group(1)] = "true"
+    return form
+
+
+def test_changing_costs_saves_even_if_another_field_is_bad(admin_client):
+    """The reported bug: a bad Webhook URL (e.g. browser autofill) blocked a cost change."""
+    form = settings_form(admin_client)
+    assert form["printing.default_cost_per_page_mono"] == "1"
+    form["printing.default_cost_per_page_mono"] = "2.5"
+    form["alerts.webhook_url"] = "ceejay"  # what an autofilled username looks like
+
+    response = admin_client.post("/admin/settings", data=form)
+    assert response.status_code == 400
+    assert "Saved: Default cost per mono page." in response.text
+    assert "is not a web address" in response.text
+    assert 'value="ceejay"' in response.text  # what was typed is kept for correcting
+    assert get_settings().get("printing.default_cost_per_page_mono") == 2.5
+    assert get_settings().get("alerts.webhook_url") == ""
+
+
+def test_saving_the_unchanged_form_saves_nothing_and_reports_no_error(admin_client):
+    response = admin_client.post("/admin/settings", data=settings_form(admin_client), follow_redirects=True)
+    assert "No changes to save" in response.text
     with db_session.session_scope() as session:
         assert session.query(AppSetting).count() == 0
+
+
+def test_a_questionable_value_from_the_config_file_never_blocks_other_changes(admin_client, seeded):
+    import yaml
+
+    data = yaml.safe_load(seeded["settings_path"].read_text())
+    data["alerts"]["webhook_url"] = "hooks.internal/printquota"  # no scheme: would fail validation
+    seeded["settings_path"].write_text(yaml.safe_dump(data))
+    config_module.reset_settings_cache()
+
+    form = settings_form(admin_client)
+    assert form["alerts.webhook_url"] == "hooks.internal/printquota"
+    form["printing.currency"] = "USD"
+    response = admin_client.post("/admin/settings", data=form, follow_redirects=True)
+    assert "Saved: Currency label." in response.text
+    assert get_settings().get("printing.currency") == "USD"
+
+
+def test_numbers_are_accepted_the_way_people_type_them(admin_client):
+    form = settings_form(admin_client)
+    form.update({"quota.default_limit": "1,000", "printing.default_cost_per_page_color": "7,5",
+                 "quota.period_days": "31.0"})
+    admin_client.post("/admin/settings", data=form)
+    settings = get_settings()
+    assert settings.get("quota.default_limit") == 1000
+    assert settings.get("printing.default_cost_per_page_color") == 7.5
+    assert settings.get("quota.period_days") == 31
+
+
+def test_invalid_values_are_reported_per_field_and_not_saved(admin_client):
+    before = get_settings().get("quota.default_limit")
+    form = settings_form(admin_client)
+    form.update({"quota.default_limit": "lots", "printing.default_duplex_discount": "1.5",
+                 "printing.currency": "EUR"})
+    response = admin_client.post("/admin/settings", data=form)
+    assert response.status_code == 400
+    assert "2 settings could not be saved" in response.text
+    assert "&#39;lots&#39; is not a number" in response.text and "must be below 1" in response.text
+    assert get_settings().get("printing.currency") == "EUR"
+    assert get_settings().get("quota.default_limit") == before
 
 
 def test_environment_pinned_settings_cannot_be_overridden(admin_client, monkeypatch):

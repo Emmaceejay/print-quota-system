@@ -10,7 +10,7 @@ understand in full.
 
 | | |
 |---|---|
-| **Version** | 0.2.1 (see [CHANGELOG.md](CHANGELOG.md)) |
+| **Version** | 0.2.2 (see [CHANGELOG.md](CHANGELOG.md)) |
 | **Language** | Python 3.10+ |
 | **Platform** | Ubuntu Server 22.04 LTS / 24.04 LTS with CUPS |
 | **Datastore** | SQLite (default) or PostgreSQL |
@@ -173,7 +173,7 @@ print-quota-system/
 │   ├── cli/reset.py              Entry point for the daily period-reset timer
 │   ├── core/                     Config loading, logging, exceptions
 │   └── db/                       SQLAlchemy models, session handling, Alembic migrations
-└── tests/                        unit/ and integration/ pytest suites (178 tests)
+└── tests/                        unit/ and integration/ pytest suites (182 tests)
 ```
 
 **Console scripts** installed by the package:
@@ -424,8 +424,13 @@ SMTP server, port, STARTTLS, username, password, from address).
 - **Send test alert** sends a message to you through the saved settings and
   tells you whether it was delivered.
 - The SMTP password is never shown back. Leave it blank to keep the current one.
-- A form with any invalid field saves nothing, and the page says which field
-  is wrong.
+- **Only what you change is saved, and a problem in one field never blocks the
+  others.** Every valid change is saved. A field that can't be saved is
+  outlined in red, keeps what you typed, and says what's wrong (e.g. a webhook
+  address without `https://`). Fields you didn't touch are never re-checked.
+- Numbers can be typed as `1,000`, `0,5` or `500.0`.
+- Browser autofill is switched off on this page, so saved logins can't end up
+  in the webhook or SMTP boxes.
 
 The database location, session secret, sign-in backend, ports and CUPS paths
 are shown read-only. They decide how the services start, so they stay in
@@ -1292,7 +1297,7 @@ export PRINTQUOTA_DB_URL=sqlite:///./dev.db
 the users `ceejay` (admin), `ada`, `tunde` and `reception`, and 60
 randomised jobs, most of them reconciled.
 
-### Test suite (178 tests)
+### Test suite (182 tests)
 
 Every test runs against a throwaway SQLite file and settings file, so none
 of them can touch a real deployment. Nothing calls the real CUPS: queue tests

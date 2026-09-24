@@ -76,3 +76,5 @@ dl.facts{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;margin:
 dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;word-break:break-all}
 .setup{max-width:520px;margin:8vh auto}
 button:disabled{opacity:.45;cursor:not-allowed}
+.field-invalid input,.field-invalid select{border-color:var(--bad);background:#fffafa}
+.field-error{color:var(--bad);font-size:13px;margin-top:4px;font-weight:500}

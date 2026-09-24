@@ -115,10 +115,20 @@ def read_overrides(engine: Engine) -> dict[str, Any]:
     return out
 
 
+def _number(text: str, whole: bool) -> float:
+    """Parse a number the way people type it: ``1,000``, ``0,5``, ``500.0``."""
+    cleaned = text.replace(" ", "").replace("\u00a0", "")
+    if "," in cleaned and "." not in cleaned and not whole and cleaned.count(",") == 1:
+        cleaned = cleaned.replace(",", ".")  # decimal comma: 0,5
+    else:
+        cleaned = cleaned.replace(",", "")  # thousands separator: 1,000
+    return float(cleaned)
+
+
 def coerce(key: str, raw: Any) -> Any:
     """Validate a submitted value and convert it to the setting's type.
 
-    Raises ``ValueError`` with a message fit to show the administrator.
+    Raises ``ValueError`` with a message fit to show next to the field.
     """
     spec = FIELDS_BY_KEY.get(key)
     if spec is None:
@@ -127,37 +137,67 @@ def coerce(key: str, raw: Any) -> Any:
 
     if spec.kind == "bool":
         return text.lower() in _TRUE
-    if spec.kind == "int":
+    if spec.kind in ("int", "float"):
+        if not text:
+            raise ValueError("enter a number")
         try:
-            value: Any = int(text)
+            number = _number(text, whole=spec.kind == "int")
         except ValueError:
-            raise ValueError(f"{spec.label}: enter a whole number") from None
-    elif spec.kind == "float":
-        try:
-            value = float(text)
-        except ValueError:
-            raise ValueError(f"{spec.label}: enter a number") from None
+            raise ValueError(f"'{text}' is not a number") from None
+        if spec.kind == "int":
+            if not number.is_integer():
+                raise ValueError("enter a whole number")
+            value: Any = int(number)
+        else:
+            value = number
     elif spec.kind == "choice":
         if text not in spec.choices:
-            raise ValueError(f"{spec.label}: choose one of {', '.join(spec.choices)}")
+            raise ValueError(f"choose one of {', '.join(spec.choices)}")
         return text
     else:
-        if spec.kind == "email" and text and "@" not in text:
-            raise ValueError(f"{spec.label}: enter a valid email address")
+        if spec.kind == "email" and text and ("@" not in text or " " in text):
+            raise ValueError(f"'{text}' is not an email address")
         if spec.kind == "url" and text and not text.lower().startswith(("http://", "https://")):
-            raise ValueError(f"{spec.label}: must start with http:// or https://")
+            raise ValueError(f"'{text}' is not a web address; it must start with http:// or https://")
         if len(text) > 500:
-            raise ValueError(f"{spec.label}: too long")
+            raise ValueError("too long (500 characters at most)")
         return text
 
     if spec.minimum is not None and value < spec.minimum:
-        raise ValueError(f"{spec.label}: must be at least {spec.minimum:g}")
+        raise ValueError(f"must be at least {spec.minimum:g}")
     if spec.maximum is not None:
         too_big = value >= spec.maximum if spec.maximum_exclusive else value > spec.maximum
         if too_big:
             bound = "below" if spec.maximum_exclusive else "at most"
-            raise ValueError(f"{spec.label}: must be {bound} {spec.maximum:g}")
+            raise ValueError(f"must be {bound} {spec.maximum:g}")
     return value
+
+
+def _unchanged(spec: Field, raw: Any, current: Any) -> bool:
+    """True when the submitted text is just the current value shown back.
+
+    Fields the administrator did not touch are never re-validated, so a
+    questionable value elsewhere (from the config file, say) can never block
+    saving an unrelated change.
+    """
+    text = "" if raw is None else str(raw).strip()
+    if spec.kind == "bool":
+        return (text.lower() in _TRUE) == bool(current)
+    if spec.kind in ("int", "float"):
+        try:
+            return current is not None and _number(text, whole=spec.kind == "int") == float(current)
+        except (TypeError, ValueError):
+            return False
+    return text == ("" if current is None else str(current).strip())
+
+
+@dataclass
+class SaveResult:
+    """Outcome of saving the settings form."""
+
+    changed: list[str]
+    #: key -> message for fields that could not be saved (everything else was).
+    errors: dict[str, str]
 
 
 @dataclass
@@ -204,32 +244,33 @@ def _dig(data: dict, dotted: str) -> Any:
     return node
 
 
-def save(session: Session, submitted: dict[str, Any], actor: str) -> list[str]:
-    """Validate and store submitted values. Returns the keys that changed.
+def save(session: Session, submitted: dict[str, Any], actor: str) -> SaveResult:
+    """Store every valid change; report the invalid ones per field.
 
-    All values are validated before anything is written, so a bad field
-    never leaves the settings half-saved. Environment-pinned keys and a
-    blank secret (meaning "keep") are skipped.
+    Untouched fields are skipped without validation, environment-pinned keys
+    are ignored and a blank secret means "keep the current one". One bad
+    field therefore never stops the others from being saved.
     """
     pinned = env_overridden_keys()
     current = get_settings()
     pending: dict[str, Any] = {}
-    errors: list[str] = []
+    errors: dict[str, str] = {}
     for key, raw in submitted.items():
         spec = FIELDS_BY_KEY.get(key)
         if spec is None or key in pinned:
             continue
-        if spec.kind == "secret" and (raw is None or str(raw) == ""):
+        if spec.kind == "secret":
+            if raw is None or str(raw) == "":
+                continue
+        elif _unchanged(spec, raw, current.get(key)):
             continue
         try:
             value = coerce(key, raw)
         except ValueError as exc:
-            errors.append(str(exc))
+            errors[key] = str(exc)
             continue
         if value != current.get(key):
             pending[key] = value
-    if errors:
-        raise ValueError("; ".join(errors))
 
     now = utcnow()
     for key, value in pending.items():
@@ -251,7 +292,7 @@ def save(session: Session, submitted: dict[str, Any], actor: str) -> list[str]:
         )
         session.flush()
         invalidate_settings()
-    return sorted(pending)
+    return SaveResult(changed=sorted(pending), errors=errors)
 
 
 def revert(session: Session, key: str, actor: str) -> bool:

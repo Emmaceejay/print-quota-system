@@ -56,6 +56,26 @@ Initial release: Phases 1-8 of the build plan.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.2.2] - 2026-09-24
+
+### Fixed
+
+- **Settings page:** one invalid field (typically a browser-autofilled
+  Webhook URL) made the whole form fail with "Nothing was saved". Now every
+  valid change is saved, untouched fields are never re-validated, and a field
+  that can't be saved is marked in red with the typed value kept and a plain
+  explanation.
+- After saving, the Settings page could show and cache the old values for up
+  to 15 seconds, because settings were re-read before the transaction was
+  committed. Saves and reverts now commit first.
+- Browser autofill is disabled on the Settings form. Number, email and URL
+  boxes no longer rely on browser validation, which could block the Save
+  button without a visible reason.
+
+### Changed
+
+- Numbers accept `1,000`, `0,5` and `500.0`.
+
 ## [0.2.1] - 2026-09-24
 
 ### Fixed

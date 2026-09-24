@@ -6,14 +6,19 @@
 <p class="sub">Changes apply straight away: new print jobs use them immediately and the accounting service picks
   them up within 15 seconds. Every change is recorded in the audit log.</p>
 
-<form method="post" action="/admin/settings">
+<form method="post" action="/admin/settings" autocomplete="off" novalidate>
+  {# Browsers must not autofill saved logins into these boxes (a password field is on the page). #}
+  <input type="text" name="_ignore_user" autocomplete="username" hidden tabindex="-1" aria-hidden="true">
+  <input type="password" name="_ignore_pass" autocomplete="current-password" hidden tabindex="-1" aria-hidden="true">
   {% for section, fields in sections.items() %}
   <div class="card">
     <h2>{{ section }}</h2>
     <div class="form-grid">
       {% for f in fields %}
       {% set spec = f.spec %}
-      <div>
+      {% set problem = field_errors.get(spec.key) %}
+      {% set shown = submitted.get(spec.key) if problem else f.value %}
+      <div class="{{ 'field-invalid' if problem }}">
         {% if spec.kind == 'bool' %}
           <label class="check" style="margin-top:22px">
             <input type="checkbox" name="{{ spec.key }}" value="true" {{ 'checked' if f.value }} {{ 'disabled' if f.locked }}>
@@ -22,23 +27,21 @@
           <label for="{{ spec.key }}">{{ spec.label }}</label>
           {% if spec.kind == 'choice' %}
             <select id="{{ spec.key }}" name="{{ spec.key }}" {{ 'disabled' if f.locked }} style="width:100%">
-              {% for c in spec.choices %}<option value="{{ c }}" {{ 'selected' if c == f.value }}>{{ c }}</option>{% endfor %}
+              {% for c in spec.choices %}<option value="{{ c }}" {{ 'selected' if c == shown }}>{{ c }}</option>{% endfor %}
             </select>
           {% elif spec.kind == 'secret' %}
             <input id="{{ spec.key }}" name="{{ spec.key }}" type="password" autocomplete="new-password"
-                   placeholder="{{ '•••••••• (set)' if f.value else 'not set' }}" {{ 'disabled' if f.locked }}>
-          {% elif spec.kind in ('int', 'float') %}
-            <input id="{{ spec.key }}" name="{{ spec.key }}" type="number" value="{{ f.value }}"
-                   step="{{ '1' if spec.kind == 'int' else 'any' }}"
-                   {% if spec.minimum is not none %}min="{{ spec.minimum }}"{% endif %}
-                   {% if spec.maximum is not none and not spec.maximum_exclusive %}max="{{ spec.maximum }}"{% endif %}
-                   {{ 'disabled' if f.locked }} required>
+                   data-lpignore="true" data-1p-ignore
+                   placeholder="{{ '•••••••• (set, leave blank to keep)' if f.value else 'not set' }}" {{ 'disabled' if f.locked }}>
           {% else %}
-            <input id="{{ spec.key }}" name="{{ spec.key }}" value="{{ f.value or '' }}"
-                   type="{{ 'email' if spec.kind == 'email' else ('url' if spec.kind == 'url' else 'text') }}"
-                   {{ 'disabled' if f.locked }}>
+            <input id="{{ spec.key }}" name="{{ spec.key }}" type="text"
+                   value="{{ '%g'|format(shown) if spec.kind == 'float' and shown is number else (shown if shown is not none else '') }}"
+                   {% if spec.kind == 'int' %}inputmode="numeric"{% elif spec.kind == 'float' %}inputmode="decimal"{% elif spec.kind == 'email' %}inputmode="email"{% elif spec.kind == 'url' %}inputmode="url" placeholder="https://…"{% endif %}
+                   autocomplete="off" data-lpignore="true" data-1p-ignore spellcheck="false"
+                   {{ 'aria-invalid=true' if problem }} {{ 'disabled' if f.locked }}>
           {% endif %}
         {% endif %}
+        {% if problem %}<div class="field-error">{{ problem }}</div>{% endif %}
         <div class="hint">
           {% if f.origin == 'environment' %}<span class="badge environment">set by environment</span>
             Change it in <code>/etc/printquota/env</code> on the server.
@@ -52,7 +55,8 @@
     </div>
   </div>
   {% endfor %}
-  <div class="actions" style="margin-bottom:18px"><button type="submit">Save settings</button></div>
+  <div class="actions" style="margin-bottom:18px"><button type="submit">Save settings</button>
+    <span class="hint">Only the settings you change are saved. Anything that can't be saved is marked in red.</span></div>
 </form>
 
 <div class="grid cols-2">
