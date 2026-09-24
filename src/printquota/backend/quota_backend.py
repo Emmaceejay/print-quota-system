@@ -192,9 +192,13 @@ def run(argv: list[str], environ: Optional[dict[str, str]] = None) -> int:
         spool_path = temp_spool
 
     try:
-        from ..accounting.pages import estimate_job
+        from ..accounting.pages import estimate_spooled_job
 
-        estimate = estimate_job(
+        # Count the documents the client submitted (still in the CUPS spool),
+        # not the driver output on stdin, which usually cannot be counted.
+        estimate = estimate_spooled_job(
+            str(settings.get("printing.spool_dir", "/var/spool/cups") or ""),
+            cups_job_id,
             spool_path,
             copies=copies,
             number_up=number_up,
@@ -202,6 +206,7 @@ def run(argv: list[str], environ: Optional[dict[str, str]] = None) -> int:
         )
         pages = estimate.total_pages
         method = estimate.method
+        copies = estimate.copies
     except Exception as exc:  # estimation must never crash the queue
         log.warning("page estimation failed", extra={"error": str(exc), "job": cups_job_id})
         pages = copies

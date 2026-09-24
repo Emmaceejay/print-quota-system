@@ -50,12 +50,15 @@ def env(tmp_path, monkeypatch):
     backend_dir.mkdir()
     page_log = tmp_path / "page_log"
     page_log.touch()
+    spool_dir = tmp_path / "spool"
+    spool_dir.mkdir()
 
     settings_data = dict(TEST_SETTINGS)
     settings_data["database"] = {"url": f"sqlite:///{db_path}", "echo": False}
     settings_data["printing"] = dict(TEST_SETTINGS["printing"])
     settings_data["printing"]["real_backend_dir"] = str(backend_dir)
     settings_data["printing"]["page_log"] = str(page_log)
+    settings_data["printing"]["spool_dir"] = str(spool_dir)
 
     settings_path = tmp_path / "settings.yaml"
     settings_path.write_text(yaml.safe_dump(settings_data))
@@ -72,6 +75,7 @@ def env(tmp_path, monkeypatch):
         "db_path": db_path,
         "backend_dir": backend_dir,
         "page_log": page_log,
+        "spool_dir": spool_dir,
         "settings_path": settings_path,
     }
 

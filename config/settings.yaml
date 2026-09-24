@@ -26,6 +26,8 @@ printing:
   # the queue's real-device-uri (see docs/architecture.md).
   real_backend_dir: "/usr/lib/cups/backend"
   page_log: "/var/log/cups/page_log"
+  # CUPS RequestRoot: where the submitted documents are counted before printing.
+  spool_dir: "/var/spool/cups"
   # pdfinfo timeout, seconds
   estimator_timeout: 15
 

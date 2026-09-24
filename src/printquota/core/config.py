@@ -49,6 +49,7 @@ DEFAULTS: dict[str, Any] = {
         "currency": "NGN",
         "real_backend_dir": "/usr/lib/cups/backend",
         "page_log": "/var/log/cups/page_log",
+        "spool_dir": "/var/spool/cups",
         "estimator_timeout": 15,
     },
     "alerts": {
@@ -112,6 +113,7 @@ ENV_MAP: dict[str, str] = {
     "PRINTQUOTA_LOG_LEVEL": "logging.level",
     "PRINTQUOTA_PAGE_LOG": "printing.page_log",
     "PRINTQUOTA_REAL_BACKEND_DIR": "printing.real_backend_dir",
+    "PRINTQUOTA_SPOOL_DIR": "printing.spool_dir",
     "PRINTQUOTA_SMTP_HOST": "alerts.smtp.host",
     "PRINTQUOTA_SMTP_PORT": "alerts.smtp.port",
     "PRINTQUOTA_SMTP_USER": "alerts.smtp.user",

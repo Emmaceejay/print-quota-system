@@ -10,7 +10,7 @@ understand in full.
 
 | | |
 |---|---|
-| **Version** | 0.2.0 (see [CHANGELOG.md](CHANGELOG.md)) |
+| **Version** | 0.2.1 (see [CHANGELOG.md](CHANGELOG.md)) |
 | **Language** | Python 3.10+ |
 | **Platform** | Ubuntu Server 22.04 LTS / 24.04 LTS with CUPS |
 | **Datastore** | SQLite (default) or PostgreSQL |
@@ -173,7 +173,7 @@ print-quota-system/
 │   ├── cli/reset.py              Entry point for the daily period-reset timer
 │   ├── core/                     Config loading, logging, exceptions
 │   └── db/                       SQLAlchemy models, session handling, Alembic migrations
-└── tests/                        unit/ and integration/ pytest suites (165 tests)
+└── tests/                        unit/ and integration/ pytest suites (178 tests)
 ```
 
 **Console scripts** installed by the package:
@@ -583,7 +583,8 @@ sudo systemctl restart quota-accounting quota-api
 | `printing.default_duplex_discount` | `0.0` | Console | Duplex discount used only when a job's printer has no row |
 | `printing.currency` | `NGN` | Console | Label shown next to costs in the UI |
 | `printing.real_backend_dir` | `/usr/lib/cups/backend` | — | Directory the wrapped real backend must live in (security check) |
-| `printing.page_log` | `/var/log/cups/page_log` | — | CUPS page log the daemon reads |
+| `printing.page_log` | `/var/log/cups/page_log` | — | CUPS page log the daemon reads (may legitimately not exist, see §10) |
+| `printing.spool_dir` | `/var/spool/cups` | — | CUPS spool (`RequestRoot`) where submitted documents are counted before printing |
 | `printing.estimator_timeout` | `15` | — | Seconds allowed for `pdfinfo` |
 | `alerts.enabled` | `true` | Console | Master switch for alerts |
 | `alerts.channel` | `email` | Console | `email`, `webhook` or `none` |
@@ -616,6 +617,7 @@ sudo systemctl restart quota-accounting quota-api
 | `PRINTQUOTA_LOG_LEVEL` | `logging.level` |
 | `PRINTQUOTA_PAGE_LOG` | `printing.page_log` |
 | `PRINTQUOTA_REAL_BACKEND_DIR` | `printing.real_backend_dir` |
+| `PRINTQUOTA_SPOOL_DIR` | `printing.spool_dir` |
 | `PRINTQUOTA_SMTP_HOST` / `_PORT` / `_USER` / `_PASSWORD` / `_FROM` | `alerts.smtp.*` |
 | `PRINTQUOTA_API_HOST` / `PRINTQUOTA_API_PORT` | `api.host` / `api.port` |
 | `PRINTQUOTA_AUTH_BACKEND` | `api.auth_backend` |
@@ -764,22 +766,53 @@ quotactl policy remove 4
 
 ## 10. Page estimation and the cost model
 
-### Pre-flight estimation (`accounting/pages.py`)
+### Pre-flight estimation (`accounting/pages.py`, `accounting/cups_spool.py`)
 
-The backend identifies the spool file's format from its first bytes:
+Quotas are counted in **pages**, and a job that doesn't fit is refused
+**before anything prints**. printquota never prints part of a job.
+
+**What is counted.** On a queue with a driver (a PPD), CUPS converts each
+job into the printer's own language (PCL XL, raster, …) *before* the backend
+runs, and that data usually can't be counted. So the backend counts the
+**documents the client submitted**, which CUPS keeps in its spool directory
+(`printing.spool_dir`, default `/var/spool/cups`):
+
+| Spool file | Used for |
+|---|---|
+| `d<job>-001`, `d<job>-002`, … | Each submitted document, counted as below. Gzip-compressed documents are decompressed first |
+| `c<job>` | The job's IPP attributes: `copies`, `number-up` and `page-ranges` |
+
+Only if those are missing or can't be counted does the backend fall back to
+the data it received on stdin. If neither can be counted, it charges the
+larger of the two guesses.
+
+The format of each document is identified from its first bytes:
 
 | Format | Detected by | Page count method |
 |---|---|---|
 | PDF | `%PDF` | `pdfinfo` (exact). Runs with an argument list and a timeout |
-| PostScript | `%!PS` / `%!PS-Adobe` | The last positive `%%Pages:` value (the trailer beats a header placeholder), else the number of `%%Page:` markers |
-| PCL | `ESC%-12345X` or `ESC E` | Number of form feeds |
+| PostScript (e.g. Windows **Microsoft PS Class Driver**) | `%!PS` / `%!PS-Adobe` | The last positive `%%Pages:` value (the trailer beats a header placeholder), else the number of `%%Page:` markers |
+| Apple raster (AirPrint) | `UNIRAST` | Page count stored in the header (exact) |
+| PCL | `ESC%-12345X` or `ESC E` | Number of form feeds (PCL XL has none, so it falls back) |
 | Plain text | ≥ 90 % printable bytes | Lines ÷ 60, rounded up |
-| ESC/P, binary, unparseable, empty | — | **Falls back to 1 page per copy** |
+| PWG raster, ESC/P, binary, unparseable, empty | — | **Falls back to 1 page per copy** |
 
-Then **total = ⌈pages per copy ÷ number-up⌉ × copies**. If estimation fails
-completely, the backend charges one page per copy and logs `method=error`.
-In every case the daemon later corrects the charge from `page_log`, so
-billing ends up right even when the pre-flight *block* was approximate.
+Then **total = ⌈pages in range ÷ number-up⌉ × copies**, per document. If
+estimation fails completely, the backend charges one page per copy and logs
+`method=error`. The method used is logged with every decision (e.g.
+`method='spool:postscript'`).
+
+**After printing.** If CUPS writes a `page_log`, the accounting daemon
+corrects each charge to the real count. It reads either per-page lines or
+CUPS's `total` summary line. Many drivers never report pages, so CUPS never
+creates `page_log`. That's normal: the daemon logs it once, and charges then
+stay at the pre-print count. That count is exact for PDF, PostScript and
+Apple raster.
+
+**Windows clients:** add the printer with the **Microsoft PS Class Driver**
+(PostScript), so jobs arrive in a format that can be counted exactly. Avoid
+the PCL6 and XPS class drivers. CUPS can't convert their output, and it
+can't be counted.
 
 Job attributes are read from the CUPS options string:
 
@@ -791,10 +824,6 @@ Job attributes are read from the CUPS options string:
   `None`/`DuplexNone`/false/off/0). The daemon also marks a job as duplex if
   `page_log` shows two-sided pages.
 - **N-up:** `number-up`.
-
-**Accuracy tip:** Windows drivers that send PCL or raw data give weaker
-estimates. If pre-flight accuracy matters, point clients at the IPP
-Everywhere / driverless queue so that jobs arrive as PDF.
 
 ### Cost model (`accounting/cost.py`)
 
@@ -1229,6 +1258,7 @@ deliberately does not edit `cupsd.conf`. Restart CUPS after changing it.
 | Denied job not in the reports | Unknown or disabled user: these denials are **not** stored in `print_jobs` | CUPS journal / `error_log`; create or enable the account |
 | Queue stopped | Bad `quota:` URI, missing real backend, or the real backend failed | `lpstat -v <queue>` should read `quota:<real-uri>`; `ls -l /usr/lib/cups/backend/quota` should be `0700 root:root`; then `cupsenable <queue>` |
 | Jobs held instead of printing | Backend could not write to the database: DB down or unreadable, **printer not registered** (foreign key), or the backend crashed | `quotactl printer list`; DB file permissions; `journalctl -u cups`. Release held jobs with `lp -i <job> -H resume` |
+| A job printed although it was over the quota, or was charged 1 page | The document couldn't be counted: an uncountable format (PCL6/XPS driver), or the spool couldn't be read | `journalctl -u cups -n 50 \| grep method=` shows how it was counted. `spool:postscript`/`spool:pdf` are exact; `…:fallback` means guessed. Use the Microsoft PS Class Driver on Windows (§10) |
 | Balances don't change after printing | Daemon not running or cannot read `page_log` | `systemctl status quota-accounting`; `sudo -u printquota head /var/log/cups/page_log`; `PageLogFormat` must be the CUPS default |
 | Estimates consistently wrong | PCL/raw drivers | See §10. Billing is still corrected by the daemon |
 | User charged for a jammed job | Pages were imaged and logged | `quotactl user set-quota` (raise it) or `quotactl user reset`; both are audited |
@@ -1262,7 +1292,7 @@ export PRINTQUOTA_DB_URL=sqlite:///./dev.db
 the users `ceejay` (admin), `ada`, `tunde` and `reception`, and 60
 randomised jobs, most of them reconciled.
 
-### Test suite (165 tests)
+### Test suite (178 tests)
 
 Every test runs against a throwaway SQLite file and settings file, so none
 of them can touch a real deployment. Nothing calls the real CUPS: queue tests
@@ -1278,7 +1308,8 @@ or macOS.
 | `unit/test_config.py` | Defaults → YAML → console → env precedence, type conversion, whitelist of console keys |
 | `integration/test_backend.py` | Runs the CUPS backend exactly as CUPS does, with a stand-in real backend: allow, deny, forced duplex, unknown user, broken URI → STOP, DB failure → HOLD, path traversal |
 | `integration/test_quota_flow.py` | Immediate debit, double-spend protection, group pools, reconciliation up/down, idempotency, refunds, period rolling |
-| `integration/test_daemon.py` | `page_log` parsing, cursor, rotation, partial lines, unmatched entries |
+| `integration/test_daemon.py` | `page_log` parsing (per-page and `total` lines), cursor, rotation, partial lines, unmatched entries |
+| `integration/test_spool_counting.py` | Counting the submitted documents from the CUPS spool when the backend receives uncountable driver output: over-quota refusal before printing, copies/number-up/page-ranges from the control file, multiple documents, gzip, fallbacks |
 | `integration/test_alerts.py` | Thresholds, cooldown, disabled alerts, transport failures |
 | `integration/test_cli.py` | Every `quotactl` command group |
 | `integration/test_api.py` | Auth, portal, console CRUD, CSV, audit, health, redirects |
@@ -1318,6 +1349,9 @@ future maintainers don't trip over them. The backup-install gap, the JSON
 6. **`api.host`/`api.port` are ignored by the systemd unit**, which passes
    fixed uvicorn flags.
 7. **Only the default CUPS `PageLogFormat` is supported** by the daemon's parser.
+   Many drivers never report pages, so there may be no `page_log` at all. Charges
+   then rely on the pre-print count, which is only exact for PDF, PostScript
+   and Apple raster documents (§10).
 8. **`cupsd.conf` is not managed from the console.** Requiring logins for
    printing (§20) is still a one-time edit on the server.
 9. **Large imports with passwords are slow.** Each password is bcrypt-hashed

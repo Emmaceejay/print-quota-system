@@ -57,6 +57,15 @@ class JobTally:
     cups_job_id: int
     pages: int = 0
     sides_values: set[str] = field(default_factory=set)
+    #: Page count from a ``total`` summary line, when CUPS writes one.
+    total: Optional[int] = None
+
+    @property
+    def billed_pages(self) -> int:
+        """Per-page lines when present; otherwise the summary total."""
+        if self.pages:
+            return self.pages
+        return self.total or 0
 
     @property
     def is_duplex(self) -> bool:
@@ -73,8 +82,19 @@ def parse_page_log_line(line: str) -> Optional[JobTally]:
     except ValueError:
         return None
     if match.group("page") == "total":
-        # Some configurations log a summary line; it duplicates the pages.
-        return None
+        # A summary line: the copies column holds the job's total impressions.
+        # It duplicates per-page lines when those exist, so it is only used
+        # when they do not (see JobTally.billed_pages).
+        try:
+            total = max(int(match.group("copies")), 0)
+        except (TypeError, ValueError):
+            return None
+        return JobTally(
+            printer=match.group("printer"),
+            username=match.group("user"),
+            cups_job_id=job_id,
+            total=total,
+        )
     try:
         copies = max(int(match.group("copies")), 1)
     except (TypeError, ValueError):
@@ -106,6 +126,8 @@ def aggregate(lines: Iterable[str]) -> dict[tuple[str, int], JobTally]:
         else:
             existing.pages += parsed.pages
             existing.sides_values |= parsed.sides_values
+            if parsed.total is not None:
+                existing.total = parsed.total
     return tallies
 
 
@@ -177,12 +199,14 @@ def reconcile_tallies(tallies: dict[tuple[str, int], JobTally]) -> int:
             if job is None:
                 log.warning(
                     "page_log entry with no matching allowed job",
-                    extra={"printer": printer, "job": job_id, "pages": tally.pages},
+                    extra={"printer": printer, "job": job_id, "pages": tally.billed_pages},
                 )
+                continue
+            if tally.billed_pages <= 0:
                 continue
             if tally.is_duplex:
                 job.is_duplex = True
-            charge_job(session, job, tally.pages, settings=settings)
+            charge_job(session, job, tally.billed_pages, settings=settings)
             reconciled += 1
             notify_balance_state(session, job.username, settings=settings)
     return reconciled
@@ -230,7 +254,19 @@ def main(argv: Optional[list[str]] = None) -> int:
     signal.signal(signal.SIGINT, _stop)
 
     log.info("accounting daemon started", extra={"page_log": str(page_log), "interval": args.interval})
+    warned_missing = False
     while not stopping["flag"]:
+        if not Path(page_log).exists():
+            if not warned_missing:
+                log.warning(
+                    "CUPS page_log does not exist; jobs stay charged at their pre-print page "
+                    "count (this is normal for drivers that do not report pages)",
+                    extra={"page_log": str(page_log)},
+                )
+                warned_missing = True
+        elif warned_missing:
+            log.info("page_log appeared; reconciling from it", extra={"page_log": str(page_log)})
+            warned_missing = False
         try:
             run_once(page_log, state)
         except Exception:  # pragma: no cover - keep the daemon alive

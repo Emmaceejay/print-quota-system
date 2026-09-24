@@ -59,6 +59,10 @@ def detect_format(path: Path) -> str:
         raise EstimationError(f"cannot read spool file {path}: {exc}") from exc
     if head.startswith(b"%PDF"):
         return "pdf"
+    if head.startswith(b"UNIRAST\x00"):
+        return "urf"
+    if head.startswith((b"RaS2", b"RaS3", b"2SaR", b"3SaR")):
+        return "pwg-raster"
     if head.startswith(b"%!PS") or b"%!PS-Adobe" in head[:256]:
         return "postscript"
     if head.startswith(b"\x1b%-12345X") or head.startswith(b"\x1bE"):
@@ -121,6 +125,18 @@ def _pcl_pages(path: Path) -> Optional[int]:
     return pages or None
 
 
+def _urf_pages(path: Path) -> Optional[int]:
+    """Apple raster (AirPrint): the page count is a uint32 right after the magic."""
+    try:
+        with path.open("rb") as handle:
+            header = handle.read(12)
+    except OSError:
+        return None
+    if len(header) < 12:
+        return None
+    return int.from_bytes(header[8:12], "big") or None
+
+
 def _text_pages(path: Path) -> Optional[int]:
     try:
         with path.open("rb") as handle:
@@ -156,6 +172,8 @@ def estimate_file_pages(path: str | Path, timeout: int = 15) -> tuple[int, str]:
         pages = _pcl_pages(resolved)
     elif fmt == "text":
         pages = _text_pages(resolved)
+    elif fmt == "urf":
+        pages = _urf_pages(resolved)
 
     if pages and pages > 0:
         return pages, fmt
@@ -176,3 +194,66 @@ def estimate_job(
         number_up=max(int(number_up or 1), 1),
         method=method,
     )
+
+
+def _reliable(method: str) -> bool:
+    return not (method.endswith(":fallback") or method in ("empty", "error"))
+
+
+def estimate_spooled_job(
+    spool_dir: Optional[str],
+    job_id: Optional[int],
+    received: Optional[str | Path],
+    copies: int = 1,
+    number_up: int = 1,
+    timeout: int = 15,
+) -> PageEstimate:
+    """Estimate a job from the documents the client submitted.
+
+    The data a backend receives (``received``) has usually been converted to
+    the printer's language by the driver, which cannot be counted. So this
+    counts the original documents in the CUPS spool first, applying the
+    job's own ``copies``, ``number-up`` and ``page-ranges``, and falls back
+    to ``received`` only when the originals are missing or unreadable.
+    """
+    from . import cups_spool
+
+    attrs: dict = {}
+    per_copy = 0
+    methods: list[str] = []
+    if spool_dir and job_id is not None:
+        attrs = cups_spool.read_job_attributes(spool_dir, job_id)
+        for document in cups_spool.document_paths(spool_dir, job_id):
+            readable, temp = cups_spool.readable_copy(document)
+            try:
+                pages, method = estimate_file_pages(readable, timeout=timeout)
+            except EstimationError:
+                pages, method = DEFAULT_PAGES, "error"
+            finally:
+                if temp is not None:
+                    temp.unlink(missing_ok=True)
+            per_copy += cups_spool.pages_in_ranges(pages, attrs.get("page-ranges"))
+            methods.append(method)
+
+    job_copies = max(int(attrs.get("copies") or copies or 1), 1)
+    job_nup = max(int(attrs.get("number-up") or number_up or 1), 1)
+
+    if methods and all(_reliable(m) for m in methods):
+        return PageEstimate(per_copy, job_copies, job_nup, method="spool:" + "+".join(methods))
+
+    fallback: Optional[PageEstimate] = None
+    if received is not None:
+        try:
+            fallback = estimate_job(received, copies=job_copies, number_up=job_nup, timeout=timeout)
+        except EstimationError:
+            fallback = None
+    if fallback is not None and _reliable(fallback.method):
+        return fallback
+    # Neither source could be counted: charge the larger guess rather than
+    # letting an uncountable job through as a single page.
+    candidates = [fallback] if fallback is not None else []
+    if methods:
+        candidates.append(PageEstimate(per_copy, job_copies, job_nup, method="spool:" + "+".join(methods)))
+    if not candidates:
+        return PageEstimate(DEFAULT_PAGES, job_copies, job_nup, method="unknown:fallback")
+    return max(candidates, key=lambda e: e.total_pages)

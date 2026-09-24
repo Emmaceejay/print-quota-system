@@ -35,9 +35,29 @@ def test_parses_a_default_format_page_log_line():
     assert (tally.printer, tally.username, tally.cups_job_id, tally.pages) == ("hp-mono", "ceejay", 41, 1)
 
 
-def test_ignores_unparseable_and_summary_lines():
+def test_ignores_unparseable_lines():
     assert daemon.parse_page_log_line("garbage") is None
-    assert daemon.parse_page_log_line(page_lines()[0].replace(" 1 1 ", " total 3 ")) is None
+
+
+def test_a_total_line_is_used_only_when_there_are_no_page_lines():
+    total = page_lines()[0].replace(" 1 1 ", " total 3 ")
+    parsed = daemon.parse_page_log_line(total)
+    assert parsed.pages == 0 and parsed.total == 3 and parsed.billed_pages == 3
+
+    only_total = daemon.aggregate([total])
+    assert only_total[("hp-mono", 41)].billed_pages == 3
+
+    both = daemon.aggregate(page_lines(pages=3) + [total])
+    assert both[("hp-mono", 41)].billed_pages == 3  # not 6: the total duplicates the pages
+
+
+def test_reconciles_from_a_total_line(seeded):
+    job_id = make_job(pages=1)
+    daemon.reconcile_tallies(daemon.aggregate([page_lines()[0].replace(" 1 1 ", " total 4 ")]))
+    with db_session.session_scope() as session:
+        job = session.get(PrintJob, job_id)
+        assert job.actual_pages == 4 and job.reconciled
+        assert session.get(User, "ceejay").pages_used == 4
 
 
 def test_copies_column_multiplies_the_page_count():

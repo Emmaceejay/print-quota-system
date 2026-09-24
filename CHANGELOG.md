@@ -56,6 +56,27 @@ Initial release: Phases 1-8 of the build plan.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.2.1] - 2026-09-24
+
+### Fixed
+
+- **Jobs on driver (PPD) queues were counted as 1 page.** CUPS converts a
+  job to the printer's language before the backend runs, and that output
+  (e.g. PCL XL) can't be counted, so over-quota jobs printed in full. The
+  backend now counts the documents the client submitted, from the CUPS
+  spool (`d<job>-NNN`), and takes `copies`, `number-up` and `page-ranges`
+  from the job control file (`c<job>`). A job that doesn't fit is refused
+  before anything prints.
+- The accounting daemon ignored CUPS `total` page_log lines. It now uses them
+  when a job has no per-page lines.
+
+### Added
+
+- `printing.spool_dir` setting (`PRINTQUOTA_SPOOL_DIR`), default `/var/spool/cups`.
+- Page counting for Apple raster (AirPrint/URF) documents.
+- The accounting daemon logs once when CUPS has no `page_log`, instead of
+  waiting silently.
+
 ## [0.2.0] - 2026-09-23
 
 Everything after installation can now be done in the web console; the CLI

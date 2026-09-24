@@ -97,3 +97,17 @@ def test_estimate_job_combines_parsing_and_multipliers(tmp_path):
     path.write_text("line\n" * 60)
     estimate = estimate_job(path, copies=2)
     assert estimate.pages_per_copy == 1 and estimate.total_pages == 2
+
+
+def test_apple_raster_page_count_comes_from_the_header(tmp_path):
+    path = tmp_path / "job.urf"
+    path.write_bytes(b"UNIRAST\x00" + (7).to_bytes(4, "big") + b"\x00" * 64)
+    assert detect_format(path) == "urf"
+    assert estimate_file_pages(path) == (7, "urf")
+
+
+def test_pwg_raster_is_recognised_but_not_guessed(tmp_path):
+    path = tmp_path / "job.pwg"
+    path.write_bytes(b"RaS2" + b"\x00" * 64)
+    assert detect_format(path) == "pwg-raster"
+    assert estimate_file_pages(path) == (DEFAULT_PAGES, "pwg-raster:fallback")
