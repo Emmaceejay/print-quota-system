@@ -104,15 +104,24 @@ On **Settings**, set the default quota, period, enforcement mode, costs and
 currency, and alerts/SMTP. Then click **Send test alert**. If the Webhook URL
 box contains a username, clear it (B17).
 
-### A9. Connect each Windows PC (B11)
+### A9. Connect each Windows PC (B11, B23)
 
-1. Settings → Printers & scanners → **Add device** → **Add manually** →
-   **Select a shared printer by name**:
-   `http://<server-ip>:631/printers/<QUEUE>`. The queue name is
-   case-sensitive.
-2. Driver: **Microsoft → Microsoft PS Class Driver**. If it's not listed,
+1. **Remove** any existing entries for the printer first, especially ones
+   Windows found by itself (e.g. *"Office_Printer @ printserver"*).
+   **Don't use auto-discovered printers**: they connect with encryption that
+   Windows refuses, and jobs never reach the server (B23).
+2. Check the address works: open `http://<server-ip>:631/printers/<QUEUE>` in
+   the PC's browser. The printer's CUPS page must load.
+3. Settings → Printers & scanners → **Add device** → **Add manually** →
+   **Select a shared printer by name**, and enter that same address:
+   `http://<server-ip>:631/printers/<QUEUE>`. Use the **IP address**,
+   **`http`** (not `https`), and the exact queue name (case-sensitive), e.g.
+   `http://192.0.2.10:631/printers/Office_Printer`.
+4. Driver: **Microsoft → Microsoft PS Class Driver**. If it's not listed,
    choose **Generic → MS Publisher Imagesetter**. Never choose PCL6 or XPS.
-3. In Printing preferences, set the paper size to **A4**.
+5. In Printing preferences, set the paper size to **A4**.
+6. Print a test page and confirm a new job appears on the server
+   (`lpstat -W all -o <QUEUE> | tail -2`).
 
 ### A10. Test (see Part C for the commands)
 
@@ -444,7 +453,72 @@ confirmed on the real server. **Config** = solved by configuration, not code.
   `CORP\J.Doe` workaround account was created, move its quota to
   `j.doe` and delete it. Exact matches win, so while it exists, jobs
   sent as `CORP\J.Doe` are still charged to it.
-- **Status:** Fixed 0.2.4. Awaiting verification on the server.
+- **Status:** Fixed 0.2.4. **Verified 2026-09-25:** Jane Doe's jobs (sent as `CORP\J.Doe`) print and are charged to `j.doe`. Once his PC was reconnected, see B23.
+
+### B23. A PC's jobs never reach the server (auto-discovered printer, TLS refused)
+
+- **Symptom:** one user can't print, even though their printquota account is
+  fine (active, pages remaining) and printquota is up to date. On the
+  server, `lpstat -W all -o <QUEUE>` shows **no new jobs** from that user, so
+  printquota never sees them. Often the user also got *"the printer name is
+  not correct"* when adding the printer by address, then added it through
+  Windows' automatic discovery instead. In `/var/log/cups/error_log`,
+  repeated lines:
+  ```
+  E [...] [Client 775] Unable to encrypt connection: A TLS fatal alert has been received.
+  ```
+- **Cause:** a printer that Windows discovers by itself (e.g. *"Office_Printer @
+  printserver"*) connects to CUPS over an **encrypted** connection
+  (`ipps`/`https`, using the server's `.local` name). CUPS answers with its
+  **self-signed certificate**, Windows rejects it (the "TLS fatal alert"), and
+  every job fails on the PC before it is sent. The PC's own print queue shows
+  the job as *Error*.
+- **Diagnosis:**
+  1. On the server, `lpstat -W all -o <QUEUE> | tail`. No job from the user
+     after their attempt means the problem is between the PC and the server,
+     not in printquota.
+  2. `sudo grep "Unable to encrypt connection" /var/log/cups/error_log | tail`
+     shows TLS failures at the times the user tried to print.
+  3. Match them to the PC: `sudo grep "<dd/Mon/yyyy:HH:MM>" /var/log/cups/access_log | awk '{print $1}' | sort | uniq -c`,
+     and compare with the PC's address (`ipconfig` on the PC).
+- **Fix (on the PC):**
+  1. Remove **every** entry for the printer, including the auto-discovered
+     one, and cancel anything stuck in its queue.
+  2. In the PC's browser, open `http://<server-ip>:631/printers/<QUEUE>`. It
+     must load. If it doesn't, something blocks port 631 between the PC and
+     the server (firewall, antivirus, proxy). Test with
+     `Test-NetConnection <server-ip> -Port 631` in PowerShell.
+  3. **Add manually → Select a shared printer by name** →
+     `http://<server-ip>:631/printers/<QUEUE>`, with the IP address, `http`
+     and the exact capitals. Use the **Microsoft PS Class Driver** (B11).
+  4. Print a test page and confirm the job appears in `lpstat` and Reports.
+- **Prevention:** always connect PCs by the plain `http://<IP>` address (A9).
+  Disabling `cups-browsed` (B10) also removes the automatic HP queues that
+  kept reappearing in the log.
+- **Status:** Config. **Verified 2026-09-25:** Jane Doe's PC. After
+  removing the auto-discovered printer and re-adding
+  `http://192.0.2.10:631/printers/Office_Printer`, his jobs arrived as
+  `CORP\J.Doe` and were charged to `j.doe` (B22).
+
+### B24. Changed the price, but Reports still shows ₦1.00 per page
+
+- **Symptom:** after setting a new price, every job in **Reports** still costs
+  ₦1.00 per page.
+- **Cause 1:** when a printer is registered, it gets **its own price**,
+  copied from the default at that moment (₦1). A printer's own price always
+  wins, so changing *Default cost per mono page* on the **Settings** page
+  doesn't affect it. That default is only used for printers with no price of
+  their own.
+- **Cause 2:** a job's cost is recorded **when it prints** and never changes
+  afterwards, like a receipt. Jobs printed before a price change keep the old
+  price.
+- **Fix:** **Printers & queues** → the printer → **Edit costs** → set
+  *Cost / mono page* (and *Cost / colour page*) → **Save**. The table's
+  *Mono* column shows the price that applies. Print one page, and the new job
+  in Reports has the new cost.
+- **Note:** a printer price of **0** means "use the Settings default", not
+  free (README §23). For a free printer, set the default to 0 as well.
+- **Status:** Config.
 
 ---
 
@@ -463,6 +537,10 @@ lpstat -W all -o
 # Why a job was allowed or denied, and how its pages were counted
 sudo journalctl -u cups -n 50 --no-pager | grep -i printquota
 sudo tail -n 30 /var/log/cups/error_log
+
+# Which PCs are connecting, and any TLS (encryption) failures (B23)
+sudo tail -n 20 /var/log/cups/access_log | awk '{print $1, $4, $6, $7}'
+sudo grep -c "Unable to encrypt connection" /var/log/cups/error_log
 
 # Web console reachable and database OK
 curl -s http://localhost:8080/healthz          # {"status":"ok"}
@@ -484,6 +562,6 @@ ls -l /usr/lib/cups/backend/quota               # must be -rwx------ root root
 | 0.2.1 | 2026-09-24 | Count pages from the submitted document. B15, B16 |
 | 0.2.2 | 2026-09-24 | Settings page saves reliably. B17 |
 | 0.2.3 | 2026-09-24 | Installer survives `apt-get update` errors. B19 |
-| 0.2.4 | 2026-09-25 | Match `DOMAIN\user` and different capitals to one account. B22 |
+| 0.2.4 | 2026-09-25 | Match `DOMAIN\user` and different capitals to one account. B22 (verified). Client setup documented: B23, B24 |
 
 Full details are in [CHANGELOG.md](../CHANGELOG.md).

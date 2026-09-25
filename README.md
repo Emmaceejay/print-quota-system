@@ -1307,6 +1307,8 @@ deliberately does not edit `cupsd.conf`. Restart CUPS after changing it.
 | Printers page says *Could not read the CUPS queues* | CUPS not running, or `cups-client` missing | `systemctl status cups`; `lpstat -v` |
 | Printers page says *quota backend is not installed* | `install.sh` hasn't been run on this server | `sudo ./scripts/install.sh` |
 | IPP Everywhere queue creation fails | The printer is unreachable or doesn't speak IPP Everywhere | Check the URI with `ipptool -tv <uri> get-printer-attributes.test`, or choose *Raw queue* |
+| A user's jobs never reach the server (no new job in `lpstat -W all -o`); `error_log` shows `Unable to encrypt connection: A TLS fatal alert has been received` | The PC uses a printer Windows discovered by itself, which connects with encryption and rejects CUPS's self-signed certificate | Remove the auto-discovered printer and add `http://<server-ip>:631/printers/<QUEUE>` by address with the Microsoft PS Class Driver ([issue log B23](docs/setup-and-issues.md)) |
+| A new price doesn't show in Reports | The printer has its own price (copied from the default when it was registered), and past jobs keep the price they printed at | Set the price in **Printers & queues → Edit costs**; only new jobs use it ([issue log B24](docs/setup-and-issues.md)) |
 | Lost the setup link | — | The token is `PRINTQUOTA_SETUP_TOKEN` in `/etc/printquota/env`. Open `/setup` and paste it |
 | Locked out (no administrator can sign in) | Forgotten password or disabled account | `sudo /opt/printquota/bin/quotactl db init --admin <name>` (§6) |
 
