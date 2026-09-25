@@ -7,6 +7,7 @@ a username by ``/admin/users/{username}``.
 from __future__ import annotations
 
 import datetime as dt
+from urllib.parse import quote
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
@@ -218,9 +219,9 @@ def user_delete(
 ):
     """Delete one account, its job history and the policies that target it."""
     if username == admin.username:
-        return redirect(f"/admin/users/{username}", error="You cannot delete your own account.")
+        return redirect(f"/admin/users/{quote(username, safe='')}", error="You cannot delete your own account.")
     if not confirm:
-        return redirect(f"/admin/users/{username}", error="Tick 'I understand' to confirm the deletion.")
+        return redirect(f"/admin/users/{quote(username, safe='')}", error="Tick 'I understand' to confirm the deletion.")
     user = session.get(User, username)
     if user is None:
         return redirect("/admin/users", error=f"No such user: {username}")

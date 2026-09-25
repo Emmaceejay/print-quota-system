@@ -14,7 +14,7 @@
 
 <div class="card" style="margin-top:18px">
   <h2>Settings</h2>
-  <form method="post" action="/admin/users/{{ user.username }}/update" class="inline">
+  <form method="post" action="/admin/users/{{ user.username|urlencode }}/update" class="inline">
     <div><label for="dn">Full name</label><input id="dn" name="display_name" value="{{ user.display_name or '' }}"></div>
     <div><label for="q">Quota (pages)</label><input id="q" name="quota_limit" type="number" min="0" value="{{ user.quota_limit }}" required></div>
     <div><label for="t">Low-balance threshold</label><input id="t" name="low_balance_threshold" type="number" min="0" value="{{ user.low_balance_threshold }}" required></div>
@@ -28,11 +28,11 @@
     <div><label for="ad">Admin</label><input id="ad" name="is_admin" type="checkbox" value="true" {{ 'checked' if user.is_admin }}></div>
     <button type="submit">Save</button>
   </form>
-  <form method="post" action="/admin/users/{{ user.username }}/reset" style="margin-top:12px">
+  <form method="post" action="/admin/users/{{ user.username|urlencode }}/reset" style="margin-top:12px">
     <button type="submit" class="danger">Reset usage and restart period</button>
   </form>
   {% if user.username != admin.username %}
-  <form method="post" action="/admin/users/{{ user.username }}/delete" class="inline" style="margin-top:12px"
+  <form method="post" action="/admin/users/{{ user.username|urlencode }}/delete" class="inline" style="margin-top:12px"
         onsubmit='return confirm({{ ("Delete " ~ user.username ~ " and all of their job history?")|tojson }})'>
     <label class="check"><input type="checkbox" name="confirm" value="true" required> I understand this deletes the account and its job history</label>
     <button type="submit" class="danger">Delete user</button>

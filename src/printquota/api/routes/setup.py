@@ -9,7 +9,6 @@ requests from the server itself.
 
 from __future__ import annotations
 
-import re
 import secrets
 from typing import Optional
 
@@ -22,13 +21,13 @@ from ...core.config import get_settings
 from ...core.logging import get_logger
 from ...db.models import User
 from ...services.audit import record_audit
+from ...services.identity import new_account_problem, resolve_user
 from ..auth import get_db, hash_password, issue_session
 from ..deps import render
 
 router = APIRouter()
 log = get_logger("api.setup")
 
-USERNAME_RE = re.compile(r"^[A-Za-z0-9._@\\\-]{1,128}$")
 MIN_PASSWORD_LENGTH = 8
 _LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 
@@ -107,8 +106,13 @@ def setup_submit(
         return fail("Without a setup token, setup can only be completed from the server itself.", 403)
 
     username = username.strip()
-    if not USERNAME_RE.fullmatch(username):
-        return fail("Usernames may use letters, digits and . _ @ \\ - (no spaces).")
+    match = resolve_user(session, username)
+    if match.ambiguous:
+        return fail(f"'{username}' matches several accounts ({', '.join(match.candidates)}).")
+    if match.user is None:
+        problem = new_account_problem(session, username)
+        if problem:
+            return fail(problem)
     if len(password) < MIN_PASSWORD_LENGTH:
         return fail(f"Use a password of at least {MIN_PASSWORD_LENGTH} characters.")
     if password != password_confirm:
@@ -118,7 +122,7 @@ def setup_submit(
         return fail("Enter a valid email address or leave it blank.")
 
     settings = get_settings()
-    user = session.get(User, username)
+    user = match.user  # an existing print account (any capitals / DOMAIN\ form) is promoted
     created = user is None
     if user is None:
         user = User(
@@ -132,6 +136,7 @@ def setup_submit(
     user.is_admin = True
     user.is_active = True
     user.password_hash = hash_password(password)
+    username = user.username
     record_audit(session, username, "setup.admin", username, {"created": created}, source="web")
     log.info("first administrator created", extra={"user": username})
 

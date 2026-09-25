@@ -10,7 +10,7 @@ understand in full.
 
 | | |
 |---|---|
-| **Version** | 0.2.3 (see [CHANGELOG.md](CHANGELOG.md)) |
+| **Version** | 0.2.4 (see [CHANGELOG.md](CHANGELOG.md)) |
 | **Language** | Python 3.10+ |
 | **Platform** | Ubuntu Server 22.04 LTS / 24.04 LTS with CUPS |
 | **Datastore** | SQLite (default) or PostgreSQL |
@@ -173,7 +173,7 @@ print-quota-system/
 │   ├── cli/reset.py              Entry point for the daily period-reset timer
 │   ├── core/                     Config loading, logging, exceptions
 │   └── db/                       SQLAlchemy models, session handling, Alembic migrations
-└── tests/                        unit/ and integration/ pytest suites (182 tests)
+└── tests/                        unit/ and integration/ pytest suites (206 tests)
 ```
 
 **Console scripts** installed by the package:
@@ -338,7 +338,7 @@ password could never sign in.
 
 | Column | Meaning |
 |---|---|
-| `username` | Required. The name people print as: letters, digits, `. _ @ \ -` |
+| `username` | Required. The logon name people print as, e.g. `j.doe`: letters, digits, `. _ @ -`. No `DOMAIN\` prefix (see §8) |
 | `display_name` | Full name |
 | `email` | Where alerts go |
 | `group` | Group (department) name |
@@ -693,12 +693,43 @@ Policies are enforced in both modes.
 
 ### Accounts that cannot print
 
-- **Unknown user** (no row in `users`): denied, reason `no print account for this user`.
+- **Unknown user** (no matching account): denied, reason `no print account for this user`.
 - **Disabled user** (`is_active = false`): denied, reason `print account is disabled`.
+- **Ambiguous name** (two accounts differ only in capitals): denied, reason
+  `'<name>' matches more than one print account (…)`.
 - **Disabled printer** (`printers.is_active = false`): denied, reason `printer '<name>' is disabled`.
 
 Users are **not** created automatically. Everyone who prints to a wrapped
-queue needs an account, and the account name must match the CUPS user name.
+queue needs an account.
+
+### How the job's user name is matched to an account
+
+Windows doesn't always send the bare logon name. The same person can arrive
+as `j.doe`, `J.Doe`, `CORP\J.Doe` or, once the server is
+domain-joined, `j.doe@corp.example.com`. As in Active Directory, these are all
+one account (`services/identity.py`). For each form of the name (as sent,
+then without the `DOMAIN\` prefix, then without the `@realm`), printquota
+tries:
+
+1. an **exact** match, so anything that matched before still matches;
+2. a match **ignoring capital letters**, only if exactly one account
+   qualifies. Two accounts that differ only in capitals are never guessed
+   between: the job is refused as ambiguous.
+
+The job is then charged to, recorded under, and checked against the policies
+of the matched account. The name that was actually sent is logged
+(`print user matched sent_as=… account=…`). Portal sign-in uses the same
+matching.
+
+**Create accounts with the bare logon name** (`j.doe`). The console,
+CLI, setup wizard and CSV import refuse names containing `\` and names
+that differ from an existing account only in capitals. In a CSV import, a
+row for `J.Doe` updates the existing `j.doe`.
+
+Matching ignores the domain, so on a network with non-domain PCs a *local*
+Windows account with the same short name counts against the domain user.
+Requiring a login in CUPS (§20) is what prevents printing under someone
+else's name.
 
 ---
 
@@ -1299,7 +1330,7 @@ export PRINTQUOTA_DB_URL=sqlite:///./dev.db
 the users `ceejay` (admin), `ada`, `tunde` and `reception`, and 60
 randomised jobs, most of them reconciled.
 
-### Test suite (182 tests)
+### Test suite (206 tests)
 
 Every test runs against a throwaway SQLite file and settings file, so none
 of them can touch a real deployment. Nothing calls the real CUPS: queue tests
@@ -1320,6 +1351,7 @@ or macOS.
 | `integration/test_alerts.py` | Thresholds, cooldown, disabled alerts, transport failures |
 | `integration/test_cli.py` | Every `quotactl` command group |
 | `integration/test_api.py` | Auth, portal, console CRUD, CSV, audit, health, redirects |
+| `integration/test_identity.py` | Name matching: `DOMAIN\user`, capitals, `user@realm`, exact-match priority, ambiguity refusal, jobs charged to the matched account, sign-in, and the creation rules in the console, CLI, import and setup |
 | `integration/test_console.py` | Setup wizard and its token, admin creation, password rules, self-protection, user filters, CSV import (preview/apply/upload/update), export, bulk actions, user and group deletion, Settings page (save, validation, env lock, secret handling, revert, live effect), queue enforce/release/add against a fake CUPS, input validation, permission errors |
 
 ### Code conventions

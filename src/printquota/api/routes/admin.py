@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import datetime as dt
 import io
+from urllib.parse import quote
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -198,15 +199,12 @@ def users_create(
     session: Session = Depends(get_db),
 ):
     """Create a print account (or another administrator) from the console."""
-    from ...services.user_import import USERNAME_RE
+    from ...services.identity import new_account_problem
 
     username = username.strip()
-    if not username:
-        return redirect("/admin/users", error="Username is required.")
-    if not USERNAME_RE.fullmatch(username):
-        return redirect("/admin/users", error="Usernames may use letters, digits and . _ @ \\ - (no spaces).")
-    if session.get(User, username) is not None:
-        return redirect("/admin/users", error=f"User '{username}' already exists.")
+    problem = new_account_problem(session, username)
+    if problem:
+        return redirect("/admin/users", error=problem)
     if group_name and session.get(Group, group_name) is None:
         return redirect("/admin/users", error=f"No such group: {group_name}")
     settings = get_settings()
@@ -295,7 +293,7 @@ def user_update(
     user = session.get(User, username)
     if user is None:
         return redirect("/admin/users", error=f"No such user: {username}")
-    back = f"/admin/users/{username}"
+    back = f"/admin/users/{quote(username, safe='')}"
     if user.username == admin.username and not is_admin:
         return redirect(back, error="You cannot remove your own admin rights.")
     if user.username == admin.username and not is_active:
@@ -336,7 +334,7 @@ def user_update(
         },
         source="web",
     )
-    return redirect(f"/admin/users/{username}", message="Saved.")
+    return redirect(f"/admin/users/{quote(username, safe='')}", message="Saved.")
 
 
 @router.post("/users/{username}/reset", include_in_schema=False)
@@ -352,7 +350,7 @@ def user_reset_usage(
     before = user.pages_used
     reset_user(session, user)
     record_audit(session, admin.username, "user.reset", username, {"was": before}, source="web")
-    return redirect(f"/admin/users/{username}", message=f"Usage reset (was {before} pages).")
+    return redirect(f"/admin/users/{quote(username, safe='')}", message=f"Usage reset (was {before} pages).")
 
 
 # ----------------------------------------------------------------------- groups

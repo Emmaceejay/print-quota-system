@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import csv
 import io
-import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -23,6 +22,7 @@ from sqlalchemy.orm import Session
 from ..core.config import get_settings
 from ..db.models import Group, User
 from .audit import record_audit
+from .identity import ACCOUNT_NAME_RE, same_name_ignoring_case
 
 #: Column order for header-less input, and the names the template uses.
 COLUMNS = ("username", "display_name", "email", "group", "quota", "threshold", "password", "admin", "active")
@@ -46,8 +46,8 @@ _ALIASES = {
     "enabled": "active",
 }
 
-#: Same rule the setup wizard uses: no whitespace or path/shell metacharacters.
-USERNAME_RE = re.compile(r"^[A-Za-z0-9._@\\\-]{1,128}$")
+#: Same rule as every other way of creating an account (services.identity).
+USERNAME_RE = ACCOUNT_NAME_RE
 MAX_ROWS = 5000
 _TRUE = {"1", "true", "yes", "y", "on", "x"}
 _FALSE = {"0", "false", "no", "n", "off"}
@@ -74,6 +74,8 @@ class PlannedRow:
     username: str
     action: str  # create | update | skip | error
     message: str = ""
+    #: The existing account this row refers to (may differ in capitals).
+    account: Optional[str] = None
     values: dict = field(default_factory=dict)
 
 
@@ -167,8 +169,14 @@ def plan_import(session: Session, text: str, options: ImportOptions) -> ImportPl
         try:
             if not username:
                 raise ValueError("username is empty")
+            if "\\" in username:
+                bare = username.rsplit("\\", 1)[1]
+                raise ValueError(
+                    f"use the logon name without the domain ('{bare}'); "
+                    f"print jobs sent as '{username}' are matched to it automatically"
+                )
             if not USERNAME_RE.fullmatch(username):
-                raise ValueError("username may only contain letters, digits and . _ @ \\ -")
+                raise ValueError("username may only contain letters, digits and . _ @ -")
             if username.lower() in seen:
                 raise ValueError("appears more than once in this import")
             seen.add(username.lower())
@@ -207,6 +215,16 @@ def plan_import(session: Session, text: str, options: ImportOptions) -> ImportPl
             }
             existing = session.get(User, username)
             if existing is None:
+                # J.Doe in the file is the existing j.doe account.
+                same = same_name_ignoring_case(session, username)
+                if len(same) > 1:
+                    raise ValueError(
+                        f"matches several accounts ({', '.join(sorted(u.username for u in same))})"
+                    )
+                existing = same[0] if same else None
+            if existing is not None:
+                planned.account = existing.username
+            if existing is None:
                 planned.action = "create"
                 planned.message = _describe_create(values, options)
             elif options.update_existing:
@@ -220,6 +238,8 @@ def plan_import(session: Session, text: str, options: ImportOptions) -> ImportPl
             else:
                 planned.action = "skip"
                 planned.message = "already exists (tick 'update existing users' to change it)"
+            if existing is not None and existing.username != username:
+                planned.message += f" [same account as '{existing.username}']"
             planned.values = values
         except ValueError as exc:
             planned.action = "error"
@@ -294,7 +314,7 @@ def apply_import(
                 )
             )
         elif row.action == "update":
-            user = session.get(User, row.username)
+            user = session.get(User, row.account or row.username)
             if values["display_name"]:
                 user.display_name = values["display_name"]
             if values["email"]:
@@ -305,9 +325,10 @@ def apply_import(
                 user.quota_limit = values["quota"]
             if values["threshold"] is not None:
                 user.low_balance_threshold = values["threshold"]
-            if values["admin"] is not None and not (row.username == actor and not values["admin"]):
+            is_self = (row.account or row.username) == actor
+            if values["admin"] is not None and not (is_self and not values["admin"]):
                 user.is_admin = values["admin"]
-            if values["active"] is not None and not (row.username == actor and not values["active"]):
+            if values["active"] is not None and not (is_self and not values["active"]):
                 user.is_active = values["active"]
             if values["password"]:
                 user.password_hash = hash_password(values["password"])
@@ -319,7 +340,7 @@ def apply_import(
         f"{plan.count('create')} created, {plan.count('update')} updated",
         {
             "created": [r.username for r in plan.rows if r.action == "create"],
-            "updated": [r.username for r in plan.rows if r.action == "update"],
+            "updated": [r.account or r.username for r in plan.rows if r.action == "update"],
             "errors": plan.count("error"),
             "groups_created": plan.groups_to_create,
         },

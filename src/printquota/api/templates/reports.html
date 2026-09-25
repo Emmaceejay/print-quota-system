@@ -34,7 +34,7 @@
         <th class="num">Pages</th><th class="num">Cost {{ currency }}</th><th>Reason</th></tr>
     {% for j in jobs %}
     <tr><td>{{ j.submitted_at|dt }}</td>
-        <td><a href="/admin/users/{{ j.username }}">{{ j.username }}</a></td>
+        <td><a href="/admin/users/{{ j.username|urlencode }}">{{ j.username }}</a></td>
         <td>{{ j.printer }}</td><td>{{ (j.title or '')[:34] }}</td>
         <td>{% if j.status == 'denied' %}<span class="pill bad">denied</span>
             {% elif j.status == 'completed' %}<span class="pill ok">completed</span>

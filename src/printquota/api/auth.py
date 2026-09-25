@@ -111,17 +111,24 @@ def _authenticate_ldap(username: str, password: str) -> bool:  # pragma: no cove
 
 
 def authenticate(session: Session, username: str, password: str) -> Optional[User]:
-    """Validate credentials and return the active user record."""
-    user = session.get(User, username)
+    """Validate credentials and return the active user record.
+
+    The typed name is matched like a print job's (``CORP\\J.Doe`` or
+    ``J.Doe`` finds ``j.doe``); the password is then checked
+    against that account's own name.
+    """
+    from ..services.identity import resolve_user
+
+    user = resolve_user(session, username).user
     if user is None or not user.is_active:
         return None
     backend = str(get_settings().get("api.auth_backend", "local")).lower()
     if backend == "local":
         ok = verify_password(password, user.password_hash)
     elif backend == "pam":
-        ok = _authenticate_pam(username, password)
+        ok = _authenticate_pam(user.username, password)
     elif backend == "ldap":
-        ok = _authenticate_ldap(username, password)
+        ok = _authenticate_ldap(user.username, password)
     else:
         log.error("unknown auth backend", extra={"backend": backend})
         ok = False

@@ -31,6 +31,7 @@ from ..db.models import (
 )
 from ..policies.engine import validate_rule
 from ..services.accounts import delete_user
+from ..services.identity import new_account_problem
 from ..services.audit import record_audit
 from ..services.quota import reset_expired_periods, reset_user, usage_rows
 
@@ -150,8 +151,9 @@ def user_add(
     """Create a print account."""
     settings = get_settings()
     with db_session.session_scope() as session:
-        if session.get(User, username) is not None:
-            raise click.ClickException(f"user '{username}' already exists")
+        problem = new_account_problem(session, username)
+        if problem:
+            raise click.ClickException(problem)
         if group_name and session.get(Group, group_name) is None:
             raise click.ClickException(f"group '{group_name}' does not exist")
         record = User(

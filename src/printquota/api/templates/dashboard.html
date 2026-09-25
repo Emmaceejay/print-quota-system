@@ -35,7 +35,7 @@
     <table>
       <tr><th>User</th><th class="num">Remaining</th><th class="num">Quota</th></tr>
       {% for u in low_users %}
-      <tr><td><a href="/admin/users/{{ u.username }}">{{ u.username }}</a></td>
+      <tr><td><a href="/admin/users/{{ u.username|urlencode }}">{{ u.username }}</a></td>
           <td class="num">{% if u.remaining <= 0 %}<span class="pill bad">{{ u.remaining }}</span>{% else %}<span class="pill warn">{{ u.remaining }}</span>{% endif %}</td>
           <td class="num">{{ u.quota_limit }}</td></tr>
       {% else %}<tr><td colspan="3" class="muted">Nobody is low right now.</td></tr>{% endfor %}
@@ -47,7 +47,7 @@
     <table>
       <tr><th>User</th><th class="num">Pages</th></tr>
       {% for username, pages in top %}
-      <tr><td><a href="/admin/users/{{ username }}">{{ username }}</a></td><td class="num">{{ pages or 0 }}</td></tr>
+      <tr><td><a href="/admin/users/{{ username|urlencode }}">{{ username }}</a></td><td class="num">{{ pages or 0 }}</td></tr>
       {% else %}<tr><td colspan="2" class="muted">No jobs recorded yet.</td></tr>{% endfor %}
     </table>
   </div>

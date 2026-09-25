@@ -19,6 +19,7 @@ from ..core.config import Settings, get_settings
 from ..core.logging import get_logger
 from ..db.models import Group, PrintJob, PrintPolicy, Printer, User, utcnow
 from ..policies.engine import Decision, JobContext, PolicyRule, QuotaState, evaluate
+from .identity import resolve_user
 
 log = get_logger("services.quota")
 
@@ -110,11 +111,24 @@ def authorize_job(
     adjusts the balance by the difference between estimate and actual.
     """
     settings = settings or get_settings()
-    user = session.get(User, ctx.username)
+    # The name CUPS reports may carry a domain prefix or different capitals
+    # (CORP\J.Doe for j.doe); see services.identity.
+    sent_as = ctx.username
+    match = resolve_user(session, sent_as)
+    user = match.user
     if user is None or not user.is_active:
+        if match.ambiguous:
+            reason = (
+                f"'{sent_as}' matches more than one print account "
+                f"({', '.join(match.candidates)}); rename or remove the duplicate"
+            )
+        elif user is None:
+            reason = "no print account for this user"
+        else:
+            reason = "print account is disabled"
         job = PrintJob(
             cups_job_id=cups_job_id,
-            username=ctx.username,
+            username=user.username if user is not None else sent_as,
             printer=ctx.printer,
             title=ctx.title,
             copies=ctx.copies,
@@ -122,14 +136,20 @@ def authorize_job(
             is_duplex=ctx.is_duplex,
             estimated_pages=ctx.estimated_pages,
             status=PrintJob.STATUS_DENIED,
-            denial_reason=(
-                "no print account for this user" if user is None else "print account is disabled"
-            ),
+            denial_reason=reason,
         )
         # An unknown user has no FK target; record the denial without the row
         # so the backend can still report a reason.
         decision = Decision(allowed=False, reason=job.denial_reason, rule="unknown_user")
+        log.info("pre-flight decision", extra={
+            "user": sent_as, "printer": ctx.printer, "allowed": False, "reason": reason,
+        })
         return decision, job
+
+    if user.username != sent_as:
+        # Charge, record and apply user-scoped policies to the real account.
+        log.info("print user matched", extra={"sent_as": sent_as, "account": user.username, "how": match.how})
+        ctx = dataclasses.replace(ctx, username=user.username)
 
     if user.group_name and not ctx.group_name:
         ctx = dataclasses.replace(ctx, group_name=user.group_name)

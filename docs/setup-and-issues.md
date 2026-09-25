@@ -17,8 +17,8 @@ version.
 
 | | |
 |---|---|
-| Last updated | 2026-09-24 |
-| Current version | 0.2.3 |
+| Last updated | 2026-09-25 |
+| Current version | 0.2.4 |
 | Reference server | Ubuntu 22.04 LTS (jammy), Python 3.10, Hyper-V VM `printserver` |
 | Reference printer | CUPS queue `Office_Printer` → `lpd://192.0.2.20/lp` (PPD driver) |
 | Clients | Windows PCs on Active Directory |
@@ -91,8 +91,10 @@ URI (B8).
 
 ### A7. Create users (browser)
 
-- The printquota username must **exactly** match what the PC sends. On AD
-  that's the `sAMAccountName`, capital letters included (B14).
+- Create each user with their **bare logon name**, e.g. `j.doe` (the AD
+  `sAMAccountName`). Since 0.2.4, jobs sent as `CORP\J.Doe`,
+  `J.Doe` or `j.doe@corp.example.com` are matched to it automatically
+  (B22).
 - For many users: export from AD with PowerShell (B14), then use **Users →
   Import users…**, preview, and apply.
 
@@ -283,15 +285,16 @@ confirmed on the real server. **Config** = solved by configuration, not code.
 - **Meaning:** printing through the server **works**. The username sent by the
   PC just has no printquota account. These jobs don't appear in Reports.
 - **Fix:** find the name with `lpstat -W all -o <QUEUE>` (second column),
-  then create that user in **Users** with the exact same spelling and
-  capitals.
+  then create that user in **Users** with the bare logon name. Since 0.2.4,
+  capitals and a `DOMAIN\` prefix don't matter (B22).
 - **Status:** Config. Verified: fixed by creating the user, after which
   printing worked.
 
 ### B14. Active Directory usernames
 
-- Domain PCs send the **`sAMAccountName`** (e.g. `jsmith`, with no `DOMAIN\`).
-  Use it exactly, with the same capital letters.
+- Domain PCs usually send the **`sAMAccountName`** (e.g. `jsmith`), but some
+  send `DOMAIN\JSmith` (B22). Create the account as the bare logon name;
+  since 0.2.4 every form matches it.
 - If the server is later joined to the domain (`realm join`) and CUPS requires
   a login, names may become `jsmith@corp.example.com`. Set
   `use_fully_qualified_names = False` in `/etc/sssd/sssd.conf`, or create
@@ -410,6 +413,39 @@ confirmed on the real server. **Config** = solved by configuration, not code.
   (B14).
 - **Status:** Config. Not done yet.
 
+### B22. Jobs from one PC refused: the name arrives as `CORP\J.Doe`
+
+- **Symptom:** one user's jobs never print. `lpstat -W all -o Office_Printer`
+  shows the user as **`CORP\J.Doe`** (domain prefix plus capitals), while
+  everyone else appears as `firstname.lastname`. In `error_log`:
+  `print job denied: no print account for this user`.
+- **Cause:** printquota matched names exactly. Windows sends the domain form
+  on some PCs, depending on how the user signed in and how the printer was
+  added. The account `j.doe` was never matched. Creating an account
+  called `CORP\J.Doe` was a poor workaround: browsers turn `\` into
+  `/` in web addresses, so that account couldn't be opened in the console,
+  and the person would have two accounts with a split quota.
+- **Fix:** names are now matched the way Active Directory does
+  (`services/identity.py`). For the name as sent, then without `DOMAIN\`,
+  then without `@realm`: an exact match first, then a match ignoring
+  capitals, only if exactly one account qualifies.
+  - Jobs are charged to, recorded under and checked against the policies of
+    the matched account (`j.doe`). The name actually sent is logged:
+    `journalctl -u cups | grep "print user matched"`.
+  - Two accounts differing only in capitals are never guessed between: the
+    job is refused with `'<name>' matches more than one print account (…)`.
+  - Portal sign-in accepts every form.
+  - New accounts may not contain `\` or differ from an existing one only in
+    capitals (console, CLI, import, setup). A CSV row for `J.Doe`
+    updates `j.doe`.
+  - Console links URL-encode usernames, so an older account containing `\`
+    can still be opened and deleted.
+- **After upgrading:** make sure the user exists as `j.doe`. If a
+  `CORP\J.Doe` workaround account was created, move its quota to
+  `j.doe` and delete it. Exact matches win, so while it exists, jobs
+  sent as `CORP\J.Doe` are still charged to it.
+- **Status:** Fixed 0.2.4. Awaiting verification on the server.
+
 ---
 
 ## Part C: Quick health checks
@@ -448,5 +484,6 @@ ls -l /usr/lib/cups/backend/quota               # must be -rwx------ root root
 | 0.2.1 | 2026-09-24 | Count pages from the submitted document. B15, B16 |
 | 0.2.2 | 2026-09-24 | Settings page saves reliably. B17 |
 | 0.2.3 | 2026-09-24 | Installer survives `apt-get update` errors. B19 |
+| 0.2.4 | 2026-09-25 | Match `DOMAIN\user` and different capitals to one account. B22 |
 
 Full details are in [CHANGELOG.md](../CHANGELOG.md).

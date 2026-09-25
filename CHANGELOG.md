@@ -56,6 +56,29 @@ Initial release: Phases 1-8 of the build plan.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.2.4] - 2026-09-25
+
+### Fixed
+
+- **Jobs from some domain PCs were refused with "no print account for this
+  user".** Windows sent the name as `CORP\J.Doe` while the account is
+  `j.doe`. Names are now matched as Active Directory does: an exact
+  match first, then without the `DOMAIN\` prefix, without an `@realm`
+  suffix, and ignoring capitals. The job is charged to, recorded under and
+  checked against the matched account's policies. If two accounts differ
+  only in capitals, the job is refused as ambiguous instead of guessed.
+- Portal sign-in uses the same matching (`CORP\J.Doe` or `J.Doe`
+  signs in `j.doe`). PAM/LDAP receive the account's own name.
+- Console links and redirects URL-encode usernames, so an account containing
+  `\` can still be opened, edited and deleted.
+
+### Changed
+
+- New accounts (console, CLI, setup wizard, CSV import) may not contain `\`,
+  and may not differ from an existing account only in capitals. A CSV row for
+  `J.Doe` updates the existing `j.doe`, and the setup wizard
+  promotes an existing account whatever the capitals.
+
 ## [0.2.3] - 2026-09-24
 
 ### Fixed

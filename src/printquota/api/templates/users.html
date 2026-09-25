@@ -57,7 +57,7 @@
       <tr>
         <td class="sel"><input type="checkbox" name="usernames" value="{{ u.username }}" class="rowsel"
                                aria-label="Select {{ u.username }}"></td>
-        <td><a href="/admin/users/{{ u.username }}">{{ u.username }}</a></td>
+        <td><a href="/admin/users/{{ u.username|urlencode }}">{{ u.username }}</a></td>
         <td>{{ u.display_name or '-' }}</td>
         <td>{{ u.group_name or '-' }}</td>
         <td class="num">{{ u.pages_used }}</td>
