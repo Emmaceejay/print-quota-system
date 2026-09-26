@@ -15,11 +15,11 @@ understand in full.
 | **Platform** | Ubuntu Server 22.04 LTS / 24.04 LTS with CUPS |
 | **Datastore** | SQLite (default) or PostgreSQL |
 | **Licence** | MIT |
-| **Documentation** | [Read online](https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt) · [Setup guide](docs/setup.md) · [Known issues](docs/known-issues.md) |
+| **Documentation** | [Read online](https://emmaceejay.github.io/print-quota-system/) · [Setup guide](docs/setup.md) · [Known issues](docs/known-issues.md) |
 
 > **New here?** Follow the [setup guide](docs/setup.md). If something doesn't
 > work, check [known issues and troubleshooting](docs/known-issues.md). All
-> documents can also be [read online](https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt) as one
+> documents can also be [read online](https://emmaceejay.github.io/print-quota-system/) as one
 > formatted, searchable page.
 
 ---
@@ -1435,7 +1435,7 @@ native mobile apps, document watermarking, and MFP scan/copy tracking.
 - [CHANGELOG.md](CHANGELOG.md): release history.
 
 **Reading the documentation.** All of the above is available as one formatted, searchable
-page [online](https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt), and as HTML files in [docs/html/](docs/html/) that open
+page [online](https://emmaceejay.github.io/print-quota-system/), and as HTML files in [docs/html/](docs/html/) that open
 in any browser without an internet connection (`docs/html/setup.html`). The Markdown
 files are the source: after editing one, regenerate the HTML with
 `python3 scripts/build_docs.py` (requires `pip install -e ".[docs]"`) and commit both.

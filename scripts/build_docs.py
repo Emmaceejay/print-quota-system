@@ -32,6 +32,9 @@ except ImportError:  # pragma: no cover - guidance for a missing extra
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "docs" / "html"
+#: Repository files that aren't documents (LICENSE, scripts, ...) are linked here, so the
+#: links work from the published site as well as from a local copy.
+REPO_URL = "https://github.com/Emmaceejay/print-quota-system"
 
 
 @dataclass(frozen=True)
@@ -103,8 +106,9 @@ def _resolve_link(href: str, doc: Doc, single: bool) -> str:
         if single:
             return f"#{_prefixed(other, anchor)}" if anchor else f"#doc-{other.slug}"
         return f"{other.slug}.html" + (f"#{anchor}" if anchor else "")
-    # Any other repository file (LICENSE, scripts, ...): link to it on disk.
-    return "../../" + rel + (f"#{anchor}" if anchor else "")
+    # Any other repository file (LICENSE, scripts, docs/html/, ...): link to it on GitHub.
+    kind = "tree" if target.is_dir() else "blob"
+    return f"{REPO_URL}/{kind}/main/{rel}" + (f"#{anchor}" if anchor else "")
 
 
 def _prefixed(doc: Doc, ident: str) -> str:

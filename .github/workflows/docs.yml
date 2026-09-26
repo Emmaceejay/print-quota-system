@@ -1,0 +1,55 @@
+# Publish the documentation to GitHub Pages.
+#
+# Builds the combined handbook (all documents on one tabbed, searchable page)
+# from the Markdown sources with scripts/build_docs.py, so the site always
+# matches the current docs on main.
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "README.md"
+      - "CHANGELOG.md"
+      - "docs/**"
+      - "scripts/build_docs.py"
+      - "src/printquota/__init__.py"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the renderer
+        run: pip install "markdown-it-py>=3.0" "mdit-py-plugins>=0.4"
+      - name: Build the handbook
+        run: |
+          mkdir -p _site
+          python scripts/build_docs.py --out build/pages --single _site/index.html --standalone
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
