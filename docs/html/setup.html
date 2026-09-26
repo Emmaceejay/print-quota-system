@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Setup guide · printquota</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"><style>
+:root{
+  --ground:#F4F6F9; --surface:#FFFFFF; --ink:#172033; --muted:#5A6478; --faint:#8C95A6;
+  --rule:#DAE0E8; --accent:#0B6E99; --accent-soft:#E3F1F8; --code:#EEF2F6; --code-ink:#1E2A3D;
+  --ok:#13795B; --ok-soft:#E4F4EE; --warn:#9A5B00; --warn-soft:#FBF1E0; --info:#4B5566; --info-soft:#EDF0F4;
+  --mark:#FFF3B0;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  --display:"IBM Plex Sans Condensed","Arial Narrow","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+    --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+    --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+    --mark:#5A4A0A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+  --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+  --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+  --mark:#5A4A0A;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(76px + env(safe-area-inset-top, 0px))}
+body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.65 var(--body);-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--rule)}
+.topbar-inner{max-width:1320px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;min-height:56px}
+.brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink);padding-block:10px}
+.brand b{font:700 19px/1 var(--display);letter-spacing:-.2px}
+.brand span{font:500 12px/1 var(--mono);color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.tabs a{display:block;padding:17px 10px 15px;font:600 14px/1 var(--display);letter-spacing:.2px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.layout{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:48px}
+.side{position:sticky;top:calc(76px + env(safe-area-inset-top, 0px));align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px}
+.side .find{width:100%;font:14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin-bottom:12px}
+.side .find::placeholder{color:var(--faint)}
+.toc,.toc ul{list-style:none;margin:0;padding:0}
+.toc>li{margin:2px 0}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:13.5px;line-height:1.4}
+.toc a:hover{background:var(--accent-soft);color:var(--ink)}
+.toc>li>a{color:var(--ink);font-weight:500}
+.toc ul{margin:2px 0 6px 10px;border-left:1px solid var(--rule);padding-left:6px}
+.toc a.here{color:var(--accent);background:var(--accent-soft)}
+.toc .none{color:var(--faint);font-size:13px;padding:4px 8px}
+
+.doc{min-width:0;max-width:78ch}
+.doc-head{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.doc-head .kicker{font:500 12px/1 var(--mono);color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.doc-head p{margin:10px 0 0;color:var(--muted);max-width:65ch}
+.doc h1{font:700 34px/1.15 var(--display);letter-spacing:-.4px;margin:10px 0 0;text-wrap:balance}
+.doc .content>h1:first-child{display:none}
+.doc h2{font:700 25px/1.25 var(--display);letter-spacing:-.2px;margin:46px 0 14px;padding-top:14px;border-top:1px solid var(--rule);text-wrap:balance}
+.doc h3{font:600 19px/1.3 var(--display);margin:32px 0 10px;text-wrap:balance}
+.doc h4{font:600 16px/1.35 var(--body);margin:24px 0 8px}
+.doc h2 .anchor,.doc h3 .anchor{margin-left:8px;font:500 .8em var(--mono);color:var(--faint);text-decoration:none;opacity:0}
+.doc h2:hover .anchor,.doc h3:hover .anchor,.doc .anchor:focus{opacity:1}
+.doc p,.doc li{max-width:72ch}
+.doc ul,.doc ol{padding-left:1.4em}
+.doc li{margin:4px 0}
+.doc li>ul,.doc li>ol{margin:4px 0}
+.doc hr{border:0;border-top:1px solid var(--rule);margin:36px 0}
+.doc hr:has(+ h2){display:none}
+.doc blockquote{margin:18px 0;padding:10px 16px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 6px 6px 0}
+.doc blockquote p{margin:6px 0}
+.doc code{font:13.5px/1.5 var(--mono);background:var(--code);color:var(--code-ink);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.doc pre{position:relative;margin:14px 0;background:var(--code);border:1px solid var(--rule);border-radius:7px;overflow-x:auto}
+.doc pre code{display:block;padding:14px 16px;background:none;border-radius:0;white-space:pre;overflow-wrap:normal;font-size:13px;line-height:1.55}
+.copy{position:absolute;top:7px;right:7px;font:500 12px/1 var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:5px 9px;cursor:pointer;opacity:.9}
+.copy:hover{color:var(--ink);border-color:var(--faint)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:7px;background:var(--surface)}
+.doc table{border-collapse:collapse;width:100%;font-size:14px}
+.doc th,.doc td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+.doc th{font:600 12px/1.3 var(--body);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--ground)}
+.doc tr:last-child td{border-bottom:0}
+.doc td code{white-space:nowrap}
+.status-line{list-style:none;margin-left:-1.4em !important;padding:8px 10px;background:var(--surface);border:1px solid var(--rule);border-radius:7px}
+.status-label{font:600 11px/1 var(--body);text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:6px}
+.badge{display:inline-block;font:600 12px/1 var(--body);padding:4px 8px;border-radius:99px;margin:1px 4px 1px 0;border:1px solid transparent;white-space:nowrap}
+.badge.fixed{color:var(--accent);background:var(--accent-soft)}
+.badge.verified{color:var(--ok);background:var(--ok-soft)}
+.badge.pending{color:var(--warn);background:var(--warn-soft)}
+.badge.config,.badge.info{color:var(--info);background:var(--info-soft)}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.menu{display:none}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:18px 48px}
+  .side{position:static;max-height:none;overflow:visible;padding:0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  .side>details>summary{list-style:none;cursor:pointer;padding:12px 14px;font:600 14px var(--display);color:var(--ink)}
+  .side>details>summary::-webkit-details-marker{display:none}
+  .side>details>summary::after{content:"+";float:right;color:var(--muted)}
+  .side>details[open]>summary::after{content:"\2212"}
+  .side .toc-body{padding:0 12px 12px;max-height:60vh;overflow:auto}
+  .doc h1{font-size:28px}
+  .doc h2{font-size:22px}
+  .tabs a{padding:12px 8px 10px}
+  html{scroll-padding-top:calc(120px + env(safe-area-inset-top, 0px))}
+}
+@media (min-width:961px){
+  .side>details>summary{display:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup" aria-current="page">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-setup" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#1-install-printquota-server-shell">1. Install printquota (server shell)</a></li><li><a href="#2-create-the-first-administrator-web-console">2. Create the first administrator (web console)</a></li><li><a href="#3-share-the-printer-queues-on-the-network-server-shell">3. Share the printer queues on the network (server shell)</a></li><li><a href="#4-tidy-up-the-cups-queues-server-shell">4. Tidy up the CUPS queues (server shell)</a></li><li><a href="#5-add-printers-and-turn-on-quota-enforcement-web-console">5. Add printers and turn on quota enforcement (web console)</a></li><li><a href="#6-create-users-web-console">6. Create users (web console)</a></li><li><a href="#7-configure-settings-and-alerts-web-console">7. Configure settings and alerts (web console)</a></li><li><a href="#8-connect-client-computers">8. Connect client computers</a></li><li><a href="#9-test-the-setup">9. Test the setup</a></li><li><a href="#10-secure-the-deployment">10. Secure the deployment</a></li><li><a href="#upgrading">Upgrading</a></li><li><a href="#health-checks">Health checks</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Setup</div><h1>Setup guide</h1><p>Start here: step-by-step setup, from a fresh server to working print quotas.</p></header><div class="content"><h1 id="setup-guide">Setup guide</h1>
+<p>This guide takes you from a fresh Ubuntu server to working print quotas, in
+order. Each step says where it is done: the <strong>server shell</strong> (a few one-time
+commands) or the <strong>web console</strong> (everything else).</p>
+<ul>
+<li>For the full reference (configuration, console, CLI, security), see the
+<a href="index.html">README</a>.</li>
+<li>If something doesn't behave as described, see
+<a href="known-issues.html">Known issues and troubleshooting</a>.</li>
+</ul>
+<p><strong>Before you start</strong>, you need:</p>
+<ul>
+<li>Ubuntu Server 22.04 LTS or newer, with CUPS and your printers reachable on
+the network. Python 3.10+ is the stock interpreter, so nothing extra is
+needed.</li>
+<li><code>sudo</code> access on the server.</li>
+<li>A fixed IP address for the server and for each printer (e.g. a DHCP
+reservation).</li>
+</ul>
+<p>In the examples below, the server is <code>192.0.2.10</code>, the CUPS queue is
+<code>Office_Printer</code>, and a user signs in to Windows as <code>CORP\J.Doe</code>.
+Substitute your own values.</p>
+<hr />
+<h2 id="1-install-printquota-server-shell">1. Install printquota (server shell)<a class="anchor" href="#1-install-printquota-server-shell" aria-label="Link to this section">#</a></h2>
+<p>Install from a clone of the repository on the server itself. Copying the
+folder from a Windows PC can strip the scripts' executable permissions.</p>
+<pre><code class="language-bash">git clone https://github.com/Emmaceejay/print-quota-system.git
+cd print-quota-system
+chmod +x scripts/*.sh
+sudo ./scripts/install.sh 2&gt;&amp;1 | tail -30
+</code></pre>
+<p>The installer must finish with <strong>&quot;printquota is installed.&quot;</strong> and a setup
+link. Confirm the installation:</p>
+<pre><code class="language-bash">/opt/printquota/bin/pip show printquota | grep Version    # the version you installed
+systemctl is-enabled quota-api quota-accounting            # &quot;enabled&quot; twice
+systemctl status quota-api --no-pager | grep Active       # &quot;active (running)&quot;
+</code></pre>
+<p>If the installer stops early, see
+<a href="known-issues.html#installer-stops-at-installing-os-dependencies">Installer stops at &quot;Installing OS dependencies&quot;</a>.</p>
+<h2 id="2-create-the-first-administrator-web-console">2. Create the first administrator (web console)<a class="anchor" href="#2-create-the-first-administrator-web-console" aria-label="Link to this section">#</a></h2>
+<p>Open the link printed at the end of the installation:</p>
+<pre><code>http://192.0.2.10:8080/setup?token=…
+</code></pre>
+<p>Enter a username, your name, an email address for alerts (optional) and a
+password of at least 8 characters, then click <strong>Create administrator and
+sign in</strong>.</p>
+<ul>
+<li>The link contains a one-time token, and works only until the first
+administrator exists.</li>
+<li>If you've lost it, run <code>sudo grep SETUP_TOKEN /etc/printquota/env</code>, open
+<code>http://192.0.2.10:8080/setup</code> and paste the token.</li>
+</ul>
+<h2 id="3-share-the-printer-queues-on-the-network-server-shell">3. Share the printer queues on the network (server shell)<a class="anchor" href="#3-share-the-printer-queues-on-the-network-server-shell" aria-label="Link to this section">#</a></h2>
+<p>CUPS only accepts connections from the server itself by default. Share it,
+once:</p>
+<pre><code class="language-bash">sudo cupsctl --share-printers --remote-any
+sudo lpadmin -p Office_Printer -o printer-is-shared=true   # repeat for each queue
+sudo ufw allow 631/tcp                                     # only if the ufw firewall is enabled
+</code></pre>
+<h2 id="4-tidy-up-the-cups-queues-server-shell">4. Tidy up the CUPS queues (server shell)<a class="anchor" href="#4-tidy-up-the-cups-queues-server-shell" aria-label="Link to this section">#</a></h2>
+<p>List the queues CUPS knows about:</p>
+<pre><code class="language-bash">lpstat -v
+</code></pre>
+<p>Each line reads <code>device for &lt;queue name&gt;: &lt;device URI&gt;</code>. The <strong>queue name</strong>
+is what users connect to; the <strong>device URI</strong> (for example
+<code>lpd://192.0.2.20/lp</code> or <code>ipp://192.0.2.20/ipp/print</code>) is the printer's
+own address.</p>
+<ul>
+<li><strong>Stop automatic queues.</strong> Queues with <code>implicitclass://</code> URIs are created
+automatically by the <code>cups-browsed</code> service. They bypass quotas and can
+reappear at any time. Turn the service off:<pre><code class="language-bash">sudo systemctl disable --now cups-browsed
+</code></pre>
+</li>
+<li><strong>Remove test or unused queues</strong>, e.g. one whose device URI is
+<code>/dev/null</code>: <code>sudo lpadmin -x &lt;queue name&gt;</code>.</li>
+</ul>
+<h2 id="5-add-printers-and-turn-on-quota-enforcement-web-console">5. Add printers and turn on quota enforcement (web console)<a class="anchor" href="#5-add-printers-and-turn-on-quota-enforcement-web-console" aria-label="Link to this section">#</a></h2>
+<p>Go to <strong>Printers &amp; queues</strong>.</p>
+<ul>
+<li><strong>Existing queue:</strong> click <strong>Turn on</strong>. printquota registers the printer and
+puts the queue behind its quota check.</li>
+<li><strong>New printer:</strong> use <strong>Add a new printer to CUPS</strong>. Give it a short name
+without spaces (e.g. <code>Office_Printer</code>), the device URI
+<code>ipp://&lt;printer-ip&gt;/ipp/print</code>, and the driver <strong>IPP Everywhere</strong>. Tick
+<strong>Turn on quota enforcement straight away</strong>.</li>
+<li><strong>Prices:</strong> use <strong>Edit costs</strong> on each printer. A printer's own price takes
+priority over the default on the Settings page, and applies to jobs
+printed after the change.</li>
+</ul>
+<p>When a queue is enforced, <code>lpstat -v</code> shows its device URI with a <code>quota:</code>
+prefix.</p>
+<h2 id="6-create-users-web-console">6. Create users (web console)<a class="anchor" href="#6-create-users-web-console" aria-label="Link to this section">#</a></h2>
+<p>Create each account with the user's <strong>plain logon name</strong>, e.g. <code>j.doe</code>,
+without a <code>DOMAIN\</code> prefix. Print jobs sent as <code>CORP\J.Doe</code>, <code>J.Doe</code> or
+<code>j.doe@corp.example.com</code> are all matched to <code>j.doe</code>.</p>
+<ul>
+<li>
+<p><strong>A few users:</strong> <strong>Users → Add a user or administrator</strong>.</p>
+</li>
+<li>
+<p><strong>Many users:</strong> <strong>Users → Import users…</strong> (upload a CSV or paste rows,
+preview, then apply). To export Active Directory users in the right
+format, run this on a domain controller or a PC with the AD PowerShell
+module:</p>
+<pre><code class="language-powershell">Get-ADUser -Filter 'Enabled -eq $true' -Properties mail,Department |
+  Select-Object @{n='username';e={$_.SamAccountName}},
+                @{n='display_name';e={$_.Name}},
+                @{n='email';e={$_.mail}},
+                @{n='group';e={$_.Department}} |
+  Export-Csv users.csv -NoTypeInformation -Encoding UTF8
+</code></pre>
+<p>Tick <strong>Create groups that do not exist yet</strong> so each department becomes a
+group.</p>
+</li>
+</ul>
+<p>Imported users don't need a printquota password to print. A password is
+only needed to view their balance in the self-service portal. To use
+directory passwords for the portal, see README §13.</p>
+<h2 id="7-configure-settings-and-alerts-web-console">7. Configure settings and alerts (web console)<a class="anchor" href="#7-configure-settings-and-alerts-web-console" aria-label="Link to this section">#</a></h2>
+<p>On <strong>Settings</strong>, set the default quota and period, the enforcement mode,
+the currency and default prices, and alert delivery (SMTP server or
+webhook). Then click <strong>Send test alert</strong>.</p>
+<h2 id="8-connect-client-computers">8. Connect client computers<a class="anchor" href="#8-connect-client-computers" aria-label="Link to this section">#</a></h2>
+<p>Always connect client computers <strong>by address</strong>, using the server's IP and
+plain <code>http</code>. Don't use printers that Windows discovers by itself: they use
+an encrypted connection that Windows rejects, and jobs never reach the
+server (<a href="known-issues.html#a-users-jobs-never-reach-the-server">details</a>).</p>
+<p><strong>Windows 10/11</strong></p>
+<ol>
+<li>Remove any existing entries for the printer, especially auto-discovered
+ones such as <em>&quot;Office_Printer @ printserver&quot;</em>.</li>
+<li>Check the address in the computer's browser:
+<code>http://192.0.2.10:631/printers/Office_Printer</code>. The printer's CUPS page
+must load.</li>
+<li><strong>Settings → Bluetooth &amp; devices → Printers &amp; scanners → Add device →
+Add manually → Select a shared printer by name</strong>, and enter the same
+address. The queue name is case-sensitive.</li>
+<li>Driver: <strong>Microsoft → Microsoft PS Class Driver</strong>. If it isn't listed, use
+<strong>Generic → MS Publisher Imagesetter</strong>. Don't use the PCL6 or XPS class
+drivers (<a href="known-issues.html#which-windows-driver-to-use">why</a>).</li>
+<li>In <strong>Printing preferences</strong>, set the paper size (e.g. A4).</li>
+</ol>
+<p><strong>macOS:</strong> System Settings → Printers &amp; Scanners → <strong>Add Printer</strong> → <strong>IP</strong>:
+address <code>192.0.2.10</code>, protocol <strong>IPP</strong>, queue <code>printers/Office_Printer</code>.</p>
+<p><strong>Linux:</strong>
+<code>sudo lpadmin -p Office_Printer -E -v ipp://192.0.2.10/printers/Office_Printer -m everywhere</code></p>
+<h2 id="9-test-the-setup">9. Test the setup<a class="anchor" href="#9-test-the-setup" aria-label="Link to this section">#</a></h2>
+<ol>
+<li>In <strong>Users</strong>, open a test user, click <strong>Reset usage and restart period</strong>
+and set the quota to <strong>3</strong>.</li>
+<li>From that user's computer, print <strong>2 pages</strong>. They print, and the user
+shows 2 used and 1 remaining.</li>
+<li>Print <strong>4 pages</strong>. <strong>Nothing prints</strong>, and the job appears in <strong>Reports</strong>
+as denied: <em>quota exceeded</em>.</li>
+<li>On the server, check how pages were counted:<pre><code class="language-bash">sudo journalctl -u cups -n 50 --no-pager | grep -o &quot;method='[^']*'\|pages=[0-9]*&quot;
+</code></pre>
+<code>spool:postscript</code> or <code>spool:pdf</code> means an exact count; <code>fallback</code> means
+a guess (<a href="known-issues.html#jobs-are-counted-as-one-page">see here</a>).</li>
+</ol>
+<h2 id="10-secure-the-deployment">10. Secure the deployment<a class="anchor" href="#10-secure-the-deployment" aria-label="Link to this section">#</a></h2>
+<p>Before relying on the numbers, close the two ways around the quota:</p>
+<ul>
+<li><strong>Printing directly to the printer.</strong> A computer that can reach a
+printer's IP address can add it directly and skip printquota. On each
+printer's web admin page, restrict printing to the server's IP address
+(often called <em>IP filtering</em> or <em>access control</em>), or block it with your
+network firewall. Remove any direct printer connections from client
+computers.</li>
+<li><strong>Printing under someone else's name.</strong> By default CUPS trusts the user
+name each computer sends. Require a login for printing in
+<code>/etc/cups/cupsd.conf</code> (README §20) and restart CUPS. In an Active
+Directory domain, join the server to the domain first (<code>realm join</code>), so
+users authenticate with their domain accounts.</li>
+</ul>
+<hr />
+<h2 id="upgrading">Upgrading<a class="anchor" href="#upgrading" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">cd ~/print-quota-system
+git pull origin main
+sudo ./scripts/install.sh 2&gt;&amp;1 | tail -25
+/opt/printquota/bin/pip show printquota | grep Version    # must show the new version
+</code></pre>
+<p>If the version doesn't change, see
+<a href="known-issues.html#an-upgrade-doesnt-take-effect">An upgrade doesn't take effect</a>.</p>
+<h2 id="health-checks">Health checks<a class="anchor" href="#health-checks" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash"># Version and services
+/opt/printquota/bin/pip show printquota | grep Version
+systemctl is-enabled quota-api quota-accounting
+systemctl status quota-api quota-accounting --no-pager | grep -E &quot;●|Active&quot;
+systemctl list-timers quota-reset.timer quota-backup.timer --no-pager
+
+# Queues (a quota: prefix means enforced) and recent jobs with user names
+lpstat -v
+lpstat -W all -o | tail -20
+
+# Why a job was allowed or refused, and how its pages were counted
+sudo journalctl -u cups -n 50 --no-pager | grep -i printquota
+sudo tail -n 30 /var/log/cups/error_log
+
+# Which computers are connecting, and any failed encrypted connections
+sudo tail -n 20 /var/log/cups/access_log | awk '{print $1, $4, $6, $7}'
+sudo grep -c &quot;Unable to encrypt connection&quot; /var/log/cups/error_log
+
+# Web console and database
+curl -s http://localhost:8080/healthz                     # {&quot;status&quot;:&quot;ok&quot;}
+
+# Permissions the web console needs to manage queues
+id printquota                                              # includes lp and lpadmin
+ls -l /usr/lib/cups/backend/quota                          # -rwx------ root root
+</code></pre>
+</div><footer class="foot">Generated from <code>docs/setup.md</code> by <code>scripts/build_docs.py</code>. Edit the Markdown, then re-run the script.</footer></main></div><script>
+(function(){
+  function copyText(btn, text){
+    function done(ok){btn.textContent = ok ? 'Copied' : 'Select + Ctrl+C'; setTimeout(function(){btn.textContent='Copy';}, 1600);}
+    try{
+      navigator.clipboard.writeText(text).then(function(){done(true);}, function(){select(btn); done(false);});
+    }catch(e){select(btn); done(false);}
+  }
+  function select(btn){
+    var code = btn.parentNode.querySelector('code'); var r = document.createRange();
+    r.selectNodeContents(code); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  document.querySelectorAll('.doc pre').forEach(function(pre){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+    b.addEventListener('click', function(){copyText(b, pre.querySelector('code').innerText);});
+    pre.appendChild(b);
+  });
+
+  // Filter the contents list by what the reader types (e.g. "TLS", "driver", "price").
+  document.querySelectorAll('.side').forEach(function(side){
+    var box = side.querySelector('.find'); if(!box) return;
+    box.addEventListener('input', function(){
+      var q = box.value.trim().toLowerCase(); var any = false;
+      side.querySelectorAll('.toc>li').forEach(function(li){
+        var subs = li.querySelectorAll('ul>li'); var subHit = false;
+        subs.forEach(function(s){ var hit = !q || s.textContent.toLowerCase().indexOf(q) > -1; s.hidden = !hit; subHit = subHit || (hit && !!q); });
+        var own = li.querySelector('a').textContent.toLowerCase().indexOf(q) > -1;
+        var show = !q || own || subHit;
+        if(show && own && q){ subs.forEach(function(s){ s.hidden = false; }); }
+        li.hidden = !show; any = any || show;
+      });
+      var none = side.querySelector('.none'); if(none) none.hidden = any;
+    });
+  });
+
+  // Tabs for the single-page edition: one document visible at a time.
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.docsec'));
+  function show(sec, target){
+    sections.forEach(function(s){ s.hidden = s !== sec; });
+    document.querySelectorAll('.tabs a').forEach(function(a){
+      if(a.getAttribute('data-doc') === sec.id){ a.setAttribute('aria-current','page'); } else { a.removeAttribute('aria-current'); }
+    });
+    if(target && target !== sec){ target.scrollIntoView(); } else { window.scrollTo(0, 0); }
+  }
+  function route(){
+    if(!sections.length) return;
+    var id = decodeURIComponent(location.hash.slice(1)); var el = id && document.getElementById(id);
+    if(!el){ show(sections[0]); return; }
+    var sec = el.closest('section.docsec') || el; show(sec, el);
+  }
+  if(sections.length){ window.addEventListener('hashchange', route); route(); }
+
+  // Highlight where the reader is in the contents list.
+  if('IntersectionObserver' in window){
+    var links = {}; document.querySelectorAll('.toc a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          document.querySelectorAll('.toc a.here').forEach(function(a){ a.classList.remove('here'); });
+          var a = links[e.target.id]; if(a) a.classList.add('here');
+        }
+      });
+    }, {rootMargin:'-80px 0px -70% 0px'});
+    document.querySelectorAll('.doc h2[id], .doc h3[id]').forEach(function(h){ io.observe(h); });
+  }
+})();
+</script></body></html>

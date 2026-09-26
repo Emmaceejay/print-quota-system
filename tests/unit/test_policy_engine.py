@@ -18,7 +18,7 @@ from printquota.policies.engine import (
 
 
 def ctx(**kwargs) -> JobContext:
-    base = dict(username="ceejay", printer="hp-mono", estimated_pages=10, group_name="finance")
+    base = dict(username="alex", printer="hp-mono", estimated_pages=10, group_name="finance")
     base.update(kwargs)
     return JobContext(**base)
 
@@ -62,7 +62,7 @@ def test_user_scope_overrides_group_and_global():
     rules = [
         PolicyRule("global", None, "block_color", "true"),
         PolicyRule("group", "finance", "block_color", "true"),
-        PolicyRule("user", "ceejay", "block_color", "false"),
+        PolicyRule("user", "alex", "block_color", "false"),
     ]
     winner = resolve_rules(rules, ctx())["block_color"]
     assert winner.scope_type == "user"

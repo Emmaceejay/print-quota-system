@@ -6,7 +6,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0] - 2026-09-22
 
-Initial release: Phases 1-8 of the build plan.
+Initial release.
 
 ### Added
 
@@ -199,8 +199,15 @@ is optional.
 
 ## Unreleased
 
+### Documentation
+
+- The setup guide and the issue log are now separate documents:
+  `docs/setup.md` (step-by-step setup) and `docs/known-issues.md` (known
+  issues and troubleshooting), written for general use.
+- The documentation can be read online as one formatted page, linked from
+  the README.
+
 ### Planned
 
-- Phase 9: AD/LDAP group synchronisation driven by the existing hook.
-- Phase 10: hardening pass once real traffic exists.
-- Phase 11 (stretch): secure/pull printing, client-side confirmation popup.
+- Automatic group synchronisation from AD/LDAP, using the existing directory hook.
+- Secure (pull) printing and a client-side confirmation prompt.

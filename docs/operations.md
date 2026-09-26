@@ -2,28 +2,18 @@
 
 ## Rolling out safely
 
-Do not wrap every queue at once. The sequence that avoids surprises:
+Follow the [setup guide](setup.md). For a low-risk rollout, don't enforce every queue
+at once:
 
-1. **Install, seed nobody.** `sudo ./scripts/install.sh`, then
-   `quotactl db init --admin <you>`. Nothing is enforced yet: the wrapper is
-   installed but no queue points at it.
-2. **Register printers with their real device URIs.**
-   `quotactl printer add <queue> --device-uri <uri> --mono 2 --color 10`.
-   Get the URI from `lpstat -v`.
-3. **Create users with a generous quota** (or a very large one) so the first
-   week only *measures*. `quotactl user add <name> --quota 100000`.
-4. **Wrap one low-risk queue.** `sudo ./scripts/register_backend.sh <queue>`
-   Print a test page. Confirm with `quotactl usage --days 1` and
-   `journalctl -u cups -n 50`.
-5. **Compare estimate to actual for a few days.** In the reports, the
-   estimated and actual page columns should track closely. Large gaps point
-   at a driver that recomposes jobs — see below.
-6. **Lower quotas to real values**, then wrap the remaining queues.
-7. **Turn on `Require valid-user`** in `cupsd.conf` (see
-   [architecture.md](architecture.md#trusting-the-user-name)) before you
-   depend on the numbers.
+1. Give users a very large quota at first, so the first week only *measures* usage.
+2. Turn on enforcement for one low-risk queue and print a test page. Confirm it in
+   **Reports** and with `journalctl -u cups -n 50`.
+3. Check for a few days that page counts are exact (setup guide, step 9).
+4. Lower quotas to real values, then turn on the remaining queues.
+5. Secure the deployment (setup guide, step 10) before relying on the numbers.
 
-Undo for any queue: `sudo ./scripts/register_backend.sh <queue> --undo`.
+To stop enforcing a queue, click **Turn off** in **Printers & queues**, or run
+`sudo ./scripts/register_backend.sh <queue> --undo`.
 
 ## Troubleshooting
 
@@ -57,38 +47,33 @@ cupsenable <queue>
 `/var/lib/printquota/printquota.db` (the backend runs as root; the services
 run as `printquota`).
 
-### Balances do not move after printing
+### Balances look wrong after printing
 
-The accounting daemon is not seeing `page_log`:
+Charges are made **before** printing, from the page count of the submitted
+document, and corrected afterwards from CUPS's `page_log` when there is one.
+Many drivers never report pages, so there may be no `page_log` at all. That
+is normal (see [known issues](known-issues.md#there-is-no-page_log-file)).
 
-```bash
-systemctl status quota-accounting
-sudo -u printquota head /var/log/cups/page_log     # must be readable
-grep PageLogFormat /etc/cups/cupsd.conf            # leave it at the default
-```
-
-The daemon expects the default `PageLogFormat`. If you have customised it,
-restore the default or adjust `_LINE_RE` in
-`src/printquota/accounting/daemon.py`.
-
-### Estimates are consistently wrong
-
-`pdfinfo` gives an exact count for PDF. Windows drivers that send PCL or
-raw data give a weaker estimate (form feeds or a fallback of one page). The
-daemon still corrects the charge from `page_log`, so billing stays right —
-only the pre-flight *block* is approximate. If pre-flight accuracy matters,
-point clients at the IPP Everywhere / driverless queue so jobs arrive as
-PDF.
-
-### A user was charged for a job that jammed
-
-Refund it from the CLI's reconciliation path or by resetting the user:
+To see how recent jobs were counted:
 
 ```bash
-quotactl user show <name>        # find the job
-quotactl user set-quota <name> <higher>   # or
-quotactl user reset <name>
+sudo journalctl -u cups -n 50 --no-pager | grep -o "method='[^']*'\|pages=[0-9]*"
 ```
+
+`spool:postscript` and `spool:pdf` are exact. A method ending in `fallback`
+means the document couldn't be counted: check the client's driver
+([known issues](known-issues.md#which-windows-driver-to-use)).
+
+If `page_log` exists, the daemon expects the default `PageLogFormat`. Leave
+it at the default in `cupsd.conf`.
+
+### A user was charged for a job that didn't print
+
+There is no per-job refund. Give the pages back through the user's quota,
+in **Users** → the user:
+
+- raise their quota by the number of pages, or
+- click **Reset usage and restart period**.
 
 Both are recorded in the audit log.
 

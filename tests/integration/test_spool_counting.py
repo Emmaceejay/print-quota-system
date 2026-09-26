@@ -54,7 +54,7 @@ def put_job(env, job_id: int, documents: list[bytes], **attrs) -> None:
     (env["spool_dir"] / f"c{job_id:05d}").write_bytes(ipp_control_file(**attrs))
 
 
-def run_through_driver(env, monkeypatch, job_id: int = 41, user: str = "ceejay", copies: str = "1") -> int:
+def run_through_driver(env, monkeypatch, job_id: int = 41, user: str = "alex", copies: str = "1") -> int:
     """Invoke the backend the way CUPS does for a driver queue: 6 args, data on stdin."""
     received = env["tmp_path"] / "driver-output.bin"
     received.write_bytes(DRIVER_OUTPUT)
@@ -67,7 +67,7 @@ def run_through_driver(env, monkeypatch, job_id: int = 41, user: str = "ceejay",
 # ---------------------------------------------------------------- the reported bug
 def test_a_4_page_job_with_3_pages_left_is_refused_before_printing(seeded, monkeypatch, capsys):
     with db_session.session_scope() as session:
-        user = session.get(User, "ceejay")
+        user = session.get(User, "alex")
         user.quota_limit, user.pages_used = 3, 0
     put_job(seeded, 41, [windows_postscript(4)])
 
@@ -76,7 +76,7 @@ def test_a_4_page_job_with_3_pages_left_is_refused_before_printing(seeded, monke
     assert rc == qb.CUPS_BACKEND_CANCEL
     assert "4 page(s) requested" in capsys.readouterr().err
     with db_session.session_scope() as session:
-        assert session.get(User, "ceejay").pages_used == 0
+        assert session.get(User, "alex").pages_used == 0
         assert session.query(PrintJob).one().status == PrintJob.STATUS_DENIED
 
 
@@ -86,7 +86,7 @@ def test_an_allowed_job_is_charged_its_real_page_count(seeded, monkeypatch):
     with db_session.session_scope() as session:
         job = session.query(PrintJob).one()
         assert job.estimated_pages == 4
-        assert session.get(User, "ceejay").pages_used == 4
+        assert session.get(User, "alex").pages_used == 4
 
 
 def test_copies_come_from_the_job_not_the_driver(seeded, monkeypatch):
@@ -100,7 +100,7 @@ def test_without_spool_files_the_received_data_is_still_used(seeded, monkeypatch
     received = seeded["tmp_path"] / "plain.txt"
     received.write_text("line\n" * 130)  # 3 pages of text
     monkeypatch.setattr(qb, "_stdin_to_tempfile", lambda: received)
-    qb.run(["quota", "44", "ceejay", "notes", "1", ""],
+    qb.run(["quota", "44", "alex", "notes", "1", ""],
            {**os.environ, "PRINTER": "hp-mono", "DEVICE_URI": "quota:socket://10.0.0.5:9100"})
     with db_session.session_scope() as session:
         assert session.query(PrintJob).one().estimated_pages == 3

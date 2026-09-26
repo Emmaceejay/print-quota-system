@@ -24,7 +24,7 @@ PRINTERS = [
     ("color-mfp", "ipp://10.0.0.6/ipp/print", 2.0, 10.0, True, 0.4),
 ]
 USERS = [
-    ("ceejay", "Ceejay", "finance", 500, True),
+    ("alex", "Alex", "finance", 500, True),
     ("ada", "Ada Obi", "engineering", 800, False),
     ("tunde", "Tunde Bello", "engineering", 800, False),
     ("reception", "Front Desk", "reception", 200, False),

@@ -33,11 +33,11 @@ def test_low_balance_alert_fires_once_within_the_cooldown(seeded, monkeypatch):
     sent: list = []
     _enable_webhook(monkeypatch, seeded["settings_path"], sent)
     with db_session.session_scope() as session:
-        session.get(User, "ceejay").pages_used = 95  # 5 left, threshold 10
+        session.get(User, "alex").pages_used = 95  # 5 left, threshold 10
     with db_session.session_scope() as session:
-        assert alerts.notify_balance_state(session, "ceejay") is not None
+        assert alerts.notify_balance_state(session, "alex") is not None
     with db_session.session_scope() as session:
-        assert alerts.notify_balance_state(session, "ceejay") is None
+        assert alerts.notify_balance_state(session, "alex") is None
     assert len(sent) == 1 and sent[0]["type"] == AlertLog.TYPE_LOW_BALANCE
 
 
@@ -45,9 +45,9 @@ def test_over_quota_alert_supersedes_low_balance(seeded, monkeypatch):
     sent: list = []
     _enable_webhook(monkeypatch, seeded["settings_path"], sent)
     with db_session.session_scope() as session:
-        session.get(User, "ceejay").pages_used = 100
+        session.get(User, "alex").pages_used = 100
     with db_session.session_scope() as session:
-        alerts.notify_balance_state(session, "ceejay")
+        alerts.notify_balance_state(session, "alex")
     assert sent[0]["type"] == AlertLog.TYPE_OVER_QUOTA
 
 
@@ -55,7 +55,7 @@ def test_no_alert_while_the_balance_is_healthy(seeded, monkeypatch):
     sent: list = []
     _enable_webhook(monkeypatch, seeded["settings_path"], sent)
     with db_session.session_scope() as session:
-        assert alerts.notify_balance_state(session, "ceejay") is None
+        assert alerts.notify_balance_state(session, "alex") is None
     assert sent == []
 
 
@@ -63,23 +63,23 @@ def test_cooldown_expires(seeded, monkeypatch):
     sent: list = []
     _enable_webhook(monkeypatch, seeded["settings_path"], sent)
     with db_session.session_scope() as session:
-        session.get(User, "ceejay").pages_used = 95
+        session.get(User, "alex").pages_used = 95
         session.add(
             AlertLog(
-                username="ceejay",
+                username="alex",
                 alert_type=AlertLog.TYPE_LOW_BALANCE,
                 sent_at=utcnow() - dt.timedelta(hours=30),
             )
         )
     with db_session.session_scope() as session:
-        assert alerts.notify_balance_state(session, "ceejay") is not None
+        assert alerts.notify_balance_state(session, "alex") is not None
 
 
 def test_alerts_disabled_means_nothing_is_sent(seeded):
     with db_session.session_scope() as session:
-        session.get(User, "ceejay").pages_used = 100
+        session.get(User, "alex").pages_used = 100
     with db_session.session_scope() as session:
-        assert alerts.notify_balance_state(session, "ceejay") is None
+        assert alerts.notify_balance_state(session, "alex") is None
 
 
 def test_a_failing_transport_is_logged_not_raised(seeded, monkeypatch):
@@ -87,14 +87,14 @@ def test_a_failing_transport_is_logged_not_raised(seeded, monkeypatch):
     _enable_webhook(monkeypatch, seeded["settings_path"], sent)
     monkeypatch.setattr(alerts, "_send_webhook", lambda settings, payload: False)
     with db_session.session_scope() as session:
-        session.get(User, "ceejay").pages_used = 100
+        session.get(User, "alex").pages_used = 100
     with db_session.session_scope() as session:
-        entry = alerts.notify_balance_state(session, "ceejay")
+        entry = alerts.notify_balance_state(session, "alex")
         assert entry is not None and entry.delivered is False
 
 
 def test_audit_entries_serialise_structured_details(seeded):
     with db_session.session_scope() as session:
-        entry = record_audit(session, "root", "user.set_quota", "ceejay", {"from": 1, "to": 2})
+        entry = record_audit(session, "root", "user.set_quota", "alex", {"from": 1, "to": 2})
         session.flush()
         assert '"from": 1' in entry.details

@@ -113,9 +113,9 @@ def seeded(env):
         )
         session.add(
             User(
-                username="ceejay",
-                display_name="Ceejay",
-                email="ceejay@example.com",
+                username="alex",
+                display_name="Alex",
+                email="alex@example.com",
                 group_name="finance",
                 quota_limit=100,
                 low_balance_threshold=10,
@@ -152,7 +152,7 @@ def admin_client(seeded):
     from printquota.db.models import User
 
     with db_session.session_scope() as session:
-        admin = session.get(User, "ceejay")
+        admin = session.get(User, "alex")
         admin.is_admin = True
         admin.password_hash = hash_password("s3cret")
         member = session.get(User, "ada")
@@ -160,7 +160,7 @@ def admin_client(seeded):
 
     client = TestClient(create_app())
     response = client.post(
-        "/login", data={"username": "ceejay", "password": "s3cret", "next_url": "/admin"},
+        "/login", data={"username": "alex", "password": "s3cret", "next_url": "/admin"},
         follow_redirects=False,
     )
     assert response.status_code == 303, response.text

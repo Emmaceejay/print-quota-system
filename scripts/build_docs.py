@@ -43,8 +43,10 @@ class Doc:
 
 
 DOCS = (
-    Doc("setup-and-issues", "docs/setup-and-issues.md", "Setup & issue log",
-        "Start here: step-by-step setup for a new server, and every issue met so far with its fix."),
+    Doc("setup", "docs/setup.md", "Setup",
+        "Start here: step-by-step setup, from a fresh server to working print quotas."),
+    Doc("known-issues", "docs/known-issues.md", "Known issues",
+        "Problems you may run into, with the cause and the resolution for each."),
     Doc("index", "README.md", "Reference",
         "The full reference: how printquota works, configuration, console, CLI, security and troubleshooting."),
     Doc("architecture", "docs/architecture.md", "Architecture",
@@ -318,7 +320,7 @@ JS = r"""
     pre.appendChild(b);
   });
 
-  // Filter the contents list by what the reader types (e.g. "TLS", "B22", "price").
+  // Filter the contents list by what the reader types (e.g. "TLS", "driver", "price").
   document.querySelectorAll('.side').forEach(function(side){
     var box = side.querySelector('.find'); if(!box) return;
     box.addEventListener('input', function(){
@@ -381,7 +383,7 @@ def _side(r: Rendered) -> str:
     return (
         '<aside class="side" aria-label="Contents"><details open><summary>Contents</summary>'
         '<div class="toc-body">'
-        f'<input class="find" type="search" id="find-{r.doc.slug}" placeholder="Filter contents (e.g. TLS, B22, price)" '
+        f'<input class="find" type="search" id="find-{r.doc.slug}" placeholder="Filter contents (e.g. TLS, driver, price)" '
         'aria-label="Filter the contents list">'
         f'{_toc_html(r.toc)}<p class="none" hidden>No section matches.</p></div></details></aside>'
     )
@@ -407,7 +409,7 @@ def _tabs(active: Doc | None, single: bool) -> str:
 
 
 def _topbar(active: Doc | None, single: bool, version: str) -> str:
-    home = "#doc-setup-and-issues" if single else "setup-and-issues.html"
+    home = "#doc-setup" if single else "setup.html"
     return (f'<header class="topbar"><div class="topbar-inner"><a class="brand" href="{home}"><b>printquota</b>'
             f'<span>docs {html.escape(version)}</span></a><nav aria-label="Documents">{_tabs(active, single)}</nav>'
             "</div></header>")

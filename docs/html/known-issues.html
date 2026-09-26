@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Known issues and troubleshooting · printquota</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"><style>
+:root{
+  --ground:#F4F6F9; --surface:#FFFFFF; --ink:#172033; --muted:#5A6478; --faint:#8C95A6;
+  --rule:#DAE0E8; --accent:#0B6E99; --accent-soft:#E3F1F8; --code:#EEF2F6; --code-ink:#1E2A3D;
+  --ok:#13795B; --ok-soft:#E4F4EE; --warn:#9A5B00; --warn-soft:#FBF1E0; --info:#4B5566; --info-soft:#EDF0F4;
+  --mark:#FFF3B0;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  --display:"IBM Plex Sans Condensed","Arial Narrow","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+    --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+    --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+    --mark:#5A4A0A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+  --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+  --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+  --mark:#5A4A0A;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(76px + env(safe-area-inset-top, 0px))}
+body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.65 var(--body);-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--rule)}
+.topbar-inner{max-width:1320px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;min-height:56px}
+.brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink);padding-block:10px}
+.brand b{font:700 19px/1 var(--display);letter-spacing:-.2px}
+.brand span{font:500 12px/1 var(--mono);color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.tabs a{display:block;padding:17px 10px 15px;font:600 14px/1 var(--display);letter-spacing:.2px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.layout{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:48px}
+.side{position:sticky;top:calc(76px + env(safe-area-inset-top, 0px));align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px}
+.side .find{width:100%;font:14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin-bottom:12px}
+.side .find::placeholder{color:var(--faint)}
+.toc,.toc ul{list-style:none;margin:0;padding:0}
+.toc>li{margin:2px 0}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:13.5px;line-height:1.4}
+.toc a:hover{background:var(--accent-soft);color:var(--ink)}
+.toc>li>a{color:var(--ink);font-weight:500}
+.toc ul{margin:2px 0 6px 10px;border-left:1px solid var(--rule);padding-left:6px}
+.toc a.here{color:var(--accent);background:var(--accent-soft)}
+.toc .none{color:var(--faint);font-size:13px;padding:4px 8px}
+
+.doc{min-width:0;max-width:78ch}
+.doc-head{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.doc-head .kicker{font:500 12px/1 var(--mono);color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.doc-head p{margin:10px 0 0;color:var(--muted);max-width:65ch}
+.doc h1{font:700 34px/1.15 var(--display);letter-spacing:-.4px;margin:10px 0 0;text-wrap:balance}
+.doc .content>h1:first-child{display:none}
+.doc h2{font:700 25px/1.25 var(--display);letter-spacing:-.2px;margin:46px 0 14px;padding-top:14px;border-top:1px solid var(--rule);text-wrap:balance}
+.doc h3{font:600 19px/1.3 var(--display);margin:32px 0 10px;text-wrap:balance}
+.doc h4{font:600 16px/1.35 var(--body);margin:24px 0 8px}
+.doc h2 .anchor,.doc h3 .anchor{margin-left:8px;font:500 .8em var(--mono);color:var(--faint);text-decoration:none;opacity:0}
+.doc h2:hover .anchor,.doc h3:hover .anchor,.doc .anchor:focus{opacity:1}
+.doc p,.doc li{max-width:72ch}
+.doc ul,.doc ol{padding-left:1.4em}
+.doc li{margin:4px 0}
+.doc li>ul,.doc li>ol{margin:4px 0}
+.doc hr{border:0;border-top:1px solid var(--rule);margin:36px 0}
+.doc hr:has(+ h2){display:none}
+.doc blockquote{margin:18px 0;padding:10px 16px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 6px 6px 0}
+.doc blockquote p{margin:6px 0}
+.doc code{font:13.5px/1.5 var(--mono);background:var(--code);color:var(--code-ink);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.doc pre{position:relative;margin:14px 0;background:var(--code);border:1px solid var(--rule);border-radius:7px;overflow-x:auto}
+.doc pre code{display:block;padding:14px 16px;background:none;border-radius:0;white-space:pre;overflow-wrap:normal;font-size:13px;line-height:1.55}
+.copy{position:absolute;top:7px;right:7px;font:500 12px/1 var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:5px 9px;cursor:pointer;opacity:.9}
+.copy:hover{color:var(--ink);border-color:var(--faint)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:7px;background:var(--surface)}
+.doc table{border-collapse:collapse;width:100%;font-size:14px}
+.doc th,.doc td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+.doc th{font:600 12px/1.3 var(--body);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--ground)}
+.doc tr:last-child td{border-bottom:0}
+.doc td code{white-space:nowrap}
+.status-line{list-style:none;margin-left:-1.4em !important;padding:8px 10px;background:var(--surface);border:1px solid var(--rule);border-radius:7px}
+.status-label{font:600 11px/1 var(--body);text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:6px}
+.badge{display:inline-block;font:600 12px/1 var(--body);padding:4px 8px;border-radius:99px;margin:1px 4px 1px 0;border:1px solid transparent;white-space:nowrap}
+.badge.fixed{color:var(--accent);background:var(--accent-soft)}
+.badge.verified{color:var(--ok);background:var(--ok-soft)}
+.badge.pending{color:var(--warn);background:var(--warn-soft)}
+.badge.config,.badge.info{color:var(--info);background:var(--info-soft)}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.menu{display:none}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:18px 48px}
+  .side{position:static;max-height:none;overflow:visible;padding:0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  .side>details>summary{list-style:none;cursor:pointer;padding:12px 14px;font:600 14px var(--display);color:var(--ink)}
+  .side>details>summary::-webkit-details-marker{display:none}
+  .side>details>summary::after{content:"+";float:right;color:var(--muted)}
+  .side>details[open]>summary::after{content:"\2212"}
+  .side .toc-body{padding:0 12px 12px;max-height:60vh;overflow:auto}
+  .doc h1{font-size:28px}
+  .doc h2{font-size:22px}
+  .tabs a{padding:12px 8px 10px}
+  html{scroll-padding-top:calc(120px + env(safe-area-inset-top, 0px))}
+}
+@media (min-width:961px){
+  .side>details>summary{display:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues" aria-current="page">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-known-issues" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#troubleshooting">Troubleshooting</a><ul><li><a href="#a-users-jobs-never-reach-the-server">A user&#x27;s jobs never reach the server</a></li><li><a href="#adding-a-printer-by-address-fails">Adding a printer by address fails</a></li><li><a href="#jobs-are-cancelled-with-no-print-account-for-this-user">Jobs are cancelled with &quot;no print account for this user&quot;</a></li><li><a href="#jobs-are-refused-with-matches-more-than-one-print-account">Jobs are refused with &quot;matches more than one print account&quot;</a></li><li><a href="#which-windows-driver-to-use">Which Windows driver to use</a></li><li><a href="#jobs-are-counted-as-one-page">Jobs are counted as one page</a></li><li><a href="#there-is-no-page_log-file">There is no page_log file</a></li><li><a href="#a-new-price-doesnt-appear-in-reports">A new price doesn&#x27;t appear in Reports</a></li><li><a href="#forbidden-when-turning-on-a-queue-or-adding-a-printer">&quot;Forbidden&quot; when turning on a queue or adding a printer</a></li><li><a href="#automatic-implicitclass-queues-keep-appearing">Automatic &quot;implicitclass&quot; queues keep appearing</a></li><li><a href="#an-upgrade-doesnt-take-effect">An upgrade doesn&#x27;t take effect</a></li><li><a href="#installer-stops-at-installing-os-dependencies">Installer stops at &quot;Installing OS dependencies&quot;</a></li><li><a href="#the-web-console-is-unavailable-after-a-reboot">The web console is unavailable after a reboot</a></li><li><a href="#nobody-can-sign-in-to-the-console">Nobody can sign in to the console</a></li><li><a href="#permission-denied-when-running-the-scripts">&quot;Permission denied&quot; when running the scripts</a></li><li><a href="#messages-in-the-cups-error-log-that-are-harmless">Messages in the CUPS error log that are harmless</a></li></ul></li><li><a href="#resolved-in-earlier-releases">Resolved in earlier releases</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Known issues</div><h1>Known issues and troubleshooting</h1><p>Problems you may run into, with the cause and the resolution for each.</p></header><div class="content"><h1 id="known-issues-and-troubleshooting">Known issues and troubleshooting</h1>
+<p>Problems you may run into when deploying or running printquota, with the
+cause and the resolution for each. Start with the section whose symptom
+matches what you see.</p>
+<p><strong>First, check the installed version</strong> matches the latest release in the
+<a href="changelog.html">changelog</a>. Several problems below are fixed in newer
+versions.</p>
+<pre><code class="language-bash">/opt/printquota/bin/pip show printquota | grep Version
+</code></pre>
+<p>For setup steps, see the <a href="setup.html">setup guide</a>. The <a href="setup.html#health-checks">Health checks</a>
+there are a good first diagnostic.</p>
+<hr />
+<h2 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
+<h3 id="a-users-jobs-never-reach-the-server">A user's jobs never reach the server<a class="anchor" href="#a-users-jobs-never-reach-the-server" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> One user can't print, although their account is active and has
+pages left. <code>lpstat -W all -o &lt;queue&gt;</code> on the server shows no new job from
+them, so printquota never sees the job. On their computer, the job sits in
+the print queue with <em>Error</em>. The CUPS error log shows lines such as:</p>
+<pre><code>E [...] [Client 775] Unable to encrypt connection: A TLS fatal alert has been received.
+</code></pre>
+<p><strong>Cause.</strong> The computer uses a printer that Windows discovered by itself
+(e.g. <em>&quot;Office_Printer @ printserver&quot;</em>). Such printers connect over an
+encrypted connection (<code>ipps</code>/<code>https</code>). CUPS presents a self-signed
+certificate, Windows rejects it, and the job fails before it is sent.</p>
+<p><strong>Resolution.</strong></p>
+<ol>
+<li>On the computer, remove <strong>every</strong> entry for the printer, including the
+auto-discovered one, and cancel anything stuck in its queue.</li>
+<li>Open <code>http://&lt;server-ip&gt;:631/printers/&lt;queue&gt;</code> in the computer's browser.
+If the page doesn't load, see
+<a href="#adding-a-printer-by-address-fails">Adding a printer by address fails</a>.</li>
+<li>Add the printer by address, as described in
+<a href="setup.html#8-connect-client-computers">setup step 8</a>, with the
+<strong>Microsoft PS Class Driver</strong>.</li>
+</ol>
+<p>To confirm which computer is failing, compare the IP addresses in
+<code>/var/log/cups/access_log</code> at the time of the errors with the computer's
+address (<code>ipconfig</code>).</p>
+<h3 id="adding-a-printer-by-address-fails">Adding a printer by address fails<a class="anchor" href="#adding-a-printer-by-address-fails" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> Windows reports that the printer name is incorrect or can't be
+found when you enter <code>http://&lt;server-ip&gt;:631/printers/&lt;queue&gt;</code>.</p>
+<p><strong>Cause.</strong> Either the address is not exactly right, or the computer can't
+reach the server on port 631.</p>
+<p><strong>Resolution.</strong></p>
+<ul>
+<li>Open the same address in the computer's browser. If the CUPS page for the
+printer loads, copy the address from the browser. The queue name is
+case-sensitive, and the address must use <code>http</code>, not <code>https</code>.</li>
+<li>If it doesn't load, test the connection in PowerShell:
+<code>Test-NetConnection &lt;server-ip&gt; -Port 631</code>. If <code>TcpTestSucceeded</code> is
+<code>False</code>, a firewall, antivirus product or network segment is blocking the
+port.</li>
+<li>If the computer uses a web proxy, add the server's address to the proxy
+exceptions.</li>
+<li>Make sure the queue is shared (<a href="setup.html#3-share-the-printer-queues-on-the-network-server-shell">setup step 3</a>).</li>
+</ul>
+<h3 id="jobs-are-cancelled-with-no-print-account-for-this-user">Jobs are cancelled with &quot;no print account for this user&quot;<a class="anchor" href="#jobs-are-cancelled-with-no-print-account-for-this-user" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> The CUPS error log shows
+<code>[Job N] print job denied: no print account for this user</code>, followed by
+<code>Backend returned status 5 (cancel job)</code>. The job does not appear in
+<strong>Reports</strong>.</p>
+<p><strong>Cause.</strong> No printquota account matches the name the computer sent.
+Printing through the server is working; only the account is missing.</p>
+<p><strong>Resolution.</strong> Find the name that was sent:</p>
+<pre><code class="language-bash">lpstat -W all -o &lt;queue&gt; | tail
+</code></pre>
+<p>The second column is the user name. Create the account with the plain
+logon name. Capitals and a <code>DOMAIN\</code> prefix don't matter: jobs sent as
+<code>CORP\J.Doe</code>, <code>J.Doe</code> or <code>j.doe@corp.example.com</code> all match the account
+<code>j.doe</code> (version 0.2.4 and later).</p>
+<h3 id="jobs-are-refused-with-matches-more-than-one-print-account">Jobs are refused with &quot;matches more than one print account&quot;<a class="anchor" href="#jobs-are-refused-with-matches-more-than-one-print-account" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause.</strong> Two accounts differ only in capital letters (for example <code>j.doe</code>
+and <code>J.Doe</code>), so printquota can't tell which one a job belongs to. It
+refuses the job rather than guessing.</p>
+<p><strong>Resolution.</strong> Keep one account and delete the other. Move its quota
+first if needed. Current versions don't allow creating such duplicates.</p>
+<h3 id="which-windows-driver-to-use">Which Windows driver to use<a class="anchor" href="#which-windows-driver-to-use" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> Jobs fail, print garbage, or are counted as a single page.</p>
+<p><strong>Cause.</strong> When a printer is added by address, Windows offers generic class
+drivers. The CUPS queue converts the job for the printer, and printquota
+counts its pages, so the job must arrive in a format both can read.</p>
+<p><strong>Resolution.</strong> Use <strong>Microsoft PS Class Driver</strong> (PostScript). If it isn't
+listed, use <strong>Generic → MS Publisher Imagesetter</strong>. Don't use:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Driver</th>
+<th>Why not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Microsoft PCL6 Class Driver</td>
+<td>CUPS can't convert PCL input</td>
+</tr>
+<tr>
+<td>Microsoft MS-XPS / OpenXPS Class Driver</td>
+<td>CUPS can't read XPS</td>
+</tr>
+</tbody>
+</table></div>
+<p>To check whether a queue has a driver on the server, run
+<code>lpstat -l -p &lt;queue&gt; | grep -i interface</code>. A <code>.ppd</code> file means the server
+converts jobs, so no printer-specific driver is needed on client computers.
+No <code>.ppd</code> means a raw queue: either install the printer's own driver on
+every client, or convert the queue to a driverless one:</p>
+<pre><code class="language-bash">sudo lpadmin -p &lt;queue&gt; -E -v ipp://&lt;printer-ip&gt;/ipp/print -m everywhere
+</code></pre>
+<p>Then click <strong>Turn on</strong> for the queue again in <strong>Printers &amp; queues</strong>.</p>
+<h3 id="jobs-are-counted-as-one-page">Jobs are counted as one page<a class="anchor" href="#jobs-are-counted-as-one-page" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> Multi-page jobs are charged as one page, and over-quota jobs
+print.</p>
+<p><strong>Cause.</strong> The document couldn't be counted before printing: an
+uncountable format (PCL6 or XPS driver), or the CUPS spool directory
+couldn't be read. Versions before 0.2.1 also counted every job on a queue
+with a driver as one page.</p>
+<p><strong>Resolution.</strong> Check how recent jobs were counted:</p>
+<pre><code class="language-bash">sudo journalctl -u cups -n 50 --no-pager | grep -o &quot;method='[^']*'\|pages=[0-9]*&quot;
+</code></pre>
+<p><code>spool:postscript</code> and <code>spool:pdf</code> are exact. A method ending in
+<code>fallback</code> is a guess: switch the client to the
+<a href="#which-windows-driver-to-use">recommended driver</a>. If CUPS uses a
+non-default spool directory (<code>RequestRoot</code>), set <code>printing.spool_dir</code> to
+match.</p>
+<h3 id="there-is-no-page_log-file">There is no page_log file<a class="anchor" href="#there-is-no-page_log-file" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> <code>/var/log/cups/page_log</code> does not exist, and the accounting
+service logs that it is missing.</p>
+<p><strong>Cause.</strong> Many printer drivers never report page counts to CUPS, so CUPS
+never creates the file. This is normal.</p>
+<p><strong>Resolution.</strong> None needed. Jobs are charged at the page count measured
+before printing, which is exact for PDF and PostScript documents. When CUPS
+does write a <code>page_log</code>, charges are corrected from it automatically.</p>
+<h3 id="a-new-price-doesnt-appear-in-reports">A new price doesn't appear in Reports<a class="anchor" href="#a-new-price-doesnt-appear-in-reports" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause.</strong> A printer registered in printquota has its own price, copied from
+the default when it was registered, and that price takes priority over the
+<strong>Settings</strong> default. A job's cost is also fixed when it prints, so past
+jobs keep their original price.</p>
+<p><strong>Resolution.</strong> Set the price on the printer: <strong>Printers &amp; queues → Edit
+costs</strong>. New jobs use it. A printer price of <strong>0</strong> means &quot;use the Settings
+default&quot;, not free.</p>
+<h3 id="forbidden-when-turning-on-a-queue-or-adding-a-printer">&quot;Forbidden&quot; when turning on a queue or adding a printer<a class="anchor" href="#forbidden-when-turning-on-a-queue-or-adding-a-printer" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause.</strong> The <code>printquota</code> service account isn't in the CUPS
+administrators' group (<code>lpadmin</code>), or the web service was started before it
+was added.</p>
+<p><strong>Resolution.</strong></p>
+<pre><code class="language-bash">sudo usermod -a -G lpadmin printquota
+sudo systemctl restart quota-api
+id printquota     # must list lpadmin
+</code></pre>
+<p>Re-running <code>install.sh</code> also does this.</p>
+<h3 id="automatic-implicitclass-queues-keep-appearing">Automatic &quot;implicitclass&quot; queues keep appearing<a class="anchor" href="#automatic-implicitclass-queues-keep-appearing" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> <code>lpstat -v</code> lists queues with <code>implicitclass://</code> device URIs,
+sometimes duplicated, and the CUPS log shows <code>CreateProfile failed … AlreadyExists</code> messages.</p>
+<p><strong>Cause.</strong> The <code>cups-browsed</code> service creates queues for printers it
+discovers. They aren't enforced, and CUPS can recreate them at any time.</p>
+<p><strong>Resolution.</strong> Create one permanent queue per printer
+(<a href="setup.html#5-add-printers-and-turn-on-quota-enforcement-web-console">setup step 5</a>),
+then run <code>sudo systemctl disable --now cups-browsed</code>.</p>
+<h3 id="an-upgrade-doesnt-take-effect">An upgrade doesn't take effect<a class="anchor" href="#an-upgrade-doesnt-take-effect" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> After <code>git pull</code> and reinstalling, the old behaviour remains.</p>
+<p><strong>Diagnosis.</strong></p>
+<pre><code class="language-bash">git log --oneline -1                                      # latest commit present?
+/opt/printquota/bin/pip show printquota | grep Version    # new version installed?
+systemctl status quota-api --no-pager | grep Active       # restarted after the upgrade?
+</code></pre>
+<p><strong>Cause.</strong> Usually the installer stopped before installing the new version
+(see the next entry), so the old version is still installed and running.</p>
+<p><strong>Resolution.</strong> Re-run the installer and check that it finishes. Or, when a
+release has no database changes, install and restart directly:</p>
+<pre><code class="language-bash">sudo /opt/printquota/bin/pip install --upgrade ~/print-quota-system
+sudo systemctl restart quota-api quota-accounting
+</code></pre>
+<h3 id="installer-stops-at-installing-os-dependencies">Installer stops at &quot;Installing OS dependencies&quot;<a class="anchor" href="#installer-stops-at-installing-os-dependencies" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> The installer ends after messages such as
+<code>E: Failed to fetch … File has unexpected size … Mirror sync in progress?</code>.</p>
+<p><strong>Cause.</strong> <code>apt-get update</code> failed, typically because an Ubuntu mirror was
+mid-sync or a third-party package repository is broken. Before 0.2.3 the
+installer stopped at that point.</p>
+<p><strong>Resolution.</strong> Upgrade to 0.2.3 or later. The installer then skips the step
+when all packages are present, and treats <code>apt-get update</code> errors as
+warnings. On older versions, use the direct install in
+<a href="#an-upgrade-doesnt-take-effect">the previous entry</a>, or retry later.</p>
+<h3 id="the-web-console-is-unavailable-after-a-reboot">The web console is unavailable after a reboot<a class="anchor" href="#the-web-console-is-unavailable-after-a-reboot" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> <code>http://&lt;server-ip&gt;:8080</code> stops answering after the server
+restarts, and <code>systemctl is-enabled quota-api</code> prints <code>disabled</code>.</p>
+<p><strong>Cause.</strong> Installers from 0.2.0 to 0.2.4 started the web service but didn't
+enable it at boot on new installations.</p>
+<p><strong>Resolution.</strong> <code>sudo systemctl enable --now quota-api</code>, or upgrade to 0.2.5
+or later and re-run the installer.</p>
+<h3 id="nobody-can-sign-in-to-the-console">Nobody can sign in to the console<a class="anchor" href="#nobody-can-sign-in-to-the-console" aria-label="Link to this section">#</a></h3>
+<p><strong>Resolution.</strong> On the server, reset a password and restore administrator
+rights for an account. No other data changes:</p>
+<pre><code class="language-bash">sudo /opt/printquota/bin/quotactl db init --admin &lt;username&gt;
+sudo /opt/printquota/bin/quotactl user enable &lt;username&gt;    # if the account was disabled
+</code></pre>
+<h3 id="permission-denied-when-running-the-scripts">&quot;Permission denied&quot; when running the scripts<a class="anchor" href="#permission-denied-when-running-the-scripts" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause.</strong> The repository was copied from a Windows computer, which drops
+the executable permission from the scripts.</p>
+<p><strong>Resolution.</strong> <code>chmod +x scripts/*.sh</code>, or clone the repository directly on
+the server.</p>
+<h3 id="messages-in-the-cups-error-log-that-are-harmless">Messages in the CUPS error log that are harmless<a class="anchor" href="#messages-in-the-cups-error-log-that-are-harmless" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Printer drivers are deprecated and will stop working in a future version of CUPS</code></td>
+<td>A general notice about PPD drivers from CUPS</td>
+</tr>
+<tr>
+<td><code>Raw queues are deprecated …</code></td>
+<td>The same notice, for queues without a driver</td>
+</tr>
+<tr>
+<td><code>CreateProfile failed … AlreadyExists</code></td>
+<td>Colour-profile messages from automatic queues; they stop once <code>cups-browsed</code> is disabled</td>
+</tr>
+<tr>
+<td><code>Returning IPP client-error-bad-request for windows-ext</code></td>
+<td>A Windows computer probing the server while adding a printer</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>Scheduler shutting down due to program error</code> on its own only needs
+attention if it repeats. Then check <code>sudo journalctl -u cups --since &quot;&lt;time&gt;&quot;</code>.</p>
+<hr />
+<h2 id="resolved-in-earlier-releases">Resolved in earlier releases<a class="anchor" href="#resolved-in-earlier-releases" aria-label="Link to this section">#</a></h2>
+<p>If you run an older version, these problems are fixed by upgrading. Details
+are in the <a href="changelog.html">changelog</a>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Fixed in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The web console wasn't enabled at boot on new installations</td>
+<td>0.2.5</td>
+</tr>
+<tr>
+<td>Jobs refused when the user name arrived as <code>DOMAIN\User</code> or with different capitals</td>
+<td>0.2.4</td>
+</tr>
+<tr>
+<td>Installer stopped when <code>apt-get update</code> failed</td>
+<td>0.2.3</td>
+</tr>
+<tr>
+<td>Settings page rejected every change when an unrelated field was invalid (&quot;Nothing was saved&quot;)</td>
+<td>0.2.2</td>
+</tr>
+<tr>
+<td>Jobs on queues with a driver counted as one page, so over-quota jobs printed</td>
+<td>0.2.1</td>
+</tr>
+<tr>
+<td>Deleting a user who had printed failed</td>
+<td>0.2.0</td>
+</tr>
+<tr>
+<td>The nightly database backup never ran</td>
+<td>0.2.0</td>
+</tr>
+</tbody>
+</table></div>
+</div><footer class="foot">Generated from <code>docs/known-issues.md</code> by <code>scripts/build_docs.py</code>. Edit the Markdown, then re-run the script.</footer></main></div><script>
+(function(){
+  function copyText(btn, text){
+    function done(ok){btn.textContent = ok ? 'Copied' : 'Select + Ctrl+C'; setTimeout(function(){btn.textContent='Copy';}, 1600);}
+    try{
+      navigator.clipboard.writeText(text).then(function(){done(true);}, function(){select(btn); done(false);});
+    }catch(e){select(btn); done(false);}
+  }
+  function select(btn){
+    var code = btn.parentNode.querySelector('code'); var r = document.createRange();
+    r.selectNodeContents(code); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  document.querySelectorAll('.doc pre').forEach(function(pre){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+    b.addEventListener('click', function(){copyText(b, pre.querySelector('code').innerText);});
+    pre.appendChild(b);
+  });
+
+  // Filter the contents list by what the reader types (e.g. "TLS", "driver", "price").
+  document.querySelectorAll('.side').forEach(function(side){
+    var box = side.querySelector('.find'); if(!box) return;
+    box.addEventListener('input', function(){
+      var q = box.value.trim().toLowerCase(); var any = false;
+      side.querySelectorAll('.toc>li').forEach(function(li){
+        var subs = li.querySelectorAll('ul>li'); var subHit = false;
+        subs.forEach(function(s){ var hit = !q || s.textContent.toLowerCase().indexOf(q) > -1; s.hidden = !hit; subHit = subHit || (hit && !!q); });
+        var own = li.querySelector('a').textContent.toLowerCase().indexOf(q) > -1;
+        var show = !q || own || subHit;
+        if(show && own && q){ subs.forEach(function(s){ s.hidden = false; }); }
+        li.hidden = !show; any = any || show;
+      });
+      var none = side.querySelector('.none'); if(none) none.hidden = any;
+    });
+  });
+
+  // Tabs for the single-page edition: one document visible at a time.
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.docsec'));
+  function show(sec, target){
+    sections.forEach(function(s){ s.hidden = s !== sec; });
+    document.querySelectorAll('.tabs a').forEach(function(a){
+      if(a.getAttribute('data-doc') === sec.id){ a.setAttribute('aria-current','page'); } else { a.removeAttribute('aria-current'); }
+    });
+    if(target && target !== sec){ target.scrollIntoView(); } else { window.scrollTo(0, 0); }
+  }
+  function route(){
+    if(!sections.length) return;
+    var id = decodeURIComponent(location.hash.slice(1)); var el = id && document.getElementById(id);
+    if(!el){ show(sections[0]); return; }
+    var sec = el.closest('section.docsec') || el; show(sec, el);
+  }
+  if(sections.length){ window.addEventListener('hashchange', route); route(); }
+
+  // Highlight where the reader is in the contents list.
+  if('IntersectionObserver' in window){
+    var links = {}; document.querySelectorAll('.toc a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          document.querySelectorAll('.toc a.here').forEach(function(a){ a.classList.remove('here'); });
+          var a = links[e.target.id]; if(a) a.classList.add('here');
+        }
+      });
+    }, {rootMargin:'-80px 0px -70% 0px'});
+    document.querySelectorAll('.doc h2[id], .doc h3[id]').forEach(function(h){ io.observe(h); });
+  }
+})();
+</script></body></html>

@@ -94,7 +94,7 @@ install -d -m 0755 "$PREFIX/share" "$PREFIX/share/scripts" "$PREFIX/share/docs"
 cp -r "$REPO_DIR/alembic.ini" "$PREFIX/share/alembic.ini"
 install -m 0755 "$REPO_DIR/scripts/backup.sh" "$PREFIX/share/scripts/backup.sh"
 install -m 0644 "$REPO_DIR"/docs/*.md "$PREFIX/share/docs/"
-# Browsable HTML copy of the docs (open docs/html/setup-and-issues.html in a browser).
+# Browsable HTML copy of the docs (open docs/html/setup.html in a browser).
 if [[ -d "$REPO_DIR/docs/html" ]]; then
     install -d -m 0755 "$PREFIX/share/docs/html"
     install -m 0644 "$REPO_DIR"/docs/html/*.html "$PREFIX/share/docs/html/"

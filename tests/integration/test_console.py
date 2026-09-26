@@ -132,7 +132,7 @@ def test_admin_can_reset_a_users_password_and_name(admin_client):
 
 
 def test_admin_cannot_disable_themselves(admin_client):
-    response = admin_client.post("/admin/users/ceejay/update", data={
+    response = admin_client.post("/admin/users/alex/update", data={
         "quota_limit": "100", "low_balance_threshold": "10", "is_admin": "true"}, follow_redirects=True)
     assert "cannot disable your own account" in response.text
 
@@ -141,7 +141,7 @@ def test_user_list_filters(admin_client):
     body = admin_client.get("/admin/users?group=-").text
     assert "solo" in body and "/admin/users/ada" not in body
     body = admin_client.get("/admin/users?status=admin").text
-    assert "/admin/users/ceejay" in body and "/admin/users/solo" not in body
+    assert "/admin/users/alex" in body and "/admin/users/solo" not in body
 
 
 def test_delete_a_user_with_job_history(admin_client):
@@ -155,7 +155,7 @@ def test_delete_a_user_with_job_history(admin_client):
         assert session.get(User, "ada") is None
         assert session.query(PrintJob).filter_by(username="ada").count() == 0
         assert session.query(PrintPolicy).count() == 0
-    assert admin_client.post("/admin/users/ceejay/delete", data={"confirm": "true"},
+    assert admin_client.post("/admin/users/alex/delete", data={"confirm": "true"},
                              follow_redirects=True).text.count("cannot delete your own") == 1
 
 
@@ -187,10 +187,10 @@ def test_bulk_move_to_group_and_set_quota(admin_client):
 
 def test_bulk_actions_never_lock_out_the_acting_admin(admin_client):
     response = admin_client.post("/admin/users/bulk", data={
-        "usernames": ["ceejay", "ada"], "action": "disable"}, follow_redirects=True)
+        "usernames": ["alex", "ada"], "action": "disable"}, follow_redirects=True)
     assert "Your own account was left unchanged" in response.text
     with db_session.session_scope() as session:
-        assert session.get(User, "ceejay").is_active
+        assert session.get(User, "alex").is_active
         assert not session.get(User, "ada").is_active
 
 
@@ -263,7 +263,7 @@ def test_import_template_and_export_round_trip(admin_client):
     template = admin_client.get("/admin/users/import/template.csv")
     assert template.status_code == 200 and template.text.startswith("username,")
     export = admin_client.get("/admin/users.csv")
-    assert "ceejay" in export.text and "$2" not in export.text  # never exports password hashes
+    assert "alex" in export.text and "$2" not in export.text  # never exports password hashes
 
 
 # ----------------------------------------------------------------------- groups
@@ -322,13 +322,13 @@ def test_changing_costs_saves_even_if_another_field_is_bad(admin_client):
     form = settings_form(admin_client)
     assert form["printing.default_cost_per_page_mono"] == "1"
     form["printing.default_cost_per_page_mono"] = "2.5"
-    form["alerts.webhook_url"] = "ceejay"  # what an autofilled username looks like
+    form["alerts.webhook_url"] = "alex"  # what an autofilled username looks like
 
     response = admin_client.post("/admin/settings", data=form)
     assert response.status_code == 400
     assert "Saved: Default cost per mono page." in response.text
     assert "is not a web address" in response.text
-    assert 'value="ceejay"' in response.text  # what was typed is kept for correcting
+    assert 'value="alex"' in response.text  # what was typed is kept for correcting
     assert get_settings().get("printing.default_cost_per_page_mono") == 2.5
     assert get_settings().get("alerts.webhook_url") == ""
 

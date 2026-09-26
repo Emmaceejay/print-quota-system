@@ -112,30 +112,20 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
   .side>details>summary{display:none}
 }
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup-and-issues.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup-and-issues.html" data-doc="doc-setup-and-issues">Setup &amp; issue log</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations" aria-current="page">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-operations" placeholder="Filter contents (e.g. TLS, B22, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#rolling-out-safely">Rolling out safely</a></li><li><a href="#troubleshooting">Troubleshooting</a><ul><li><a href="#jobs-disappear-and-the-user-sees-no-reason">Jobs disappear and the user sees no reason</a></li><li><a href="#the-queue-stopped">The queue stopped</a></li><li><a href="#jobs-are-held-instead-of-printing">Jobs are held instead of printing</a></li><li><a href="#balances-do-not-move-after-printing">Balances do not move after printing</a></li><li><a href="#estimates-are-consistently-wrong">Estimates are consistently wrong</a></li><li><a href="#a-user-was-charged-for-a-job-that-jammed">A user was charged for a job that jammed</a></li></ul></li><li><a href="#backup-and-restore">Backup and restore</a></li><li><a href="#upgrades">Upgrades</a></li><li><a href="#monitoring">Monitoring</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Operations</div><h1>Operations runbook</h1><p>Day-two runbook: rollout, troubleshooting, backup and restore, upgrades, monitoring.</p></header><div class="content"><h1 id="operations-runbook">Operations runbook</h1>
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations" aria-current="page">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-operations" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#rolling-out-safely">Rolling out safely</a></li><li><a href="#troubleshooting">Troubleshooting</a><ul><li><a href="#jobs-disappear-and-the-user-sees-no-reason">Jobs disappear and the user sees no reason</a></li><li><a href="#the-queue-stopped">The queue stopped</a></li><li><a href="#jobs-are-held-instead-of-printing">Jobs are held instead of printing</a></li><li><a href="#balances-look-wrong-after-printing">Balances look wrong after printing</a></li><li><a href="#a-user-was-charged-for-a-job-that-didnt-print">A user was charged for a job that didn&#x27;t print</a></li></ul></li><li><a href="#backup-and-restore">Backup and restore</a></li><li><a href="#upgrades">Upgrades</a></li><li><a href="#monitoring">Monitoring</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Operations</div><h1>Operations runbook</h1><p>Day-two runbook: rollout, troubleshooting, backup and restore, upgrades, monitoring.</p></header><div class="content"><h1 id="operations-runbook">Operations runbook</h1>
 <h2 id="rolling-out-safely">Rolling out safely<a class="anchor" href="#rolling-out-safely" aria-label="Link to this section">#</a></h2>
-<p>Do not wrap every queue at once. The sequence that avoids surprises:</p>
+<p>Follow the <a href="setup.html">setup guide</a>. For a low-risk rollout, don't enforce every queue
+at once:</p>
 <ol>
-<li><strong>Install, seed nobody.</strong> <code>sudo ./scripts/install.sh</code>, then
-<code>quotactl db init --admin &lt;you&gt;</code>. Nothing is enforced yet: the wrapper is
-installed but no queue points at it.</li>
-<li><strong>Register printers with their real device URIs.</strong>
-<code>quotactl printer add &lt;queue&gt; --device-uri &lt;uri&gt; --mono 2 --color 10</code>.
-Get the URI from <code>lpstat -v</code>.</li>
-<li><strong>Create users with a generous quota</strong> (or a very large one) so the first
-week only <em>measures</em>. <code>quotactl user add &lt;name&gt; --quota 100000</code>.</li>
-<li><strong>Wrap one low-risk queue.</strong> <code>sudo ./scripts/register_backend.sh &lt;queue&gt;</code>
-Print a test page. Confirm with <code>quotactl usage --days 1</code> and
-<code>journalctl -u cups -n 50</code>.</li>
-<li><strong>Compare estimate to actual for a few days.</strong> In the reports, the
-estimated and actual page columns should track closely. Large gaps point
-at a driver that recomposes jobs — see below.</li>
-<li><strong>Lower quotas to real values</strong>, then wrap the remaining queues.</li>
-<li><strong>Turn on <code>Require valid-user</code></strong> in <code>cupsd.conf</code> (see
-<a href="architecture.html#trusting-the-user-name">architecture.md</a>) before you
-depend on the numbers.</li>
+<li>Give users a very large quota at first, so the first week only <em>measures</em> usage.</li>
+<li>Turn on enforcement for one low-risk queue and print a test page. Confirm it in
+<strong>Reports</strong> and with <code>journalctl -u cups -n 50</code>.</li>
+<li>Check for a few days that page counts are exact (setup guide, step 9).</li>
+<li>Lower quotas to real values, then turn on the remaining queues.</li>
+<li>Secure the deployment (setup guide, step 10) before relying on the numbers.</li>
 </ol>
-<p>Undo for any queue: <code>sudo ./scripts/register_backend.sh &lt;queue&gt; --undo</code>.</p>
+<p>To stop enforcing a queue, click <strong>Turn off</strong> in <strong>Printers &amp; queues</strong>, or run
+<code>sudo ./scripts/register_backend.sh &lt;queue&gt; --undo</code>.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
 <h3 id="jobs-disappear-and-the-user-sees-no-reason">Jobs disappear and the user sees no reason<a class="anchor" href="#jobs-disappear-and-the-user-sees-no-reason" aria-label="Link to this section">#</a></h3>
 <p>Check the backend decision:</p>
@@ -156,28 +146,26 @@ cupsenable &lt;queue&gt;
 <code>quota-accounting</code>'s journal and the permissions on
 <code>/var/lib/printquota/printquota.db</code> (the backend runs as root; the services
 run as <code>printquota</code>).</p>
-<h3 id="balances-do-not-move-after-printing">Balances do not move after printing<a class="anchor" href="#balances-do-not-move-after-printing" aria-label="Link to this section">#</a></h3>
-<p>The accounting daemon is not seeing <code>page_log</code>:</p>
-<pre><code class="language-bash">systemctl status quota-accounting
-sudo -u printquota head /var/log/cups/page_log     # must be readable
-grep PageLogFormat /etc/cups/cupsd.conf            # leave it at the default
+<h3 id="balances-look-wrong-after-printing">Balances look wrong after printing<a class="anchor" href="#balances-look-wrong-after-printing" aria-label="Link to this section">#</a></h3>
+<p>Charges are made <strong>before</strong> printing, from the page count of the submitted
+document, and corrected afterwards from CUPS's <code>page_log</code> when there is one.
+Many drivers never report pages, so there may be no <code>page_log</code> at all. That
+is normal (see <a href="known-issues.html#there-is-no-page_log-file">known issues</a>).</p>
+<p>To see how recent jobs were counted:</p>
+<pre><code class="language-bash">sudo journalctl -u cups -n 50 --no-pager | grep -o &quot;method='[^']*'\|pages=[0-9]*&quot;
 </code></pre>
-<p>The daemon expects the default <code>PageLogFormat</code>. If you have customised it,
-restore the default or adjust <code>_LINE_RE</code> in
-<code>src/printquota/accounting/daemon.py</code>.</p>
-<h3 id="estimates-are-consistently-wrong">Estimates are consistently wrong<a class="anchor" href="#estimates-are-consistently-wrong" aria-label="Link to this section">#</a></h3>
-<p><code>pdfinfo</code> gives an exact count for PDF. Windows drivers that send PCL or
-raw data give a weaker estimate (form feeds or a fallback of one page). The
-daemon still corrects the charge from <code>page_log</code>, so billing stays right —
-only the pre-flight <em>block</em> is approximate. If pre-flight accuracy matters,
-point clients at the IPP Everywhere / driverless queue so jobs arrive as
-PDF.</p>
-<h3 id="a-user-was-charged-for-a-job-that-jammed">A user was charged for a job that jammed<a class="anchor" href="#a-user-was-charged-for-a-job-that-jammed" aria-label="Link to this section">#</a></h3>
-<p>Refund it from the CLI's reconciliation path or by resetting the user:</p>
-<pre><code class="language-bash">quotactl user show &lt;name&gt;        # find the job
-quotactl user set-quota &lt;name&gt; &lt;higher&gt;   # or
-quotactl user reset &lt;name&gt;
-</code></pre>
+<p><code>spool:postscript</code> and <code>spool:pdf</code> are exact. A method ending in <code>fallback</code>
+means the document couldn't be counted: check the client's driver
+(<a href="known-issues.html#which-windows-driver-to-use">known issues</a>).</p>
+<p>If <code>page_log</code> exists, the daemon expects the default <code>PageLogFormat</code>. Leave
+it at the default in <code>cupsd.conf</code>.</p>
+<h3 id="a-user-was-charged-for-a-job-that-didnt-print">A user was charged for a job that didn't print<a class="anchor" href="#a-user-was-charged-for-a-job-that-didnt-print" aria-label="Link to this section">#</a></h3>
+<p>There is no per-job refund. Give the pages back through the user's quota,
+in <strong>Users</strong> → the user:</p>
+<ul>
+<li>raise their quota by the number of pages, or</li>
+<li>click <strong>Reset usage and restart period</strong>.</li>
+</ul>
 <p>Both are recorded in the audit log.</p>
 <h2 id="backup-and-restore">Backup and restore<a class="anchor" href="#backup-and-restore" aria-label="Link to this section">#</a></h2>
 <p>The nightly timer writes to <code>/var/backups/printquota</code> using SQLite's online
@@ -228,7 +216,7 @@ still print and are charged the estimate, but the corrections stop.</li>
     pre.appendChild(b);
   });
 
-  // Filter the contents list by what the reader types (e.g. "TLS", "B22", "price").
+  // Filter the contents list by what the reader types (e.g. "TLS", "driver", "price").
   document.querySelectorAll('.side').forEach(function(side){
     var box = side.querySelector('.find'); if(!box) return;
     box.addEventListener('input', function(){

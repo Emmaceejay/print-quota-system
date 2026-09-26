@@ -19,8 +19,8 @@ def test_password_hashing_round_trip():
 
 
 def test_session_token_round_trip(seeded):
-    token = issue_session("ceejay")
-    assert read_session(token) == "ceejay"
+    token = issue_session("alex")
+    assert read_session(token) == "alex"
     assert read_session("not-a-token") is None
 
 
@@ -49,12 +49,12 @@ def test_a_non_admin_cannot_reach_the_console(seeded):
 
 def test_portal_shows_the_users_own_balance(admin_client):
     body = admin_client.get("/me").text
-    assert "Ceejay" in body and "Allowance" in body
+    assert "Alex" in body and "Allowance" in body
 
 
 def test_portal_json_endpoint(admin_client):
     data = admin_client.get("/api/me").json()
-    assert data["username"] == "ceejay" and data["group"] == "finance"
+    assert data["username"] == "alex" and data["group"] == "finance"
     assert data["remaining"] == 100
 
 
@@ -102,13 +102,13 @@ def test_duplicate_user_is_rejected_with_a_message(admin_client):
 
 def test_admin_cannot_remove_their_own_admin_rights(admin_client):
     response = admin_client.post(
-        "/admin/users/ceejay/update",
+        "/admin/users/alex/update",
         data={"quota_limit": "100", "low_balance_threshold": "10", "is_active": "true"},
         follow_redirects=True,
     )
     assert "cannot remove your own admin rights" in response.text
     with db_session.session_scope() as session:
-        assert session.get(User, "ceejay").is_admin
+        assert session.get(User, "alex").is_admin
 
 
 def test_reset_usage_from_the_console(admin_client):

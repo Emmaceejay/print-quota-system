@@ -112,7 +112,7 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
   .side>details>summary{display:none}
 }
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup-and-issues.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup-and-issues.html" data-doc="doc-setup-and-issues">Setup &amp; issue log</a></li><li><a href="index.html" data-doc="doc-index" aria-current="page">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-index" placeholder="Filter contents (e.g. TLS, B22, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#table-of-contents">Table of contents</a></li><li><a href="#1-how-it-works">1. How it works</a></li><li><a href="#2-features">2. Features</a></li><li><a href="#3-repository-layout">3. Repository layout</a></li><li><a href="#4-requirements">4. Requirements</a></li><li><a href="#5-installation">5. Installation</a><ul><li><a href="#what-installsh-does">What install.sh does</a></li><li><a href="#installed-file-system-layout">Installed file-system layout</a></li></ul></li><li><a href="#6-first-time-setup-and-safe-rollout">6. First-time setup and safe rollout</a><ul><li><a href="#step-1-create-the-first-administrator-setup-wizard">Step 1: create the first administrator (setup wizard)</a></li><li><a href="#step-2-follow-the-getting-started-checklist">Step 2: follow the &quot;Getting started&quot; checklist</a></li><li><a href="#managing-users-in-the-browser">Managing users in the browser</a></li><li><a href="#managing-printers-and-quota-enforcement-in-the-browser">Managing printers and quota enforcement in the browser</a></li><li><a href="#changing-settings-in-the-browser">Changing settings in the browser</a></li><li><a href="#setting-or-resetting-an-administrator-password">Setting or resetting an administrator password</a></li><li><a href="#doing-the-same-from-the-command-line-optional">Doing the same from the command line (optional)</a></li><li><a href="#what-register_backendsh-does">What register_backend.sh does</a></li><li><a href="#recommended-rollout-sequence">Recommended rollout sequence</a></li></ul></li><li><a href="#7-configuration-reference">7. Configuration reference</a><ul><li><a href="#precedence">Precedence</a></li><li><a href="#all-settings">All settings</a></li><li><a href="#environment-variables">Environment variables</a></li></ul></li><li><a href="#8-quotas-periods-and-group-budgets">8. Quotas, periods and group budgets</a><ul><li><a href="#units">Units</a></li><li><a href="#rolling-periods">Rolling periods</a></li><li><a href="#charging-lifecycle-of-a-job">Charging lifecycle of a job</a></li><li><a href="#group-budgets">Group budgets</a></li><li><a href="#enforcement-modes">Enforcement modes</a></li><li><a href="#accounts-that-cannot-print">Accounts that cannot print</a></li><li><a href="#how-the-jobs-user-name-is-matched-to-an-account">How the job&#x27;s user name is matched to an account</a></li></ul></li><li><a href="#9-print-policies">9. Print policies</a><ul><li><a href="#rule-types">Rule types</a></li><li><a href="#scopes-and-precedence">Scopes and precedence</a></li><li><a href="#evaluation-order">Evaluation order</a></li><li><a href="#examples">Examples</a></li></ul></li><li><a href="#10-page-estimation-and-the-cost-model">10. Page estimation and the cost model</a><ul><li><a href="#pre-flight-estimation-accountingpagespy-accountingcups_spoolpy">Pre-flight estimation (accounting/pages.py, accounting/cups_spool.py)</a></li><li><a href="#cost-model-accountingcostpy">Cost model (accounting/cost.py)</a></li></ul></li><li><a href="#11-the-quotactl-command-line-tool">11. The quotactl command-line tool</a><ul><li><a href="#database">Database</a></li><li><a href="#users">Users</a></li><li><a href="#groups">Groups</a></li><li><a href="#printers">Printers</a></li><li><a href="#policies">Policies</a></li><li><a href="#reports-and-maintenance">Reports and maintenance</a></li></ul></li><li><a href="#12-web-console-and-self-service-portal">12. Web console and self-service portal</a><ul><li><a href="#pages">Pages</a></li><li><a href="#json-endpoints">JSON endpoints</a></li></ul></li><li><a href="#13-authentication">13. Authentication</a></li><li><a href="#14-alerts">14. Alerts</a></li><li><a href="#15-services-and-timers">15. Services and timers</a></li><li><a href="#16-data-model">16. Data model</a><ul><li><a href="#sqlite-vs-postgresql">SQLite vs PostgreSQL</a></li></ul></li><li><a href="#17-logging-and-monitoring">17. Logging and monitoring</a></li><li><a href="#18-backup-and-restore">18. Backup and restore</a></li><li><a href="#19-upgrades-and-database-migrations">19. Upgrades and database migrations</a></li><li><a href="#20-security-model">20. Security model</a><ul><li><a href="#trusting-the-user-name-required-before-relying-on-quotas">Trusting the user name (required before relying on quotas)</a></li><li><a href="#built-in-protections">Built-in protections</a></li><li><a href="#recommendations">Recommendations</a></li></ul></li><li><a href="#21-troubleshooting">21. Troubleshooting</a></li><li><a href="#22-development-and-testing">22. Development and testing</a><ul><li><a href="#test-suite-206-tests">Test suite (206 tests)</a></li><li><a href="#code-conventions">Code conventions</a></li></ul></li><li><a href="#23-known-limitations-and-gaps">23. Known limitations and gaps</a></li><li><a href="#24-roadmap">24. Roadmap</a></li><li><a href="#25-further-documentation">25. Further documentation</a></li><li><a href="#26-licence">26. Licence</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Reference</div><h1>printquota</h1><p>The full reference: how printquota works, configuration, console, CLI, security and troubleshooting.</p></header><div class="content"><h1 id="printquota">printquota</h1>
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues">Known issues</a></li><li><a href="index.html" data-doc="doc-index" aria-current="page">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-index" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#table-of-contents">Table of contents</a></li><li><a href="#1-how-it-works">1. How it works</a></li><li><a href="#2-features">2. Features</a></li><li><a href="#3-repository-layout">3. Repository layout</a></li><li><a href="#4-requirements">4. Requirements</a></li><li><a href="#5-installation">5. Installation</a><ul><li><a href="#what-installsh-does">What install.sh does</a></li><li><a href="#installed-file-system-layout">Installed file-system layout</a></li></ul></li><li><a href="#6-first-time-setup-and-safe-rollout">6. First-time setup and safe rollout</a><ul><li><a href="#step-1-create-the-first-administrator-setup-wizard">Step 1: create the first administrator (setup wizard)</a></li><li><a href="#step-2-follow-the-getting-started-checklist">Step 2: follow the &quot;Getting started&quot; checklist</a></li><li><a href="#managing-users-in-the-browser">Managing users in the browser</a></li><li><a href="#managing-printers-and-quota-enforcement-in-the-browser">Managing printers and quota enforcement in the browser</a></li><li><a href="#changing-settings-in-the-browser">Changing settings in the browser</a></li><li><a href="#setting-or-resetting-an-administrator-password">Setting or resetting an administrator password</a></li><li><a href="#doing-the-same-from-the-command-line-optional">Doing the same from the command line (optional)</a></li><li><a href="#what-register_backendsh-does">What register_backend.sh does</a></li><li><a href="#recommended-rollout-sequence">Recommended rollout sequence</a></li></ul></li><li><a href="#7-configuration-reference">7. Configuration reference</a><ul><li><a href="#precedence">Precedence</a></li><li><a href="#all-settings">All settings</a></li><li><a href="#environment-variables">Environment variables</a></li></ul></li><li><a href="#8-quotas-periods-and-group-budgets">8. Quotas, periods and group budgets</a><ul><li><a href="#units">Units</a></li><li><a href="#rolling-periods">Rolling periods</a></li><li><a href="#charging-lifecycle-of-a-job">Charging lifecycle of a job</a></li><li><a href="#group-budgets">Group budgets</a></li><li><a href="#enforcement-modes">Enforcement modes</a></li><li><a href="#accounts-that-cannot-print">Accounts that cannot print</a></li><li><a href="#how-the-jobs-user-name-is-matched-to-an-account">How the job&#x27;s user name is matched to an account</a></li></ul></li><li><a href="#9-print-policies">9. Print policies</a><ul><li><a href="#rule-types">Rule types</a></li><li><a href="#scopes-and-precedence">Scopes and precedence</a></li><li><a href="#evaluation-order">Evaluation order</a></li><li><a href="#examples">Examples</a></li></ul></li><li><a href="#10-page-estimation-and-the-cost-model">10. Page estimation and the cost model</a><ul><li><a href="#pre-flight-estimation-accountingpagespy-accountingcups_spoolpy">Pre-flight estimation (accounting/pages.py, accounting/cups_spool.py)</a></li><li><a href="#cost-model-accountingcostpy">Cost model (accounting/cost.py)</a></li></ul></li><li><a href="#11-the-quotactl-command-line-tool">11. The quotactl command-line tool</a><ul><li><a href="#database">Database</a></li><li><a href="#users">Users</a></li><li><a href="#groups">Groups</a></li><li><a href="#printers">Printers</a></li><li><a href="#policies">Policies</a></li><li><a href="#reports-and-maintenance">Reports and maintenance</a></li></ul></li><li><a href="#12-web-console-and-self-service-portal">12. Web console and self-service portal</a><ul><li><a href="#pages">Pages</a></li><li><a href="#json-endpoints">JSON endpoints</a></li></ul></li><li><a href="#13-authentication">13. Authentication</a></li><li><a href="#14-alerts">14. Alerts</a></li><li><a href="#15-services-and-timers">15. Services and timers</a></li><li><a href="#16-data-model">16. Data model</a><ul><li><a href="#sqlite-vs-postgresql">SQLite vs PostgreSQL</a></li></ul></li><li><a href="#17-logging-and-monitoring">17. Logging and monitoring</a></li><li><a href="#18-backup-and-restore">18. Backup and restore</a></li><li><a href="#19-upgrades-and-database-migrations">19. Upgrades and database migrations</a></li><li><a href="#20-security-model">20. Security model</a><ul><li><a href="#trusting-the-user-name-required-before-relying-on-quotas">Trusting the user name (required before relying on quotas)</a></li><li><a href="#built-in-protections">Built-in protections</a></li><li><a href="#recommendations">Recommendations</a></li></ul></li><li><a href="#21-troubleshooting">21. Troubleshooting</a></li><li><a href="#22-development-and-testing">22. Development and testing</a><ul><li><a href="#test-suite-206-tests">Test suite (206 tests)</a></li><li><a href="#code-conventions">Code conventions</a></li></ul></li><li><a href="#23-known-limitations-and-gaps">23. Known limitations and gaps</a></li><li><a href="#24-roadmap">24. Roadmap</a></li><li><a href="#25-further-documentation">25. Further documentation</a></li><li><a href="#26-licence">26. Licence</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Reference</div><h1>printquota</h1><p>The full reference: how printquota works, configuration, console, CLI, security and troubleshooting.</p></header><div class="content"><h1 id="printquota">printquota</h1>
 <p><strong>A self-hosted print quota, policy and accounting system for CUPS on Ubuntu Server.</strong></p>
 <p>printquota covers the parts of PaperCut NG that a single organisation needs:
 per-user page quotas, department budgets, cost tracking, print policies,
@@ -142,8 +142,18 @@ understand in full.</p>
 <td><strong>Licence</strong></td>
 <td>MIT</td>
 </tr>
+<tr>
+<td><strong>Documentation</strong></td>
+<td><a href="https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt">Read online</a> · <a href="setup.html">Setup guide</a> · <a href="known-issues.html">Known issues</a></td>
+</tr>
 </tbody>
 </table></div>
+<blockquote>
+<p><strong>New here?</strong> Follow the <a href="setup.html">setup guide</a>. If something doesn't
+work, check <a href="known-issues.html">known issues and troubleshooting</a>. All
+documents can also be <a href="https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt">read online</a> as one
+formatted, searchable page.</p>
+</blockquote>
 <hr />
 <h2 id="table-of-contents">Table of contents<a class="anchor" href="#table-of-contents" aria-label="Link to this section">#</a></h2>
 <ol>
@@ -295,7 +305,8 @@ backups.</li>
 │   └── seed_demo.py              Populate a demo database for evaluation
 ├── systemd/                      Service and timer units (see §15)
 ├── docs/
-│   ├── setup-and-issues.md       Setup runbook + issue log (start here)
+│   ├── setup.md                  Step-by-step setup guide (start here)
+│   ├── known-issues.md           Known issues and troubleshooting
 │   ├── html/                     Browsable HTML versions of all the docs
 │   ├── architecture.md           Design decisions, enforcement mechanics, security
 │   └── operations.md             Day-two runbook
@@ -738,8 +749,8 @@ if they don't have one yet).</li>
 <p><strong>Recovery when nobody can sign in</strong> (the only case that needs the server
 shell). Run this on the server. It sets a new password, restores admin
 rights and re-enables the account, without touching any other data:</p>
-<pre><code class="language-bash">sudo /opt/printquota/bin/quotactl db init --admin ceejay
-sudo /opt/printquota/bin/quotactl user enable ceejay    # only if the account was disabled
+<pre><code class="language-bash">sudo /opt/printquota/bin/quotactl db init --admin alex
+sudo /opt/printquota/bin/quotactl user enable alex    # only if the account was disabled
 </code></pre>
 <p><code>quotactl user set-password &lt;name&gt;</code> also works. Both commands prompt for the
 password. Avoid the <code>--password</code>/<code>--admin-password</code> flags for real
@@ -760,7 +771,7 @@ your own account. Another administrator has to do that.</li>
 </ul>
 <h3 id="doing-the-same-from-the-command-line-optional">Doing the same from the command line (optional)<a class="anchor" href="#doing-the-same-from-the-command-line-optional" aria-label="Link to this section">#</a></h3>
 <p>Everything above can also be scripted with <code>quotactl</code> (§11):</p>
-<pre><code class="language-bash">sudo /opt/printquota/bin/quotactl db init --admin ceejay
+<pre><code class="language-bash">sudo /opt/printquota/bin/quotactl db init --admin alex
 sudo /opt/printquota/bin/quotactl group add finance --budget 5000
 sudo /opt/printquota/bin/quotactl user add ada --quota 500 --group finance --email ada@example.com
 sudo /opt/printquota/bin/quotactl printer add hp-mono --device-uri socket://10.0.0.5:9100 \
@@ -1849,8 +1860,7 @@ row decides console access.</p>
 </code></pre>
 <p>LDAP usernames must match <code>^[A-Za-z0-9._-]{1,128}$</code>, and filter values are
 escaped according to RFC 4515. <code>group_map</code> is read by a helper function
-(<code>lookup_groups</code>) that is <strong>not yet wired to any sync job</strong>. Automatic group
-synchronisation is planned for Phase 9.</p>
+(<code>lookup_groups</code>) that is <strong>not yet wired to any sync job</strong>. Automatic group synchronisation is planned.</p>
 <hr />
 <h2 id="14-alerts">14. Alerts<a class="anchor" href="#14-alerts" aria-label="Link to this section">#</a></h2>
 <p>After each reconciled job, the accounting daemon checks the user's balance:</p>
@@ -2237,12 +2247,12 @@ the first administrator exists.</li>
 <tr>
 <td>A user's jobs never reach the server (no new job in <code>lpstat -W all -o</code>); <code>error_log</code> shows <code>Unable to encrypt connection: A TLS fatal alert has been received</code></td>
 <td>The PC uses a printer Windows discovered by itself, which connects with encryption and rejects CUPS's self-signed certificate</td>
-<td>Remove the auto-discovered printer and add <code>http://&lt;server-ip&gt;:631/printers/&lt;QUEUE&gt;</code> by address with the Microsoft PS Class Driver (<a href="setup-and-issues.html">issue log B23</a>)</td>
+<td>Remove the auto-discovered printer and add <code>http://&lt;server-ip&gt;:631/printers/&lt;QUEUE&gt;</code> by address with the Microsoft PS Class Driver (<a href="known-issues.html#a-users-jobs-never-reach-the-server">known issues</a>)</td>
 </tr>
 <tr>
 <td>A new price doesn't show in Reports</td>
 <td>The printer has its own price (copied from the default when it was registered), and past jobs keep the price they printed at</td>
-<td>Set the price in <strong>Printers &amp; queues → Edit costs</strong>; only new jobs use it (<a href="setup-and-issues.html">issue log B24</a>)</td>
+<td>Set the price in <strong>Printers &amp; queues → Edit costs</strong>; only new jobs use it (<a href="known-issues.html#a-new-price-doesnt-appear-in-reports">known issues</a>)</td>
 </tr>
 <tr>
 <td>Lost the setup link</td>
@@ -2256,7 +2266,7 @@ the first administrator exists.</li>
 </tr>
 </tbody>
 </table></div>
-<p>More detail is in <a href="operations.html">docs/operations.md</a>, and every issue met so far, with its fix, is in <a href="setup-and-issues.html">docs/setup-and-issues.md</a>.</p>
+<p>More detail is in <a href="known-issues.html">docs/known-issues.md</a> and <a href="operations.html">docs/operations.md</a>.</p>
 <hr />
 <h2 id="22-development-and-testing">22. Development and testing<a class="anchor" href="#22-development-and-testing" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e &quot;.[dev]&quot;
@@ -2268,7 +2278,7 @@ export PRINTQUOTA_DB_URL=sqlite:///./dev.db
 </code></pre>
 <p><code>seed_demo.py</code> creates the groups <code>finance</code> (budget 2000), <code>engineering</code>
 (6000) and <code>reception</code> (unlimited), the printers <code>hp-mono</code> and <code>color-mfp</code>,
-the users <code>ceejay</code> (admin), <code>ada</code>, <code>tunde</code> and <code>reception</code>, and 60
+the users <code>alex</code> (admin), <code>ada</code>, <code>tunde</code> and <code>reception</code>, and 60
 randomised jobs, most of them reconciled.</p>
 <h3 id="test-suite-206-tests">Test suite (206 tests)<a class="anchor" href="#test-suite-206-tests" aria-label="Link to this section">#</a></h3>
 <p>Every test runs against a throwaway SQLite file and settings file, so none
@@ -2349,10 +2359,8 @@ fully unit-testable.</li>
 </ul>
 <hr />
 <h2 id="23-known-limitations-and-gaps">23. Known limitations and gaps<a class="anchor" href="#23-known-limitations-and-gaps" aria-label="Link to this section">#</a></h2>
-<p>These were found by reviewing the code as of 0.2.0 and are listed so that
-future maintainers don't trip over them. The backup-install gap, the JSON
-401 on <code>/admin/api/*</code>, and the failing user deletion from 0.1.1 are fixed
-(see <a href="changelog.html">CHANGELOG.md</a>).</p>
+<p>Current limitations, listed so that operators and contributors know what to expect.
+Problems with a known workaround are in <a href="known-issues.html">docs/known-issues.md</a>.</p>
 <ol>
 <li><strong>A printer rate of 0 falls back to the default rate</strong>, so a free queue
 or a mono-only printer with colour set to 0 is still charged
@@ -2380,18 +2388,13 @@ printing (§20) is still a one-time edit on the server.</li>
 minutes in one request. Imports without passwords are fast. For very large
 batches, import without passwords and let people use PAM/LDAP sign-in, or
 split the file.</li>
-<li><strong>Script executable bits:</strong> a Windows checkout can drop the executable
-bit from <code>scripts/*.sh</code>, <code>scripts/seed_demo.py</code> and <code>quota_backend.py</code>
-(git shows a 100755 → 100644 mode change). Run <code>chmod +x scripts/*.sh</code>
-on the server before installing, and don't commit the mode change.</li>
 </ol>
 <hr />
 <h2 id="24-roadmap">24. Roadmap<a class="anchor" href="#24-roadmap" aria-label="Link to this section">#</a></h2>
 <p>From <a href="changelog.html">CHANGELOG.md</a>:</p>
 <ul>
-<li><strong>Phase 9:</strong> AD/LDAP group synchronisation using the existing hook.</li>
-<li><strong>Phase 10:</strong> hardening pass once there is real traffic.</li>
-<li><strong>Phase 11 (stretch):</strong> secure/pull printing and a client-side confirmation popup.</li>
+<li>Automatic group synchronisation from AD/LDAP, using the existing directory hook.</li>
+<li>Secure (pull) printing and a client-side confirmation prompt.</li>
 </ul>
 <p><strong>Out of scope by design:</strong> multi-tenancy, payment/billing integration,
 native mobile apps, document watermarking, and MFP scan/copy tracking.</p>
@@ -2401,15 +2404,18 @@ native mobile apps, document watermarking, and MFP scan/copy tracking.</p>
 <li><a href="architecture.html">docs/architecture.md</a>: why a custom system, the
 enforcement mechanism, the data model, the policy engine, the security
 model, and scaling.</li>
-<li><strong>Easy-reading HTML versions</strong> of all these documents are in <a href="../../docs/html">docs/html/</a>. Open
-<code>docs/html/setup-and-issues.html</code> in any browser; they work offline. After editing any
-Markdown document, regenerate them with <code>python3 scripts/build_docs.py</code> (needs
-<code>pip install -e &quot;.[docs]&quot;</code>) and commit the result.</li>
-<li><a href="setup-and-issues.html">docs/setup-and-issues.md</a>: <strong>start here for a new server or a problem.</strong> A step-by-step setup runbook, plus a log of every issue met in the real deployment (symptom, cause, fix, version).</li>
+<li><a href="setup.html">docs/setup.md</a>: <strong>start here.</strong> Step-by-step setup for a new server.</li>
+<li><a href="known-issues.html">docs/known-issues.md</a>: known issues and troubleshooting, each
+with its symptom, cause and resolution.</li>
 <li><a href="operations.html">docs/operations.md</a>: rollout, troubleshooting,
 backup and restore, upgrades, monitoring.</li>
 <li><a href="changelog.html">CHANGELOG.md</a>: release history.</li>
 </ul>
+<p><strong>Reading the documentation.</strong> All of the above is available as one formatted, searchable
+page <a href="https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt">online</a>, and as HTML files in <a href="../../docs/html">docs/html/</a> that open
+in any browser without an internet connection (<code>docs/html/setup.html</code>). The Markdown
+files are the source: after editing one, regenerate the HTML with
+<code>python3 scripts/build_docs.py</code> (requires <code>pip install -e &quot;.[docs]&quot;</code>) and commit both.</p>
 <hr />
 <h2 id="26-licence">26. Licence<a class="anchor" href="#26-licence" aria-label="Link to this section">#</a></h2>
 <p>MIT. See <a href="../../LICENSE">LICENSE</a>.</p>
@@ -2431,7 +2437,7 @@ backup and restore, upgrades, monitoring.</li>
     pre.appendChild(b);
   });
 
-  // Filter the contents list by what the reader types (e.g. "TLS", "B22", "price").
+  // Filter the contents list by what the reader types (e.g. "TLS", "driver", "price").
   document.querySelectorAll('.side').forEach(function(side){
     var box = side.querySelector('.find'); if(!box) return;
     box.addEventListener('input', function(){

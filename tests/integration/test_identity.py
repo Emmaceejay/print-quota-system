@@ -141,7 +141,7 @@ def test_new_account_rules(jdoe):
         assert "without the domain" in new_account_problem(session, r"CORP\J.Doe")
         assert "same account as the existing 'j.doe'" in new_account_problem(session, "J.Doe")
         assert "already exists" in new_account_problem(session, "j.doe")
-        assert "no spaces" in new_account_problem(session, "jdoe doe")
+        assert "no spaces" in new_account_problem(session, "jane doe")
         assert new_account_problem(session, "ada.obi") is None
 
 
@@ -190,6 +190,6 @@ def test_a_legacy_backslash_account_can_still_be_opened_in_the_console(jdoe, adm
     with db_session.session_scope() as session:
         session.add(User(username=r"CORP\Legacy.User", quota_limit=5))
     users = admin_client.get("/admin/users").text
-    assert "/admin/users/TG%5CLegacy.User" in users
-    page = admin_client.get("/admin/users/TG%5CLegacy.User")
+    assert "/admin/users/CORP%5CLegacy.User" in users
+    page = admin_client.get("/admin/users/CORP%5CLegacy.User")
     assert page.status_code == 200 and r"CORP\Legacy.User" in page.text

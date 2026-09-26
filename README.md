@@ -15,6 +15,12 @@ understand in full.
 | **Platform** | Ubuntu Server 22.04 LTS / 24.04 LTS with CUPS |
 | **Datastore** | SQLite (default) or PostgreSQL |
 | **Licence** | MIT |
+| **Documentation** | [Read online](https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt) · [Setup guide](docs/setup.md) · [Known issues](docs/known-issues.md) |
+
+> **New here?** Follow the [setup guide](docs/setup.md). If something doesn't
+> work, check [known issues and troubleshooting](docs/known-issues.md). All
+> documents can also be [read online](https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt) as one
+> formatted, searchable page.
 
 ---
 
@@ -152,7 +158,8 @@ print-quota-system/
 │   └── seed_demo.py              Populate a demo database for evaluation
 ├── systemd/                      Service and timer units (see §15)
 ├── docs/
-│   ├── setup-and-issues.md       Setup runbook + issue log (start here)
+│   ├── setup.md                  Step-by-step setup guide (start here)
+│   ├── known-issues.md           Known issues and troubleshooting
 │   ├── html/                     Browsable HTML versions of all the docs
 │   ├── architecture.md           Design decisions, enforcement mechanics, security
 │   └── operations.md             Day-two runbook
@@ -461,8 +468,8 @@ shell). Run this on the server. It sets a new password, restores admin
 rights and re-enables the account, without touching any other data:
 
 ```bash
-sudo /opt/printquota/bin/quotactl db init --admin ceejay
-sudo /opt/printquota/bin/quotactl user enable ceejay    # only if the account was disabled
+sudo /opt/printquota/bin/quotactl db init --admin alex
+sudo /opt/printquota/bin/quotactl user enable alex    # only if the account was disabled
 ```
 
 `quotactl user set-password <name>` also works. Both commands prompt for the
@@ -488,7 +495,7 @@ accounts, because they leave the password in shell history.
 Everything above can also be scripted with `quotactl` (§11):
 
 ```bash
-sudo /opt/printquota/bin/quotactl db init --admin ceejay
+sudo /opt/printquota/bin/quotactl db init --admin alex
 sudo /opt/printquota/bin/quotactl group add finance --budget 5000
 sudo /opt/printquota/bin/quotactl user add ada --quota 500 --group finance --email ada@example.com
 sudo /opt/printquota/bin/quotactl printer add hp-mono --device-uri socket://10.0.0.5:9100 \
@@ -1028,8 +1035,7 @@ ldap:
 
 LDAP usernames must match `^[A-Za-z0-9._-]{1,128}$`, and filter values are
 escaped according to RFC 4515. `group_map` is read by a helper function
-(`lookup_groups`) that is **not yet wired to any sync job**. Automatic group
-synchronisation is planned for Phase 9.
+(`lookup_groups`) that is **not yet wired to any sync job**. Automatic group synchronisation is planned.
 
 ---
 
@@ -1310,12 +1316,12 @@ deliberately does not edit `cupsd.conf`. Restart CUPS after changing it.
 | Printers page says *Could not read the CUPS queues* | CUPS not running, or `cups-client` missing | `systemctl status cups`; `lpstat -v` |
 | Printers page says *quota backend is not installed* | `install.sh` hasn't been run on this server | `sudo ./scripts/install.sh` |
 | IPP Everywhere queue creation fails | The printer is unreachable or doesn't speak IPP Everywhere | Check the URI with `ipptool -tv <uri> get-printer-attributes.test`, or choose *Raw queue* |
-| A user's jobs never reach the server (no new job in `lpstat -W all -o`); `error_log` shows `Unable to encrypt connection: A TLS fatal alert has been received` | The PC uses a printer Windows discovered by itself, which connects with encryption and rejects CUPS's self-signed certificate | Remove the auto-discovered printer and add `http://<server-ip>:631/printers/<QUEUE>` by address with the Microsoft PS Class Driver ([issue log B23](docs/setup-and-issues.md)) |
-| A new price doesn't show in Reports | The printer has its own price (copied from the default when it was registered), and past jobs keep the price they printed at | Set the price in **Printers & queues → Edit costs**; only new jobs use it ([issue log B24](docs/setup-and-issues.md)) |
+| A user's jobs never reach the server (no new job in `lpstat -W all -o`); `error_log` shows `Unable to encrypt connection: A TLS fatal alert has been received` | The PC uses a printer Windows discovered by itself, which connects with encryption and rejects CUPS's self-signed certificate | Remove the auto-discovered printer and add `http://<server-ip>:631/printers/<QUEUE>` by address with the Microsoft PS Class Driver ([known issues](docs/known-issues.md#a-users-jobs-never-reach-the-server)) |
+| A new price doesn't show in Reports | The printer has its own price (copied from the default when it was registered), and past jobs keep the price they printed at | Set the price in **Printers & queues → Edit costs**; only new jobs use it ([known issues](docs/known-issues.md#a-new-price-doesnt-appear-in-reports)) |
 | Lost the setup link | — | The token is `PRINTQUOTA_SETUP_TOKEN` in `/etc/printquota/env`. Open `/setup` and paste it |
 | Locked out (no administrator can sign in) | Forgotten password or disabled account | `sudo /opt/printquota/bin/quotactl db init --admin <name>` (§6) |
 
-More detail is in [docs/operations.md](docs/operations.md), and every issue met so far, with its fix, is in [docs/setup-and-issues.md](docs/setup-and-issues.md).
+More detail is in [docs/known-issues.md](docs/known-issues.md) and [docs/operations.md](docs/operations.md).
 
 ---
 
@@ -1332,7 +1338,7 @@ export PRINTQUOTA_DB_URL=sqlite:///./dev.db
 
 `seed_demo.py` creates the groups `finance` (budget 2000), `engineering`
 (6000) and `reception` (unlimited), the printers `hp-mono` and `color-mfp`,
-the users `ceejay` (admin), `ada`, `tunde` and `reception`, and 60
+the users `alex` (admin), `ada`, `tunde` and `reception`, and 60
 randomised jobs, most of them reconciled.
 
 ### Test suite (206 tests)
@@ -1372,10 +1378,8 @@ or macOS.
 
 ## 23. Known limitations and gaps
 
-These were found by reviewing the code as of 0.2.0 and are listed so that
-future maintainers don't trip over them. The backup-install gap, the JSON
-401 on `/admin/api/*`, and the failing user deletion from 0.1.1 are fixed
-(see [CHANGELOG.md](CHANGELOG.md)).
+Current limitations, listed so that operators and contributors know what to expect.
+Problems with a known workaround are in [docs/known-issues.md](docs/known-issues.md).
 
 1. **A printer rate of 0 falls back to the default rate**, so a free queue
    or a mono-only printer with colour set to 0 is still charged
@@ -1403,10 +1407,6 @@ future maintainers don't trip over them. The backup-install gap, the JSON
    minutes in one request. Imports without passwords are fast. For very large
    batches, import without passwords and let people use PAM/LDAP sign-in, or
    split the file.
-10. **Script executable bits:** a Windows checkout can drop the executable
-    bit from `scripts/*.sh`, `scripts/seed_demo.py` and `quota_backend.py`
-    (git shows a 100755 → 100644 mode change). Run `chmod +x scripts/*.sh`
-    on the server before installing, and don't commit the mode change.
 
 ---
 
@@ -1414,9 +1414,8 @@ future maintainers don't trip over them. The backup-install gap, the JSON
 
 From [CHANGELOG.md](CHANGELOG.md):
 
-- **Phase 9:** AD/LDAP group synchronisation using the existing hook.
-- **Phase 10:** hardening pass once there is real traffic.
-- **Phase 11 (stretch):** secure/pull printing and a client-side confirmation popup.
+- Automatic group synchronisation from AD/LDAP, using the existing directory hook.
+- Secure (pull) printing and a client-side confirmation prompt.
 
 **Out of scope by design:** multi-tenancy, payment/billing integration,
 native mobile apps, document watermarking, and MFP scan/copy tracking.
@@ -1428,14 +1427,18 @@ native mobile apps, document watermarking, and MFP scan/copy tracking.
 - [docs/architecture.md](docs/architecture.md): why a custom system, the
   enforcement mechanism, the data model, the policy engine, the security
   model, and scaling.
-- **Easy-reading HTML versions** of all these documents are in [docs/html/](docs/html/). Open
-  `docs/html/setup-and-issues.html` in any browser; they work offline. After editing any
-  Markdown document, regenerate them with `python3 scripts/build_docs.py` (needs
-  `pip install -e ".[docs]"`) and commit the result.
-- [docs/setup-and-issues.md](docs/setup-and-issues.md): **start here for a new server or a problem.** A step-by-step setup runbook, plus a log of every issue met in the real deployment (symptom, cause, fix, version).
+- [docs/setup.md](docs/setup.md): **start here.** Step-by-step setup for a new server.
+- [docs/known-issues.md](docs/known-issues.md): known issues and troubleshooting, each
+  with its symptom, cause and resolution.
 - [docs/operations.md](docs/operations.md): rollout, troubleshooting,
   backup and restore, upgrades, monitoring.
 - [CHANGELOG.md](CHANGELOG.md): release history.
+
+**Reading the documentation.** All of the above is available as one formatted, searchable
+page [online](https://claude.ai/artifact/TAkd38SPXAvTVbPXKHtEYt), and as HTML files in [docs/html/](docs/html/) that open
+in any browser without an internet connection (`docs/html/setup.html`). The Markdown
+files are the source: after editing one, regenerate the HTML with
+`python3 scripts/build_docs.py` (requires `pip install -e ".[docs]"`) and commit both.
 
 ---
 

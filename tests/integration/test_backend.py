@@ -35,7 +35,7 @@ def spool(env, name: str = "doc.txt", lines: int = 120):
     return path
 
 
-def cups_argv(path, job_id="41", user="ceejay", copies="1", options="") -> list[str]:
+def cups_argv(path, job_id="41", user="alex", copies="1", options="") -> list[str]:
     return ["quota", job_id, user, "Quarterly report", copies, options, str(path)]
 
 
@@ -58,17 +58,17 @@ def test_allowed_job_is_handed_to_the_real_backend(fake_backend):
     assert rc == qb.CUPS_BACKEND_OK
     invocation = json.loads(fake_backend["record"].read_text())
     assert invocation["device_uri"] == "socket://10.0.0.5:9100"
-    assert invocation["argv"][1:5] == ["41", "ceejay", "Quarterly report", "1"]
+    assert invocation["argv"][1:5] == ["41", "alex", "Quarterly report", "1"]
     with db_session.session_scope() as session:
         job = session.query(PrintJob).one()
         assert job.status == PrintJob.STATUS_ALLOWED
         assert job.cups_job_id == 41 and job.estimated_pages == 2
-        assert session.get(User, "ceejay").pages_used == 2
+        assert session.get(User, "alex").pages_used == 2
 
 
 def test_denied_job_is_cancelled_and_never_reaches_the_printer(fake_backend, capsys):
     with db_session.session_scope() as session:
-        session.get(User, "ceejay").quota_limit = 1
+        session.get(User, "alex").quota_limit = 1
     path = spool(fake_backend)
     rc = qb.run(cups_argv(path), cups_env(fake_backend))
     assert rc == qb.CUPS_BACKEND_CANCEL, "a denial must cancel the job, not stop the queue"
