@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Operations runbook · printquota</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"><style>
+:root{
+  --ground:#F4F6F9; --surface:#FFFFFF; --ink:#172033; --muted:#5A6478; --faint:#8C95A6;
+  --rule:#DAE0E8; --accent:#0B6E99; --accent-soft:#E3F1F8; --code:#EEF2F6; --code-ink:#1E2A3D;
+  --ok:#13795B; --ok-soft:#E4F4EE; --warn:#9A5B00; --warn-soft:#FBF1E0; --info:#4B5566; --info-soft:#EDF0F4;
+  --mark:#FFF3B0;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  --display:"IBM Plex Sans Condensed","Arial Narrow","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+    --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+    --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+    --mark:#5A4A0A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+  --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+  --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+  --mark:#5A4A0A;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(76px + env(safe-area-inset-top, 0px))}
+body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.65 var(--body);-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--rule)}
+.topbar-inner{max-width:1320px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;min-height:56px}
+.brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink);padding-block:10px}
+.brand b{font:700 19px/1 var(--display);letter-spacing:-.2px}
+.brand span{font:500 12px/1 var(--mono);color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.tabs a{display:block;padding:17px 10px 15px;font:600 14px/1 var(--display);letter-spacing:.2px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.layout{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:48px}
+.side{position:sticky;top:calc(76px + env(safe-area-inset-top, 0px));align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px}
+.side .find{width:100%;font:14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin-bottom:12px}
+.side .find::placeholder{color:var(--faint)}
+.toc,.toc ul{list-style:none;margin:0;padding:0}
+.toc>li{margin:2px 0}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:13.5px;line-height:1.4}
+.toc a:hover{background:var(--accent-soft);color:var(--ink)}
+.toc>li>a{color:var(--ink);font-weight:500}
+.toc ul{margin:2px 0 6px 10px;border-left:1px solid var(--rule);padding-left:6px}
+.toc a.here{color:var(--accent);background:var(--accent-soft)}
+.toc .none{color:var(--faint);font-size:13px;padding:4px 8px}
+
+.doc{min-width:0;max-width:78ch}
+.doc-head{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.doc-head .kicker{font:500 12px/1 var(--mono);color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.doc-head p{margin:10px 0 0;color:var(--muted);max-width:65ch}
+.doc h1{font:700 34px/1.15 var(--display);letter-spacing:-.4px;margin:10px 0 0;text-wrap:balance}
+.doc .content>h1:first-child{display:none}
+.doc h2{font:700 25px/1.25 var(--display);letter-spacing:-.2px;margin:46px 0 14px;padding-top:14px;border-top:1px solid var(--rule);text-wrap:balance}
+.doc h3{font:600 19px/1.3 var(--display);margin:32px 0 10px;text-wrap:balance}
+.doc h4{font:600 16px/1.35 var(--body);margin:24px 0 8px}
+.doc h2 .anchor,.doc h3 .anchor{margin-left:8px;font:500 .8em var(--mono);color:var(--faint);text-decoration:none;opacity:0}
+.doc h2:hover .anchor,.doc h3:hover .anchor,.doc .anchor:focus{opacity:1}
+.doc p,.doc li{max-width:72ch}
+.doc ul,.doc ol{padding-left:1.4em}
+.doc li{margin:4px 0}
+.doc li>ul,.doc li>ol{margin:4px 0}
+.doc hr{border:0;border-top:1px solid var(--rule);margin:36px 0}
+.doc hr:has(+ h2){display:none}
+.doc blockquote{margin:18px 0;padding:10px 16px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 6px 6px 0}
+.doc blockquote p{margin:6px 0}
+.doc code{font:13.5px/1.5 var(--mono);background:var(--code);color:var(--code-ink);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.doc pre{position:relative;margin:14px 0;background:var(--code);border:1px solid var(--rule);border-radius:7px;overflow-x:auto}
+.doc pre code{display:block;padding:14px 16px;background:none;border-radius:0;white-space:pre;overflow-wrap:normal;font-size:13px;line-height:1.55}
+.copy{position:absolute;top:7px;right:7px;font:500 12px/1 var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:5px 9px;cursor:pointer;opacity:.9}
+.copy:hover{color:var(--ink);border-color:var(--faint)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:7px;background:var(--surface)}
+.doc table{border-collapse:collapse;width:100%;font-size:14px}
+.doc th,.doc td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+.doc th{font:600 12px/1.3 var(--body);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--ground)}
+.doc tr:last-child td{border-bottom:0}
+.doc td code{white-space:nowrap}
+.status-line{list-style:none;margin-left:-1.4em !important;padding:8px 10px;background:var(--surface);border:1px solid var(--rule);border-radius:7px}
+.status-label{font:600 11px/1 var(--body);text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:6px}
+.badge{display:inline-block;font:600 12px/1 var(--body);padding:4px 8px;border-radius:99px;margin:1px 4px 1px 0;border:1px solid transparent;white-space:nowrap}
+.badge.fixed{color:var(--accent);background:var(--accent-soft)}
+.badge.verified{color:var(--ok);background:var(--ok-soft)}
+.badge.pending{color:var(--warn);background:var(--warn-soft)}
+.badge.config,.badge.info{color:var(--info);background:var(--info-soft)}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.menu{display:none}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:18px 48px}
+  .side{position:static;max-height:none;overflow:visible;padding:0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  .side>details>summary{list-style:none;cursor:pointer;padding:12px 14px;font:600 14px var(--display);color:var(--ink)}
+  .side>details>summary::-webkit-details-marker{display:none}
+  .side>details>summary::after{content:"+";float:right;color:var(--muted)}
+  .side>details[open]>summary::after{content:"\2212"}
+  .side .toc-body{padding:0 12px 12px;max-height:60vh;overflow:auto}
+  .doc h1{font-size:28px}
+  .doc h2{font-size:22px}
+  .tabs a{padding:12px 8px 10px}
+  html{scroll-padding-top:calc(120px + env(safe-area-inset-top, 0px))}
+}
+@media (min-width:961px){
+  .side>details>summary{display:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup-and-issues.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup-and-issues.html" data-doc="doc-setup-and-issues">Setup &amp; issue log</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations" aria-current="page">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-operations" placeholder="Filter contents (e.g. TLS, B22, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#rolling-out-safely">Rolling out safely</a></li><li><a href="#troubleshooting">Troubleshooting</a><ul><li><a href="#jobs-disappear-and-the-user-sees-no-reason">Jobs disappear and the user sees no reason</a></li><li><a href="#the-queue-stopped">The queue stopped</a></li><li><a href="#jobs-are-held-instead-of-printing">Jobs are held instead of printing</a></li><li><a href="#balances-do-not-move-after-printing">Balances do not move after printing</a></li><li><a href="#estimates-are-consistently-wrong">Estimates are consistently wrong</a></li><li><a href="#a-user-was-charged-for-a-job-that-jammed">A user was charged for a job that jammed</a></li></ul></li><li><a href="#backup-and-restore">Backup and restore</a></li><li><a href="#upgrades">Upgrades</a></li><li><a href="#monitoring">Monitoring</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Operations</div><h1>Operations runbook</h1><p>Day-two runbook: rollout, troubleshooting, backup and restore, upgrades, monitoring.</p></header><div class="content"><h1 id="operations-runbook">Operations runbook</h1>
+<h2 id="rolling-out-safely">Rolling out safely<a class="anchor" href="#rolling-out-safely" aria-label="Link to this section">#</a></h2>
+<p>Do not wrap every queue at once. The sequence that avoids surprises:</p>
+<ol>
+<li><strong>Install, seed nobody.</strong> <code>sudo ./scripts/install.sh</code>, then
+<code>quotactl db init --admin &lt;you&gt;</code>. Nothing is enforced yet: the wrapper is
+installed but no queue points at it.</li>
+<li><strong>Register printers with their real device URIs.</strong>
+<code>quotactl printer add &lt;queue&gt; --device-uri &lt;uri&gt; --mono 2 --color 10</code>.
+Get the URI from <code>lpstat -v</code>.</li>
+<li><strong>Create users with a generous quota</strong> (or a very large one) so the first
+week only <em>measures</em>. <code>quotactl user add &lt;name&gt; --quota 100000</code>.</li>
+<li><strong>Wrap one low-risk queue.</strong> <code>sudo ./scripts/register_backend.sh &lt;queue&gt;</code>
+Print a test page. Confirm with <code>quotactl usage --days 1</code> and
+<code>journalctl -u cups -n 50</code>.</li>
+<li><strong>Compare estimate to actual for a few days.</strong> In the reports, the
+estimated and actual page columns should track closely. Large gaps point
+at a driver that recomposes jobs — see below.</li>
+<li><strong>Lower quotas to real values</strong>, then wrap the remaining queues.</li>
+<li><strong>Turn on <code>Require valid-user</code></strong> in <code>cupsd.conf</code> (see
+<a href="architecture.html#trusting-the-user-name">architecture.md</a>) before you
+depend on the numbers.</li>
+</ol>
+<p>Undo for any queue: <code>sudo ./scripts/register_backend.sh &lt;queue&gt; --undo</code>.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
+<h3 id="jobs-disappear-and-the-user-sees-no-reason">Jobs disappear and the user sees no reason<a class="anchor" href="#jobs-disappear-and-the-user-sees-no-reason" aria-label="Link to this section">#</a></h3>
+<p>Check the backend decision:</p>
+<pre><code class="language-bash">journalctl -u cups -n 100 | grep -i printquota
+quotactl usage --days 1 --status denied
+</code></pre>
+<p><code>denial_reason</code> on the job row is the authoritative answer.</p>
+<h3 id="the-queue-stopped">The queue stopped<a class="anchor" href="#the-queue-stopped" aria-label="Link to this section">#</a></h3>
+<p>A wrapper should never stop a queue on a denial — it returns CANCEL. A
+stopped queue means the device URI is wrong (<code>CUPS_BACKEND_STOP</code>) or the
+real backend itself failed. Check:</p>
+<pre><code class="language-bash">lpstat -v &lt;queue&gt;                      # should read quota:&lt;real-uri&gt;
+ls -l /usr/lib/cups/backend/quota      # must be 0700 root:root
+cupsenable &lt;queue&gt;
+</code></pre>
+<h3 id="jobs-are-held-instead-of-printing">Jobs are held instead of printing<a class="anchor" href="#jobs-are-held-instead-of-printing" aria-label="Link to this section">#</a></h3>
+<p><code>CUPS_BACKEND_HOLD</code> means the wrapper could not reach the database. Check
+<code>quota-accounting</code>'s journal and the permissions on
+<code>/var/lib/printquota/printquota.db</code> (the backend runs as root; the services
+run as <code>printquota</code>).</p>
+<h3 id="balances-do-not-move-after-printing">Balances do not move after printing<a class="anchor" href="#balances-do-not-move-after-printing" aria-label="Link to this section">#</a></h3>
+<p>The accounting daemon is not seeing <code>page_log</code>:</p>
+<pre><code class="language-bash">systemctl status quota-accounting
+sudo -u printquota head /var/log/cups/page_log     # must be readable
+grep PageLogFormat /etc/cups/cupsd.conf            # leave it at the default
+</code></pre>
+<p>The daemon expects the default <code>PageLogFormat</code>. If you have customised it,
+restore the default or adjust <code>_LINE_RE</code> in
+<code>src/printquota/accounting/daemon.py</code>.</p>
+<h3 id="estimates-are-consistently-wrong">Estimates are consistently wrong<a class="anchor" href="#estimates-are-consistently-wrong" aria-label="Link to this section">#</a></h3>
+<p><code>pdfinfo</code> gives an exact count for PDF. Windows drivers that send PCL or
+raw data give a weaker estimate (form feeds or a fallback of one page). The
+daemon still corrects the charge from <code>page_log</code>, so billing stays right —
+only the pre-flight <em>block</em> is approximate. If pre-flight accuracy matters,
+point clients at the IPP Everywhere / driverless queue so jobs arrive as
+PDF.</p>
+<h3 id="a-user-was-charged-for-a-job-that-jammed">A user was charged for a job that jammed<a class="anchor" href="#a-user-was-charged-for-a-job-that-jammed" aria-label="Link to this section">#</a></h3>
+<p>Refund it from the CLI's reconciliation path or by resetting the user:</p>
+<pre><code class="language-bash">quotactl user show &lt;name&gt;        # find the job
+quotactl user set-quota &lt;name&gt; &lt;higher&gt;   # or
+quotactl user reset &lt;name&gt;
+</code></pre>
+<p>Both are recorded in the audit log.</p>
+<h2 id="backup-and-restore">Backup and restore<a class="anchor" href="#backup-and-restore" aria-label="Link to this section">#</a></h2>
+<p>The nightly timer writes to <code>/var/backups/printquota</code> using SQLite's online
+backup API (safe while the services run):</p>
+<pre><code class="language-bash">systemctl list-timers quota-backup.timer
+sudo /opt/printquota/share/scripts/backup.sh /var/backups/printquota
+</code></pre>
+<p>Restore:</p>
+<pre><code class="language-bash">sudo systemctl stop quota-api quota-accounting
+sudo gunzip -c /var/backups/printquota/printquota-&lt;stamp&gt;.db.gz \
+     &gt; /var/lib/printquota/printquota.db
+sudo chown printquota:printquota /var/lib/printquota/printquota.db
+sudo systemctl start quota-accounting quota-api
+</code></pre>
+<p>Losing this database loses every balance and all usage history. Copy the
+backups off the VM as well.</p>
+<h2 id="upgrades">Upgrades<a class="anchor" href="#upgrades" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">cd /path/to/print-quota-system
+git pull
+sudo ./scripts/install.sh          # idempotent: re-installs and migrates
+</code></pre>
+<p><code>install.sh</code> keeps your existing <code>settings.yaml</code> and <code>env</code>, reinstalls the
+package, runs <code>alembic upgrade head</code> and restarts the units. Schema changes
+always ship as an Alembic migration — never edit the schema by hand.</p>
+<h2 id="monitoring">Monitoring<a class="anchor" href="#monitoring" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><code>GET /healthz</code> — liveness plus a database round-trip (503 when degraded).</li>
+<li><code>GET /admin/api/summary?days=30</code> — JSON totals for a dashboard (requires
+an admin session).</li>
+<li>Alert on <code>quota-accounting.service</code> not being active: if it stops, jobs
+still print and are charged the estimate, but the corrections stop.</li>
+</ul>
+</div><footer class="foot">Generated from <code>docs/operations.md</code> by <code>scripts/build_docs.py</code>. Edit the Markdown, then re-run the script.</footer></main></div><script>
+(function(){
+  function copyText(btn, text){
+    function done(ok){btn.textContent = ok ? 'Copied' : 'Select + Ctrl+C'; setTimeout(function(){btn.textContent='Copy';}, 1600);}
+    try{
+      navigator.clipboard.writeText(text).then(function(){done(true);}, function(){select(btn); done(false);});
+    }catch(e){select(btn); done(false);}
+  }
+  function select(btn){
+    var code = btn.parentNode.querySelector('code'); var r = document.createRange();
+    r.selectNodeContents(code); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  document.querySelectorAll('.doc pre').forEach(function(pre){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+    b.addEventListener('click', function(){copyText(b, pre.querySelector('code').innerText);});
+    pre.appendChild(b);
+  });
+
+  // Filter the contents list by what the reader types (e.g. "TLS", "B22", "price").
+  document.querySelectorAll('.side').forEach(function(side){
+    var box = side.querySelector('.find'); if(!box) return;
+    box.addEventListener('input', function(){
+      var q = box.value.trim().toLowerCase(); var any = false;
+      side.querySelectorAll('.toc>li').forEach(function(li){
+        var subs = li.querySelectorAll('ul>li'); var subHit = false;
+        subs.forEach(function(s){ var hit = !q || s.textContent.toLowerCase().indexOf(q) > -1; s.hidden = !hit; subHit = subHit || (hit && !!q); });
+        var own = li.querySelector('a').textContent.toLowerCase().indexOf(q) > -1;
+        var show = !q || own || subHit;
+        if(show && own && q){ subs.forEach(function(s){ s.hidden = false; }); }
+        li.hidden = !show; any = any || show;
+      });
+      var none = side.querySelector('.none'); if(none) none.hidden = any;
+    });
+  });
+
+  // Tabs for the single-page edition: one document visible at a time.
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.docsec'));
+  function show(sec, target){
+    sections.forEach(function(s){ s.hidden = s !== sec; });
+    document.querySelectorAll('.tabs a').forEach(function(a){
+      if(a.getAttribute('data-doc') === sec.id){ a.setAttribute('aria-current','page'); } else { a.removeAttribute('aria-current'); }
+    });
+    if(target && target !== sec){ target.scrollIntoView(); } else { window.scrollTo(0, 0); }
+  }
+  function route(){
+    if(!sections.length) return;
+    var id = decodeURIComponent(location.hash.slice(1)); var el = id && document.getElementById(id);
+    if(!el){ show(sections[0]); return; }
+    var sec = el.closest('section.docsec') || el; show(sec, el);
+  }
+  if(sections.length){ window.addEventListener('hashchange', route); route(); }
+
+  // Highlight where the reader is in the contents list.
+  if('IntersectionObserver' in window){
+    var links = {}; document.querySelectorAll('.toc a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          document.querySelectorAll('.toc a.here').forEach(function(a){ a.classList.remove('here'); });
+          var a = links[e.target.id]; if(a) a.classList.add('here');
+        }
+      });
+    }, {rootMargin:'-80px 0px -70% 0px'});
+    document.querySelectorAll('.doc h2[id], .doc h3[id]').forEach(function(h){ io.observe(h); });
+  }
+})();
+</script></body></html>

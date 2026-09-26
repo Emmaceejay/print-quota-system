@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Architecture and design decisions · printquota</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"><style>
+:root{
+  --ground:#F4F6F9; --surface:#FFFFFF; --ink:#172033; --muted:#5A6478; --faint:#8C95A6;
+  --rule:#DAE0E8; --accent:#0B6E99; --accent-soft:#E3F1F8; --code:#EEF2F6; --code-ink:#1E2A3D;
+  --ok:#13795B; --ok-soft:#E4F4EE; --warn:#9A5B00; --warn-soft:#FBF1E0; --info:#4B5566; --info-soft:#EDF0F4;
+  --mark:#FFF3B0;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  --display:"IBM Plex Sans Condensed","Arial Narrow","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+    --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+    --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+    --mark:#5A4A0A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+  --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+  --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+  --mark:#5A4A0A;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(76px + env(safe-area-inset-top, 0px))}
+body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.65 var(--body);-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--rule)}
+.topbar-inner{max-width:1320px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;min-height:56px}
+.brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink);padding-block:10px}
+.brand b{font:700 19px/1 var(--display);letter-spacing:-.2px}
+.brand span{font:500 12px/1 var(--mono);color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.tabs a{display:block;padding:17px 10px 15px;font:600 14px/1 var(--display);letter-spacing:.2px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.layout{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:48px}
+.side{position:sticky;top:calc(76px + env(safe-area-inset-top, 0px));align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px}
+.side .find{width:100%;font:14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin-bottom:12px}
+.side .find::placeholder{color:var(--faint)}
+.toc,.toc ul{list-style:none;margin:0;padding:0}
+.toc>li{margin:2px 0}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:13.5px;line-height:1.4}
+.toc a:hover{background:var(--accent-soft);color:var(--ink)}
+.toc>li>a{color:var(--ink);font-weight:500}
+.toc ul{margin:2px 0 6px 10px;border-left:1px solid var(--rule);padding-left:6px}
+.toc a.here{color:var(--accent);background:var(--accent-soft)}
+.toc .none{color:var(--faint);font-size:13px;padding:4px 8px}
+
+.doc{min-width:0;max-width:78ch}
+.doc-head{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.doc-head .kicker{font:500 12px/1 var(--mono);color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.doc-head p{margin:10px 0 0;color:var(--muted);max-width:65ch}
+.doc h1{font:700 34px/1.15 var(--display);letter-spacing:-.4px;margin:10px 0 0;text-wrap:balance}
+.doc .content>h1:first-child{display:none}
+.doc h2{font:700 25px/1.25 var(--display);letter-spacing:-.2px;margin:46px 0 14px;padding-top:14px;border-top:1px solid var(--rule);text-wrap:balance}
+.doc h3{font:600 19px/1.3 var(--display);margin:32px 0 10px;text-wrap:balance}
+.doc h4{font:600 16px/1.35 var(--body);margin:24px 0 8px}
+.doc h2 .anchor,.doc h3 .anchor{margin-left:8px;font:500 .8em var(--mono);color:var(--faint);text-decoration:none;opacity:0}
+.doc h2:hover .anchor,.doc h3:hover .anchor,.doc .anchor:focus{opacity:1}
+.doc p,.doc li{max-width:72ch}
+.doc ul,.doc ol{padding-left:1.4em}
+.doc li{margin:4px 0}
+.doc li>ul,.doc li>ol{margin:4px 0}
+.doc hr{border:0;border-top:1px solid var(--rule);margin:36px 0}
+.doc hr:has(+ h2){display:none}
+.doc blockquote{margin:18px 0;padding:10px 16px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 6px 6px 0}
+.doc blockquote p{margin:6px 0}
+.doc code{font:13.5px/1.5 var(--mono);background:var(--code);color:var(--code-ink);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.doc pre{position:relative;margin:14px 0;background:var(--code);border:1px solid var(--rule);border-radius:7px;overflow-x:auto}
+.doc pre code{display:block;padding:14px 16px;background:none;border-radius:0;white-space:pre;overflow-wrap:normal;font-size:13px;line-height:1.55}
+.copy{position:absolute;top:7px;right:7px;font:500 12px/1 var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:5px 9px;cursor:pointer;opacity:.9}
+.copy:hover{color:var(--ink);border-color:var(--faint)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:7px;background:var(--surface)}
+.doc table{border-collapse:collapse;width:100%;font-size:14px}
+.doc th,.doc td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+.doc th{font:600 12px/1.3 var(--body);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--ground)}
+.doc tr:last-child td{border-bottom:0}
+.doc td code{white-space:nowrap}
+.status-line{list-style:none;margin-left:-1.4em !important;padding:8px 10px;background:var(--surface);border:1px solid var(--rule);border-radius:7px}
+.status-label{font:600 11px/1 var(--body);text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:6px}
+.badge{display:inline-block;font:600 12px/1 var(--body);padding:4px 8px;border-radius:99px;margin:1px 4px 1px 0;border:1px solid transparent;white-space:nowrap}
+.badge.fixed{color:var(--accent);background:var(--accent-soft)}
+.badge.verified{color:var(--ok);background:var(--ok-soft)}
+.badge.pending{color:var(--warn);background:var(--warn-soft)}
+.badge.config,.badge.info{color:var(--info);background:var(--info-soft)}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.menu{display:none}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:18px 48px}
+  .side{position:static;max-height:none;overflow:visible;padding:0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  .side>details>summary{list-style:none;cursor:pointer;padding:12px 14px;font:600 14px var(--display);color:var(--ink)}
+  .side>details>summary::-webkit-details-marker{display:none}
+  .side>details>summary::after{content:"+";float:right;color:var(--muted)}
+  .side>details[open]>summary::after{content:"\2212"}
+  .side .toc-body{padding:0 12px 12px;max-height:60vh;overflow:auto}
+  .doc h1{font-size:28px}
+  .doc h2{font-size:22px}
+  .tabs a{padding:12px 8px 10px}
+  html{scroll-padding-top:calc(120px + env(safe-area-inset-top, 0px))}
+}
+@media (min-width:961px){
+  .side>details>summary{display:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup-and-issues.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup-and-issues.html" data-doc="doc-setup-and-issues">Setup &amp; issue log</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture" aria-current="page">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-architecture" placeholder="Filter contents (e.g. TLS, B22, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#1-why-not-an-existing-project">1. Why not an existing project</a></li><li><a href="#2-the-enforcement-mechanism">2. The enforcement mechanism</a><ul><li><a href="#why-both-halves">Why both halves</a></li><li><a href="#why-a-denial-returns-cancel-not-failed">Why a denial returns CANCEL, not FAILED</a></li><li><a href="#why-a-datastore-failure-returns-hold">Why a datastore failure returns HOLD</a></li></ul></li><li><a href="#3-data-model">3. Data model</a><ul><li><a href="#quota-semantics">Quota semantics</a></li><li><a href="#group-budgets">Group budgets</a></li></ul></li><li><a href="#4-policy-engine">4. Policy engine</a></li><li><a href="#5-security-model">5. Security model</a><ul><li><a href="#trusting-the-user-name">Trusting the user name</a></li><li><a href="#other-measures">Other measures</a></li></ul></li><li><a href="#6-observability">6. Observability</a></li><li><a href="#7-scaling-past-sqlite">7. Scaling past SQLite</a></li><li><a href="#8-deliberate-non-goals">8. Deliberate non-goals</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Architecture</div><h1>Architecture and design decisions</h1><p>Design decisions, the enforcement mechanism, data model and security model.</p></header><div class="content"><h1 id="architecture-and-design-decisions">Architecture and design decisions</h1>
+<h2 id="1-why-not-an-existing-project">1. Why not an existing project<a class="anchor" href="#1-why-not-an-existing-project" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Why it was rejected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PaperCut NG/MF</td>
+<td>Proprietary; free only to 5 users</td>
+</tr>
+<tr>
+<td>PyKota</td>
+<td>Upstream dead; Python 2 era; no security maintenance</td>
+</tr>
+<tr>
+<td>SavaPage</td>
+<td>Core licensing ambiguous across distributions</td>
+</tr>
+</tbody>
+</table></div>
+<p>The remaining option is a small, owned system built directly on CUPS's own
+extension point. That is what this is.</p>
+<h2 id="2-the-enforcement-mechanism">2. The enforcement mechanism<a class="anchor" href="#2-the-enforcement-mechanism" aria-label="Link to this section">#</a></h2>
+<p>CUPS logs usage; it does not enforce. There are two integration points and
+printquota uses both:</p>
+<p><strong>Pre-flight — a wrapper backend.</strong> A CUPS queue's <code>DeviceURI</code> names the
+program CUPS execs to move the job to the device. Setting it to
+<code>quota:socket://10.0.0.5:9100</code> makes CUPS run <code>/usr/lib/cups/backend/quota</code>
+with the real URI carried inside. The wrapper:</p>
+<ol>
+<li>reads <code>job-originating-user-name</code> from <code>argv[2]</code>;</li>
+<li>estimates the page count from the spool file (<code>pdfinfo</code> for PDF, the
+<code>%%Pages</code> trailer for PostScript, form feeds for PCL, line count for
+text), multiplied by copies and divided by N-up;</li>
+<li>evaluates policy rules, then the user's quota and the group pool;</li>
+<li><strong>ALLOW</strong> → execs the real backend with the same argv and
+<code>DEVICE_URI</code> rewritten; <strong>DENY</strong> → exits <code>CUPS_BACKEND_CANCEL</code>.</li>
+</ol>
+<p><strong>Post-print — the accounting daemon.</strong> CUPS writes one <code>page_log</code> line per
+imaged page. The daemon aggregates those per job and reconciles the charge.</p>
+<h3 id="why-both-halves">Why both halves<a class="anchor" href="#why-both-halves" aria-label="Link to this section">#</a></h3>
+<p>The pre-flight estimate can be wrong: the filter chain may add a banner
+page, the driver may re-compose the job, duplex and N-up change the number
+of sides, and a job may fail halfway. <code>page_log</code> is the only authoritative
+count, but it exists only after the paper is out — too late to block
+anything. So printquota charges the estimate up front (which is what stops
+a burst of jobs all passing against the same balance) and corrects the
+difference afterwards.</p>
+<h3 id="why-a-denial-returns-cancel-not-failed">Why a denial returns CANCEL, not FAILED<a class="anchor" href="#why-a-denial-returns-cancel-not-failed" aria-label="Link to this section">#</a></h3>
+<p><code>CUPS_BACKEND_FAILED</code> <strong>disables the queue</strong> — one user hitting their quota
+would take the printer offline for the whole office. <code>CUPS_BACKEND_CANCEL</code>
+cancels that one job and leaves the queue running. The reason is written to
+stderr with an <code>ERROR:</code> prefix, so it lands in <code>error_log</code> and in the job's
+state message.</p>
+<h3 id="why-a-datastore-failure-returns-hold">Why a datastore failure returns HOLD<a class="anchor" href="#why-a-datastore-failure-returns-hold" aria-label="Link to this section">#</a></h3>
+<p>If the database is unreachable, the wrapper cannot know whether the job is
+within quota. Printing it would be unaccounted; cancelling it would lose the
+user's work. <code>CUPS_BACKEND_HOLD</code> keeps the job in the queue until an
+administrator releases it.</p>
+<h2 id="3-data-model">3. Data model<a class="anchor" href="#3-data-model" aria-label="Link to this section">#</a></h2>
+<p>Seven tables (<code>src/printquota/db/models.py</code>):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>groups</code></td>
+<td>Department, optional shared page pool, pool usage</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>Quota, usage, rolling period anchor, alert threshold, flags</td>
+</tr>
+<tr>
+<td><code>printers</code></td>
+<td>Queue name, real device URI, per-page costs, duplex discount</td>
+</tr>
+<tr>
+<td><code>print_policies</code></td>
+<td>One rule, scoped to user/group/printer/global</td>
+</tr>
+<tr>
+<td><code>print_jobs</code></td>
+<td>Every decision and its reconciliation</td>
+</tr>
+<tr>
+<td><code>alerts_log</code></td>
+<td>Every notification (also drives the cooldown)</td>
+</tr>
+<tr>
+<td><code>admin_audit_log</code></td>
+<td>Every privileged action, from console and CLI alike</td>
+</tr>
+</tbody>
+</table></div>
+<p>Design notes:</p>
+<ul>
+<li><strong>Timestamps are timezone-aware UTC, written from Python</strong>, never by a
+database default, so SQLite and PostgreSQL behave identically.</li>
+<li><strong><code>print_jobs.cups_job_id</code> is not the primary key.</strong> CUPS reuses job ids
+after a restart; the surrogate <code>id</code> keeps history unambiguous.</li>
+<li><strong><code>charged_pages</code> is separate from <code>estimated_pages</code> and
+<code>actual_pages</code>.</strong> It records what the balance was actually debited, which
+is what makes reconciliation a difference (<code>actual - charged</code>) and
+therefore idempotent.</li>
+<li><strong><code>reconciled</code> is a hard flag.</strong> Replaying <code>page_log</code> can never
+double-charge.</li>
+</ul>
+<h3 id="quota-semantics">Quota semantics<a class="anchor" href="#quota-semantics" aria-label="Link to this section">#</a></h3>
+<p>Quota is counted in <strong>pages</strong>, over a <strong>rolling period</strong> anchored per user
+(<code>period_start</code>). When the period elapses the anchor advances in whole
+windows — a user who did not print for three months restarts aligned to
+their original anchor, not to &quot;now&quot;, so quotas do not drift across the
+organisation.</p>
+<p>Cost is tracked in money alongside pages, for reporting and chargeback. It
+does not gate printing; mixing the two units in one enforcement decision
+makes denials hard for users to reason about.</p>
+<h3 id="group-budgets">Group budgets<a class="anchor" href="#group-budgets" aria-label="Link to this section">#</a></h3>
+<p>A job must fit <strong>both</strong> the user's own quota and their group's shared pool
+(when one is set). This is the behaviour administrators expect from a
+department budget: an individual allowance stops one person monopolising the
+pool, and the pool stops the department as a whole overspending. It can be
+turned off with <code>quota.enforce_group_budget: false</code>.</p>
+<h2 id="4-policy-engine">4. Policy engine<a class="anchor" href="#4-policy-engine" aria-label="Link to this section">#</a></h2>
+<p><code>src/printquota/policies/engine.py</code> is pure functions over plain
+dataclasses: no ORM, no configuration lookups, no I/O. That is what makes
+the quota and policy logic exhaustively unit-testable without a printer.</p>
+<p>Rules resolve by scope specificity — <strong>user &gt; group &gt; printer &gt; global</strong> —
+and a more specific rule <em>replaces</em> the less specific one for that rule type
+rather than stacking with it, which is what an administrator means when they
+add an exception for one person.</p>
+<p>Policies are evaluated <strong>before</strong> quota so that a policy violation is
+reported as such, rather than surfacing to the user as a confusing balance
+message.</p>
+<p><code>force_duplex</code> is the one rule that modifies rather than denies: it appends
+<code>sides=two-sided-long-edge</code> to the options handed to the real backend.</p>
+<h2 id="5-security-model">5. Security model<a class="anchor" href="#5-security-model" aria-label="Link to this section">#</a></h2>
+<h3 id="trusting-the-user-name">Trusting the user name<a class="anchor" href="#trusting-the-user-name" aria-label="Link to this section">#</a></h3>
+<p>Enforcement is only as trustworthy as <code>job-originating-user-name</code>. By
+default CUPS takes it from the client, where it can be set to anything. In
+<code>/etc/cups/cupsd.conf</code>:</p>
+<pre><code class="language-apache">&lt;Location /printers&gt;
+  Order allow,deny
+  Allow @LOCAL
+  AuthType Default
+  Require valid-user
+&lt;/Location&gt;
+</code></pre>
+<p>With <code>Require valid-user</code>, CUPS replaces the job's user name with the
+authenticated one. Without it, quotas are advisory at best. The installer
+does not edit <code>cupsd.conf</code> for you — that file is too important to rewrite
+behind an administrator's back.</p>
+<h3 id="other-measures">Other measures<a class="anchor" href="#other-measures" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>The wrapper never passes anything to a shell. <code>pdfinfo</code> is invoked with an
+argument list and a timeout.</li>
+<li>The real backend path is resolved and checked to be inside
+<code>printing.real_backend_dir</code>, so a crafted device URI cannot exec an
+arbitrary binary.</li>
+<li>The backend is installed <code>0700 root:root</code>. CUPS runs <code>0700</code> backends as
+root (needed to read the spool file) and <code>0755</code> ones as <code>lp</code>.</li>
+<li>The web app stores bcrypt password hashes, issues signed session cookies
+(<code>HttpOnly</code>, <code>SameSite=Lax</code>), and only follows relative redirect targets
+after sign-in.</li>
+<li>Every privileged action is written to <code>admin_audit_log</code> with the actor,
+target and source (<code>cli</code> or <code>web</code>).</li>
+<li>The services run as an unprivileged <code>printquota</code> user under systemd
+hardening (<code>ProtectSystem=strict</code>, <code>NoNewPrivileges</code>, a minimal
+<code>ReadWritePaths</code>).</li>
+</ul>
+<h2 id="6-observability">6. Observability<a class="anchor" href="#6-observability" aria-label="Link to this section">#</a></h2>
+<p>Logging is structured and goes to journald when <code>systemd-python</code> is present,
+otherwise to stderr (which journald captures anyway). Every allow/deny
+decision logs the user, printer, page count, estimation method, the rule
+that fired and the reason.</p>
+<pre><code class="language-bash">journalctl -u cups -f                 # backend decisions
+journalctl -u quota-accounting -f     # reconciliation
+journalctl -u quota-api -f            # console and portal
+</code></pre>
+<h2 id="7-scaling-past-sqlite">7. Scaling past SQLite<a class="anchor" href="#7-scaling-past-sqlite" aria-label="Link to this section">#</a></h2>
+<p>SQLite is the default: one VM, low write concurrency, WAL enabled, foreign
+keys on, a busy timeout for the three processes that share the file. The
+schema uses no SQLite-specific types, so moving to PostgreSQL is one setting
+plus <code>alembic upgrade head</code>:</p>
+<pre><code class="language-yaml">database:
+  url: &quot;postgresql+psycopg://printquota:...@localhost/printquota&quot;
+</code></pre>
+<p>Rough guidance: SQLite is comfortable to a few hundred users and a handful
+of busy queues. Move to PostgreSQL when you start seeing <code>database is locked</code> warnings in the accounting log, or when you want the database on a
+different host from CUPS.</p>
+<h2 id="8-deliberate-non-goals">8. Deliberate non-goals<a class="anchor" href="#8-deliberate-non-goals" aria-label="Link to this section">#</a></h2>
+<p>Multi-tenancy, payment/billing integration, native mobile apps, document
+watermarking and MFP scan/copy tracking are out of scope. Secure/pull
+printing and a client-side confirmation popup are plausible later additions
+— both need per-device or per-OS agents, which is a different project from
+this one.</p>
+</div><footer class="foot">Generated from <code>docs/architecture.md</code> by <code>scripts/build_docs.py</code>. Edit the Markdown, then re-run the script.</footer></main></div><script>
+(function(){
+  function copyText(btn, text){
+    function done(ok){btn.textContent = ok ? 'Copied' : 'Select + Ctrl+C'; setTimeout(function(){btn.textContent='Copy';}, 1600);}
+    try{
+      navigator.clipboard.writeText(text).then(function(){done(true);}, function(){select(btn); done(false);});
+    }catch(e){select(btn); done(false);}
+  }
+  function select(btn){
+    var code = btn.parentNode.querySelector('code'); var r = document.createRange();
+    r.selectNodeContents(code); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  document.querySelectorAll('.doc pre').forEach(function(pre){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+    b.addEventListener('click', function(){copyText(b, pre.querySelector('code').innerText);});
+    pre.appendChild(b);
+  });
+
+  // Filter the contents list by what the reader types (e.g. "TLS", "B22", "price").
+  document.querySelectorAll('.side').forEach(function(side){
+    var box = side.querySelector('.find'); if(!box) return;
+    box.addEventListener('input', function(){
+      var q = box.value.trim().toLowerCase(); var any = false;
+      side.querySelectorAll('.toc>li').forEach(function(li){
+        var subs = li.querySelectorAll('ul>li'); var subHit = false;
+        subs.forEach(function(s){ var hit = !q || s.textContent.toLowerCase().indexOf(q) > -1; s.hidden = !hit; subHit = subHit || (hit && !!q); });
+        var own = li.querySelector('a').textContent.toLowerCase().indexOf(q) > -1;
+        var show = !q || own || subHit;
+        if(show && own && q){ subs.forEach(function(s){ s.hidden = false; }); }
+        li.hidden = !show; any = any || show;
+      });
+      var none = side.querySelector('.none'); if(none) none.hidden = any;
+    });
+  });
+
+  // Tabs for the single-page edition: one document visible at a time.
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.docsec'));
+  function show(sec, target){
+    sections.forEach(function(s){ s.hidden = s !== sec; });
+    document.querySelectorAll('.tabs a').forEach(function(a){
+      if(a.getAttribute('data-doc') === sec.id){ a.setAttribute('aria-current','page'); } else { a.removeAttribute('aria-current'); }
+    });
+    if(target && target !== sec){ target.scrollIntoView(); } else { window.scrollTo(0, 0); }
+  }
+  function route(){
+    if(!sections.length) return;
+    var id = decodeURIComponent(location.hash.slice(1)); var el = id && document.getElementById(id);
+    if(!el){ show(sections[0]); return; }
+    var sec = el.closest('section.docsec') || el; show(sec, el);
+  }
+  if(sections.length){ window.addEventListener('hashchange', route); route(); }
+
+  // Highlight where the reader is in the contents list.
+  if('IntersectionObserver' in window){
+    var links = {}; document.querySelectorAll('.toc a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          document.querySelectorAll('.toc a.here').forEach(function(a){ a.classList.remove('here'); });
+          var a = links[e.target.id]; if(a) a.classList.add('here');
+        }
+      });
+    }, {rootMargin:'-80px 0px -70% 0px'});
+    document.querySelectorAll('.doc h2[id], .doc h3[id]').forEach(function(h){ io.observe(h); });
+  }
+})();
+</script></body></html>

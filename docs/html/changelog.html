@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Changelog · printquota</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"><style>
+:root{
+  --ground:#F4F6F9; --surface:#FFFFFF; --ink:#172033; --muted:#5A6478; --faint:#8C95A6;
+  --rule:#DAE0E8; --accent:#0B6E99; --accent-soft:#E3F1F8; --code:#EEF2F6; --code-ink:#1E2A3D;
+  --ok:#13795B; --ok-soft:#E4F4EE; --warn:#9A5B00; --warn-soft:#FBF1E0; --info:#4B5566; --info-soft:#EDF0F4;
+  --mark:#FFF3B0;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  --display:"IBM Plex Sans Condensed","Arial Narrow","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+    --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+    --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+    --mark:#5A4A0A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+  --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+  --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+  --mark:#5A4A0A;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(76px + env(safe-area-inset-top, 0px))}
+body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.65 var(--body);-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--rule)}
+.topbar-inner{max-width:1320px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;min-height:56px}
+.brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink);padding-block:10px}
+.brand b{font:700 19px/1 var(--display);letter-spacing:-.2px}
+.brand span{font:500 12px/1 var(--mono);color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.tabs a{display:block;padding:17px 10px 15px;font:600 14px/1 var(--display);letter-spacing:.2px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.layout{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:48px}
+.side{position:sticky;top:calc(76px + env(safe-area-inset-top, 0px));align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px}
+.side .find{width:100%;font:14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin-bottom:12px}
+.side .find::placeholder{color:var(--faint)}
+.toc,.toc ul{list-style:none;margin:0;padding:0}
+.toc>li{margin:2px 0}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:13.5px;line-height:1.4}
+.toc a:hover{background:var(--accent-soft);color:var(--ink)}
+.toc>li>a{color:var(--ink);font-weight:500}
+.toc ul{margin:2px 0 6px 10px;border-left:1px solid var(--rule);padding-left:6px}
+.toc a.here{color:var(--accent);background:var(--accent-soft)}
+.toc .none{color:var(--faint);font-size:13px;padding:4px 8px}
+
+.doc{min-width:0;max-width:78ch}
+.doc-head{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.doc-head .kicker{font:500 12px/1 var(--mono);color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.doc-head p{margin:10px 0 0;color:var(--muted);max-width:65ch}
+.doc h1{font:700 34px/1.15 var(--display);letter-spacing:-.4px;margin:10px 0 0;text-wrap:balance}
+.doc .content>h1:first-child{display:none}
+.doc h2{font:700 25px/1.25 var(--display);letter-spacing:-.2px;margin:46px 0 14px;padding-top:14px;border-top:1px solid var(--rule);text-wrap:balance}
+.doc h3{font:600 19px/1.3 var(--display);margin:32px 0 10px;text-wrap:balance}
+.doc h4{font:600 16px/1.35 var(--body);margin:24px 0 8px}
+.doc h2 .anchor,.doc h3 .anchor{margin-left:8px;font:500 .8em var(--mono);color:var(--faint);text-decoration:none;opacity:0}
+.doc h2:hover .anchor,.doc h3:hover .anchor,.doc .anchor:focus{opacity:1}
+.doc p,.doc li{max-width:72ch}
+.doc ul,.doc ol{padding-left:1.4em}
+.doc li{margin:4px 0}
+.doc li>ul,.doc li>ol{margin:4px 0}
+.doc hr{border:0;border-top:1px solid var(--rule);margin:36px 0}
+.doc hr:has(+ h2){display:none}
+.doc blockquote{margin:18px 0;padding:10px 16px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 6px 6px 0}
+.doc blockquote p{margin:6px 0}
+.doc code{font:13.5px/1.5 var(--mono);background:var(--code);color:var(--code-ink);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.doc pre{position:relative;margin:14px 0;background:var(--code);border:1px solid var(--rule);border-radius:7px;overflow-x:auto}
+.doc pre code{display:block;padding:14px 16px;background:none;border-radius:0;white-space:pre;overflow-wrap:normal;font-size:13px;line-height:1.55}
+.copy{position:absolute;top:7px;right:7px;font:500 12px/1 var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:5px 9px;cursor:pointer;opacity:.9}
+.copy:hover{color:var(--ink);border-color:var(--faint)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:7px;background:var(--surface)}
+.doc table{border-collapse:collapse;width:100%;font-size:14px}
+.doc th,.doc td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+.doc th{font:600 12px/1.3 var(--body);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--ground)}
+.doc tr:last-child td{border-bottom:0}
+.doc td code{white-space:nowrap}
+.status-line{list-style:none;margin-left:-1.4em !important;padding:8px 10px;background:var(--surface);border:1px solid var(--rule);border-radius:7px}
+.status-label{font:600 11px/1 var(--body);text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:6px}
+.badge{display:inline-block;font:600 12px/1 var(--body);padding:4px 8px;border-radius:99px;margin:1px 4px 1px 0;border:1px solid transparent;white-space:nowrap}
+.badge.fixed{color:var(--accent);background:var(--accent-soft)}
+.badge.verified{color:var(--ok);background:var(--ok-soft)}
+.badge.pending{color:var(--warn);background:var(--warn-soft)}
+.badge.config,.badge.info{color:var(--info);background:var(--info-soft)}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.menu{display:none}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:18px 48px}
+  .side{position:static;max-height:none;overflow:visible;padding:0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  .side>details>summary{list-style:none;cursor:pointer;padding:12px 14px;font:600 14px var(--display);color:var(--ink)}
+  .side>details>summary::-webkit-details-marker{display:none}
+  .side>details>summary::after{content:"+";float:right;color:var(--muted)}
+  .side>details[open]>summary::after{content:"\2212"}
+  .side .toc-body{padding:0 12px 12px;max-height:60vh;overflow:auto}
+  .doc h1{font-size:28px}
+  .doc h2{font-size:22px}
+  .tabs a{padding:12px 8px 10px}
+  html{scroll-padding-top:calc(120px + env(safe-area-inset-top, 0px))}
+}
+@media (min-width:961px){
+  .side>details>summary{display:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup-and-issues.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup-and-issues.html" data-doc="doc-setup-and-issues">Setup &amp; issue log</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog" aria-current="page">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-changelog" placeholder="Filter contents (e.g. TLS, B22, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#010---2026-09-22">[0.1.0] - 2026-09-22</a><ul><li><a href="#added">Added</a></li><li><a href="#security">Security</a></li></ul></li><li><a href="#011---2026-09-23">[0.1.1] - 2026-09-23</a><ul><li><a href="#fixed">Fixed</a></li></ul></li><li><a href="#025---2026-09-26">[0.2.5] - 2026-09-26</a><ul><li><a href="#added-1">Added</a></li><li><a href="#fixed-1">Fixed</a></li></ul></li><li><a href="#024---2026-09-25">[0.2.4] - 2026-09-25</a><ul><li><a href="#fixed-2">Fixed</a></li><li><a href="#changed">Changed</a></li></ul></li><li><a href="#023---2026-09-24">[0.2.3] - 2026-09-24</a><ul><li><a href="#fixed-3">Fixed</a></li></ul></li><li><a href="#022---2026-09-24">[0.2.2] - 2026-09-24</a><ul><li><a href="#fixed-4">Fixed</a></li><li><a href="#changed-1">Changed</a></li></ul></li><li><a href="#021---2026-09-24">[0.2.1] - 2026-09-24</a><ul><li><a href="#fixed-5">Fixed</a></li><li><a href="#added-2">Added</a></li></ul></li><li><a href="#020---2026-09-23">[0.2.0] - 2026-09-23</a><ul><li><a href="#added-3">Added</a></li><li><a href="#changed-2">Changed</a></li><li><a href="#fixed-6">Fixed</a></li></ul></li><li><a href="#unreleased">Unreleased</a><ul><li><a href="#planned">Planned</a></li></ul></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Changelog</div><h1>Changelog</h1><p>Every release and what changed in it.</p></header><div class="content"><h1 id="changelog">Changelog</h1>
+<p>All notable changes to this project are documented here. The format follows
+<a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a> and this project
+adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<h2 id="010---2026-09-22">[0.1.0] - 2026-09-22<a class="anchor" href="#010---2026-09-22" aria-label="Link to this section">#</a></h2>
+<p>Initial release: Phases 1-8 of the build plan.</p>
+<h3 id="added">Added<a class="anchor" href="#added" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>SQLAlchemy data model with Alembic migrations (SQLite default,
+PostgreSQL-ready): users, groups, printers, policies, jobs, alerts, audit.</li>
+<li>Pure-function policy and quota engine with scope precedence
+(user &gt; group &gt; printer &gt; global).</li>
+<li>Per-user page quotas over a rolling period, with group shared budgets
+enforced alongside them.</li>
+<li>CUPS wrapper backend (<code>quota:&lt;real-uri&gt;</code>): user identification, page
+estimation (PDF/PostScript/PCL/text), policy and quota evaluation,
+pass-through to the real backend, CANCEL on denial, HOLD on datastore
+failure.</li>
+<li>Accounting daemon that reconciles <code>page_log</code> against balances, handles log
+rotation and partial lines, and is idempotent per job.</li>
+<li>Mono/colour/duplex-aware cost model with a per-printer duplex discount.</li>
+<li><code>quotactl</code> admin CLI covering users, groups, printers, policies, usage
+reporting, CSV export, period resets and the audit log.</li>
+<li>FastAPI web app: admin console (users, groups, printers, policies,
+reports, CSV export, audit log) and self-service portal with a JSON
+endpoint for client agents.</li>
+<li>Low-balance and over-quota alerts by email or webhook, with a cooldown.</li>
+<li>systemd units for the accounting daemon, the web app, the daily period
+reset and the nightly backup, with service hardening.</li>
+<li>Installer, backend registration script (reversible), backup script and a
+demo seed script.</li>
+<li>Unit and integration test suite, including tests that drive the CUPS
+backend exactly as CUPS does.</li>
+<li>Architecture and operations documentation.</li>
+</ul>
+<h3 id="security">Security<a class="anchor" href="#security" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Real-backend path validated against the configured backend directory.</li>
+<li>No shell interpolation anywhere in the backend; <code>pdfinfo</code> runs with an
+argument list and a timeout.</li>
+<li>bcrypt password hashing, signed <code>HttpOnly</code> session cookies, relative-only
+post-login redirects.</li>
+<li>Every privileged action recorded in <code>admin_audit_log</code>.</li>
+</ul>
+<h2 id="011---2026-09-23">[0.1.1] - 2026-09-23<a class="anchor" href="#011---2026-09-23" aria-label="Link to this section">#</a></h2>
+<h3 id="fixed">Fixed<a class="anchor" href="#fixed" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Lowered the supported Python floor from 3.11 to 3.10 so the package
+installs on Ubuntu 22.04 LTS, whose stock interpreter is 3.10. The full
+test suite passes on 3.10 and 3.11; no 3.11-only syntax was in use.</li>
+<li><code>install.sh</code> now checks the interpreter version up front and fails with a
+clear message instead of letting pip reject the package mid-install.</li>
+</ul>
+<h2 id="025---2026-09-26">[0.2.5] - 2026-09-26<a class="anchor" href="#025---2026-09-26" aria-label="Link to this section">#</a></h2>
+<h3 id="added-1">Added<a class="anchor" href="#added-1" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>HTML documentation.</strong> <code>docs/html/</code> has browsable, offline HTML copies of
+the README, setup guide and issue log, architecture, operations and
+changelog, with tabs, a filterable contents sidebar, copy buttons on
+commands and status badges on issues. <code>scripts/build_docs.py</code> regenerates
+them from the Markdown (needs the new <code>docs</code> extra). <code>install.sh</code> copies
+them to <code>/opt/printquota/share/docs/html/</code>.</li>
+</ul>
+<h3 id="fixed-1">Fixed<a class="anchor" href="#fixed-1" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong><code>quota-api</code> wasn't enabled on new installs.</strong> Since 0.2.0, <code>install.sh</code>
+started the web console but didn't <em>enable</em> it, so on a freshly built
+server it didn't come back after a reboot. Existing servers were
+unaffected, because the service was enabled by their first install.</li>
+</ul>
+<h2 id="024---2026-09-25">[0.2.4] - 2026-09-25<a class="anchor" href="#024---2026-09-25" aria-label="Link to this section">#</a></h2>
+<h3 id="fixed-2">Fixed<a class="anchor" href="#fixed-2" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Jobs from some domain PCs were refused with &quot;no print account for this
+user&quot;.</strong> Windows sent the name as <code>CORP\J.Doe</code> while the account is
+<code>j.doe</code>. Names are now matched as Active Directory does: an exact
+match first, then without the <code>DOMAIN\</code> prefix, without an <code>@realm</code>
+suffix, and ignoring capitals. The job is charged to, recorded under and
+checked against the matched account's policies. If two accounts differ
+only in capitals, the job is refused as ambiguous instead of guessed.</li>
+<li>Portal sign-in uses the same matching (<code>CORP\J.Doe</code> or <code>J.Doe</code>
+signs in <code>j.doe</code>). PAM/LDAP receive the account's own name.</li>
+<li>Console links and redirects URL-encode usernames, so an account containing
+<code>\</code> can still be opened, edited and deleted.</li>
+</ul>
+<h3 id="changed">Changed<a class="anchor" href="#changed" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>New accounts (console, CLI, setup wizard, CSV import) may not contain <code>\</code>,
+and may not differ from an existing account only in capitals. A CSV row for
+<code>J.Doe</code> updates the existing <code>j.doe</code>, and the setup wizard
+promotes an existing account whatever the capitals.</li>
+</ul>
+<h2 id="023---2026-09-24">[0.2.3] - 2026-09-24<a class="anchor" href="#023---2026-09-24" aria-label="Link to this section">#</a></h2>
+<h3 id="fixed-3">Fixed<a class="anchor" href="#fixed-3" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><code>install.sh</code> aborted before upgrading anything when <code>apt-get update</code>
+failed, e.g. while an Ubuntu mirror was mid-sync or a third-party apt
+repository was broken. It now skips the package step when everything is
+already installed, and treats an <code>apt-get update</code> error as a warning. Only
+failing to install a package that is actually needed stops the install.</li>
+</ul>
+<h2 id="022---2026-09-24">[0.2.2] - 2026-09-24<a class="anchor" href="#022---2026-09-24" aria-label="Link to this section">#</a></h2>
+<h3 id="fixed-4">Fixed<a class="anchor" href="#fixed-4" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Settings page:</strong> one invalid field (typically a browser-autofilled
+Webhook URL) made the whole form fail with &quot;Nothing was saved&quot;. Now every
+valid change is saved, untouched fields are never re-validated, and a field
+that can't be saved is marked in red with the typed value kept and a plain
+explanation.</li>
+<li>After saving, the Settings page could show and cache the old values for up
+to 15 seconds, because settings were re-read before the transaction was
+committed. Saves and reverts now commit first.</li>
+<li>Browser autofill is disabled on the Settings form. Number, email and URL
+boxes no longer rely on browser validation, which could block the Save
+button without a visible reason.</li>
+</ul>
+<h3 id="changed-1">Changed<a class="anchor" href="#changed-1" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Numbers accept <code>1,000</code>, <code>0,5</code> and <code>500.0</code>.</li>
+</ul>
+<h2 id="021---2026-09-24">[0.2.1] - 2026-09-24<a class="anchor" href="#021---2026-09-24" aria-label="Link to this section">#</a></h2>
+<h3 id="fixed-5">Fixed<a class="anchor" href="#fixed-5" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Jobs on driver (PPD) queues were counted as 1 page.</strong> CUPS converts a
+job to the printer's language before the backend runs, and that output
+(e.g. PCL XL) can't be counted, so over-quota jobs printed in full. The
+backend now counts the documents the client submitted, from the CUPS
+spool (<code>d&lt;job&gt;-NNN</code>), and takes <code>copies</code>, <code>number-up</code> and <code>page-ranges</code>
+from the job control file (<code>c&lt;job&gt;</code>). A job that doesn't fit is refused
+before anything prints.</li>
+<li>The accounting daemon ignored CUPS <code>total</code> page_log lines. It now uses them
+when a job has no per-page lines.</li>
+</ul>
+<h3 id="added-2">Added<a class="anchor" href="#added-2" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><code>printing.spool_dir</code> setting (<code>PRINTQUOTA_SPOOL_DIR</code>), default <code>/var/spool/cups</code>.</li>
+<li>Page counting for Apple raster (AirPrint/URF) documents.</li>
+<li>The accounting daemon logs once when CUPS has no <code>page_log</code>, instead of
+waiting silently.</li>
+</ul>
+<h2 id="020---2026-09-23">[0.2.0] - 2026-09-23<a class="anchor" href="#020---2026-09-23" aria-label="Link to this section">#</a></h2>
+<p>Everything after installation can now be done in the web console; the CLI
+is optional.</p>
+<h3 id="added-3">Added<a class="anchor" href="#added-3" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Setup wizard</strong> (<code>/setup</code>): creates the first administrator in the
+browser. Guarded by a one-time <code>PRINTQUOTA_SETUP_TOKEN</code> that <code>install.sh</code>
+generates and prints; closes itself once an administrator exists.</li>
+<li><strong>Printers &amp; queues</strong> page: lists CUPS queues, turns quota enforcement on
+and off per queue, creates new CUPS queues (IPP Everywhere or raw), and
+edits each printer's cost model. The printer row is always written before
+a queue is wrapped, and rolled back if <code>lpadmin</code> fails.</li>
+<li><strong>User import</strong> from an uploaded CSV or pasted rows, with a preview
+before anything is saved, a downloadable template, optional creation of
+missing groups and optional updates of existing users. <strong>User export</strong> to
+CSV in the same format.</li>
+<li><strong>Bulk user actions</strong>: move to group, set quota, reset usage,
+enable/disable, grant/revoke admin, delete. The acting administrator
+can never disable, demote or delete themselves.</li>
+<li>Create administrators from the Users page; edit full name; password
+confirmation; delete a single user; delete a group.</li>
+<li><strong>Settings</strong> page for quotas, enforcement mode, costs, currency and
+alert/SMTP delivery, stored in the new <code>app_settings</code> table (Alembic
+migration <code>5c1e7a9d2b44</code>), with a &quot;send test alert&quot; button. Values set by
+environment variables stay locked; infrastructure settings (database,
+secret key, ports, paths) stay file/env only.</li>
+<li>&quot;Getting started&quot; checklist on the dashboard.</li>
+</ul>
+<h3 id="changed-2">Changed<a class="anchor" href="#changed-2" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Configuration precedence is now environment &gt; console &gt; file &gt; defaults.</li>
+<li>The web service runs with the <code>lpadmin</code> group, which <code>install.sh</code> grants
+to the <code>printquota</code> account so the console can administer CUPS queues.</li>
+<li>Passwords set from the console must be at least 8 characters.</li>
+<li><code>install.sh</code> restarts the services on upgrade and prints the setup link
+instead of CLI steps.</li>
+</ul>
+<h3 id="fixed-6">Fixed<a class="anchor" href="#fixed-6" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Deleting a user who had printed failed with <code>NOT NULL constraint failed: print_jobs.username</code> (affected <code>quotactl user delete</code>). Their job history
+and user-scoped policies are now removed with them.</li>
+<li>The nightly backup never ran: <code>install.sh</code> now installs <code>backup.sh</code> and
+the docs under <code>/opt/printquota/share</code> and enables <code>quota-backup.timer</code>.</li>
+<li>Unauthenticated requests to <code>/admin/api/*</code> now get a JSON 401 instead of
+a redirect to the sign-in page.</li>
+</ul>
+<h2 id="unreleased">Unreleased<a class="anchor" href="#unreleased" aria-label="Link to this section">#</a></h2>
+<h3 id="planned">Planned<a class="anchor" href="#planned" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Phase 9: AD/LDAP group synchronisation driven by the existing hook.</li>
+<li>Phase 10: hardening pass once real traffic exists.</li>
+<li>Phase 11 (stretch): secure/pull printing, client-side confirmation popup.</li>
+</ul>
+</div><footer class="foot">Generated from <code>CHANGELOG.md</code> by <code>scripts/build_docs.py</code>. Edit the Markdown, then re-run the script.</footer></main></div><script>
+(function(){
+  function copyText(btn, text){
+    function done(ok){btn.textContent = ok ? 'Copied' : 'Select + Ctrl+C'; setTimeout(function(){btn.textContent='Copy';}, 1600);}
+    try{
+      navigator.clipboard.writeText(text).then(function(){done(true);}, function(){select(btn); done(false);});
+    }catch(e){select(btn); done(false);}
+  }
+  function select(btn){
+    var code = btn.parentNode.querySelector('code'); var r = document.createRange();
+    r.selectNodeContents(code); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  document.querySelectorAll('.doc pre').forEach(function(pre){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+    b.addEventListener('click', function(){copyText(b, pre.querySelector('code').innerText);});
+    pre.appendChild(b);
+  });
+
+  // Filter the contents list by what the reader types (e.g. "TLS", "B22", "price").
+  document.querySelectorAll('.side').forEach(function(side){
+    var box = side.querySelector('.find'); if(!box) return;
+    box.addEventListener('input', function(){
+      var q = box.value.trim().toLowerCase(); var any = false;
+      side.querySelectorAll('.toc>li').forEach(function(li){
+        var subs = li.querySelectorAll('ul>li'); var subHit = false;
+        subs.forEach(function(s){ var hit = !q || s.textContent.toLowerCase().indexOf(q) > -1; s.hidden = !hit; subHit = subHit || (hit && !!q); });
+        var own = li.querySelector('a').textContent.toLowerCase().indexOf(q) > -1;
+        var show = !q || own || subHit;
+        if(show && own && q){ subs.forEach(function(s){ s.hidden = false; }); }
+        li.hidden = !show; any = any || show;
+      });
+      var none = side.querySelector('.none'); if(none) none.hidden = any;
+    });
+  });
+
+  // Tabs for the single-page edition: one document visible at a time.
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.docsec'));
+  function show(sec, target){
+    sections.forEach(function(s){ s.hidden = s !== sec; });
+    document.querySelectorAll('.tabs a').forEach(function(a){
+      if(a.getAttribute('data-doc') === sec.id){ a.setAttribute('aria-current','page'); } else { a.removeAttribute('aria-current'); }
+    });
+    if(target && target !== sec){ target.scrollIntoView(); } else { window.scrollTo(0, 0); }
+  }
+  function route(){
+    if(!sections.length) return;
+    var id = decodeURIComponent(location.hash.slice(1)); var el = id && document.getElementById(id);
+    if(!el){ show(sections[0]); return; }
+    var sec = el.closest('section.docsec') || el; show(sec, el);
+  }
+  if(sections.length){ window.addEventListener('hashchange', route); route(); }
+
+  // Highlight where the reader is in the contents list.
+  if('IntersectionObserver' in window){
+    var links = {}; document.querySelectorAll('.toc a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          document.querySelectorAll('.toc a.here').forEach(function(a){ a.classList.remove('here'); });
+          var a = links[e.target.id]; if(a) a.classList.add('here');
+        }
+      });
+    }, {rootMargin:'-80px 0px -70% 0px'});
+    document.querySelectorAll('.doc h2[id], .doc h3[id]').forEach(function(h){ io.observe(h); });
+  }
+})();
+</script></body></html>

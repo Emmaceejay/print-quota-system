@@ -56,6 +56,24 @@ Initial release: Phases 1-8 of the build plan.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.2.5] - 2026-09-26
+
+### Added
+
+- **HTML documentation.** `docs/html/` has browsable, offline HTML copies of
+  the README, setup guide and issue log, architecture, operations and
+  changelog, with tabs, a filterable contents sidebar, copy buttons on
+  commands and status badges on issues. `scripts/build_docs.py` regenerates
+  them from the Markdown (needs the new `docs` extra). `install.sh` copies
+  them to `/opt/printquota/share/docs/html/`.
+
+### Fixed
+
+- **`quota-api` wasn't enabled on new installs.** Since 0.2.0, `install.sh`
+  started the web console but didn't *enable* it, so on a freshly built
+  server it didn't come back after a reboot. Existing servers were
+  unaffected, because the service was enabled by their first install.
+
 ## [0.2.4] - 2026-09-25
 
 ### Fixed

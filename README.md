@@ -10,7 +10,7 @@ understand in full.
 
 | | |
 |---|---|
-| **Version** | 0.2.4 (see [CHANGELOG.md](CHANGELOG.md)) |
+| **Version** | 0.2.5 (see [CHANGELOG.md](CHANGELOG.md)) |
 | **Language** | Python 3.10+ |
 | **Platform** | Ubuntu Server 22.04 LTS / 24.04 LTS with CUPS |
 | **Datastore** | SQLite (default) or PostgreSQL |
@@ -148,9 +148,12 @@ print-quota-system/
 │   ├── install.sh                Idempotent installer / upgrader (run as root)
 │   ├── register_backend.sh       Install the CUPS backend; wrap / unwrap a queue
 │   ├── backup.sh                 Online SQLite backup or pg_dump, keeps last N
+│   ├── build_docs.py             Regenerate the HTML docs in docs/html/
 │   └── seed_demo.py              Populate a demo database for evaluation
 ├── systemd/                      Service and timer units (see §15)
 ├── docs/
+│   ├── setup-and-issues.md       Setup runbook + issue log (start here)
+│   ├── html/                     Browsable HTML versions of all the docs
 │   ├── architecture.md           Design decisions, enforcement mechanics, security
 │   └── operations.md             Day-two runbook
 ├── src/printquota/
@@ -1425,6 +1428,10 @@ native mobile apps, document watermarking, and MFP scan/copy tracking.
 - [docs/architecture.md](docs/architecture.md): why a custom system, the
   enforcement mechanism, the data model, the policy engine, the security
   model, and scaling.
+- **Easy-reading HTML versions** of all these documents are in [docs/html/](docs/html/). Open
+  `docs/html/setup-and-issues.html` in any browser; they work offline. After editing any
+  Markdown document, regenerate them with `python3 scripts/build_docs.py` (needs
+  `pip install -e ".[docs]"`) and commit the result.
 - [docs/setup-and-issues.md](docs/setup-and-issues.md): **start here for a new server or a problem.** A step-by-step setup runbook, plus a log of every issue met in the real deployment (symptom, cause, fix, version).
 - [docs/operations.md](docs/operations.md): rollout, troubleshooting,
   backup and restore, upgrades, monitoring.

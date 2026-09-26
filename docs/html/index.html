@@ -1,0 +1,2482 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>printquota · printquota</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"><style>
+:root{
+  --ground:#F4F6F9; --surface:#FFFFFF; --ink:#172033; --muted:#5A6478; --faint:#8C95A6;
+  --rule:#DAE0E8; --accent:#0B6E99; --accent-soft:#E3F1F8; --code:#EEF2F6; --code-ink:#1E2A3D;
+  --ok:#13795B; --ok-soft:#E4F4EE; --warn:#9A5B00; --warn-soft:#FBF1E0; --info:#4B5566; --info-soft:#EDF0F4;
+  --mark:#FFF3B0;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  --display:"IBM Plex Sans Condensed","Arial Narrow","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+    --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+    --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+    --mark:#5A4A0A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+  --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+  --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+  --mark:#5A4A0A;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(76px + env(safe-area-inset-top, 0px))}
+body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.65 var(--body);-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--rule)}
+.topbar-inner{max-width:1320px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;min-height:56px}
+.brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink);padding-block:10px}
+.brand b{font:700 19px/1 var(--display);letter-spacing:-.2px}
+.brand span{font:500 12px/1 var(--mono);color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.tabs a{display:block;padding:17px 10px 15px;font:600 14px/1 var(--display);letter-spacing:.2px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.layout{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:48px}
+.side{position:sticky;top:calc(76px + env(safe-area-inset-top, 0px));align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px}
+.side .find{width:100%;font:14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin-bottom:12px}
+.side .find::placeholder{color:var(--faint)}
+.toc,.toc ul{list-style:none;margin:0;padding:0}
+.toc>li{margin:2px 0}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:13.5px;line-height:1.4}
+.toc a:hover{background:var(--accent-soft);color:var(--ink)}
+.toc>li>a{color:var(--ink);font-weight:500}
+.toc ul{margin:2px 0 6px 10px;border-left:1px solid var(--rule);padding-left:6px}
+.toc a.here{color:var(--accent);background:var(--accent-soft)}
+.toc .none{color:var(--faint);font-size:13px;padding:4px 8px}
+
+.doc{min-width:0;max-width:78ch}
+.doc-head{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.doc-head .kicker{font:500 12px/1 var(--mono);color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.doc-head p{margin:10px 0 0;color:var(--muted);max-width:65ch}
+.doc h1{font:700 34px/1.15 var(--display);letter-spacing:-.4px;margin:10px 0 0;text-wrap:balance}
+.doc .content>h1:first-child{display:none}
+.doc h2{font:700 25px/1.25 var(--display);letter-spacing:-.2px;margin:46px 0 14px;padding-top:14px;border-top:1px solid var(--rule);text-wrap:balance}
+.doc h3{font:600 19px/1.3 var(--display);margin:32px 0 10px;text-wrap:balance}
+.doc h4{font:600 16px/1.35 var(--body);margin:24px 0 8px}
+.doc h2 .anchor,.doc h3 .anchor{margin-left:8px;font:500 .8em var(--mono);color:var(--faint);text-decoration:none;opacity:0}
+.doc h2:hover .anchor,.doc h3:hover .anchor,.doc .anchor:focus{opacity:1}
+.doc p,.doc li{max-width:72ch}
+.doc ul,.doc ol{padding-left:1.4em}
+.doc li{margin:4px 0}
+.doc li>ul,.doc li>ol{margin:4px 0}
+.doc hr{border:0;border-top:1px solid var(--rule);margin:36px 0}
+.doc hr:has(+ h2){display:none}
+.doc blockquote{margin:18px 0;padding:10px 16px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 6px 6px 0}
+.doc blockquote p{margin:6px 0}
+.doc code{font:13.5px/1.5 var(--mono);background:var(--code);color:var(--code-ink);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.doc pre{position:relative;margin:14px 0;background:var(--code);border:1px solid var(--rule);border-radius:7px;overflow-x:auto}
+.doc pre code{display:block;padding:14px 16px;background:none;border-radius:0;white-space:pre;overflow-wrap:normal;font-size:13px;line-height:1.55}
+.copy{position:absolute;top:7px;right:7px;font:500 12px/1 var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:5px 9px;cursor:pointer;opacity:.9}
+.copy:hover{color:var(--ink);border-color:var(--faint)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:7px;background:var(--surface)}
+.doc table{border-collapse:collapse;width:100%;font-size:14px}
+.doc th,.doc td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+.doc th{font:600 12px/1.3 var(--body);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--ground)}
+.doc tr:last-child td{border-bottom:0}
+.doc td code{white-space:nowrap}
+.status-line{list-style:none;margin-left:-1.4em !important;padding:8px 10px;background:var(--surface);border:1px solid var(--rule);border-radius:7px}
+.status-label{font:600 11px/1 var(--body);text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:6px}
+.badge{display:inline-block;font:600 12px/1 var(--body);padding:4px 8px;border-radius:99px;margin:1px 4px 1px 0;border:1px solid transparent;white-space:nowrap}
+.badge.fixed{color:var(--accent);background:var(--accent-soft)}
+.badge.verified{color:var(--ok);background:var(--ok-soft)}
+.badge.pending{color:var(--warn);background:var(--warn-soft)}
+.badge.config,.badge.info{color:var(--info);background:var(--info-soft)}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.menu{display:none}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:18px 48px}
+  .side{position:static;max-height:none;overflow:visible;padding:0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  .side>details>summary{list-style:none;cursor:pointer;padding:12px 14px;font:600 14px var(--display);color:var(--ink)}
+  .side>details>summary::-webkit-details-marker{display:none}
+  .side>details>summary::after{content:"+";float:right;color:var(--muted)}
+  .side>details[open]>summary::after{content:"\2212"}
+  .side .toc-body{padding:0 12px 12px;max-height:60vh;overflow:auto}
+  .doc h1{font-size:28px}
+  .doc h2{font-size:22px}
+  .tabs a{padding:12px 8px 10px}
+  html{scroll-padding-top:calc(120px + env(safe-area-inset-top, 0px))}
+}
+@media (min-width:961px){
+  .side>details>summary{display:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup-and-issues.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup-and-issues.html" data-doc="doc-setup-and-issues">Setup &amp; issue log</a></li><li><a href="index.html" data-doc="doc-index" aria-current="page">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-index" placeholder="Filter contents (e.g. TLS, B22, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#table-of-contents">Table of contents</a></li><li><a href="#1-how-it-works">1. How it works</a></li><li><a href="#2-features">2. Features</a></li><li><a href="#3-repository-layout">3. Repository layout</a></li><li><a href="#4-requirements">4. Requirements</a></li><li><a href="#5-installation">5. Installation</a><ul><li><a href="#what-installsh-does">What install.sh does</a></li><li><a href="#installed-file-system-layout">Installed file-system layout</a></li></ul></li><li><a href="#6-first-time-setup-and-safe-rollout">6. First-time setup and safe rollout</a><ul><li><a href="#step-1-create-the-first-administrator-setup-wizard">Step 1: create the first administrator (setup wizard)</a></li><li><a href="#step-2-follow-the-getting-started-checklist">Step 2: follow the &quot;Getting started&quot; checklist</a></li><li><a href="#managing-users-in-the-browser">Managing users in the browser</a></li><li><a href="#managing-printers-and-quota-enforcement-in-the-browser">Managing printers and quota enforcement in the browser</a></li><li><a href="#changing-settings-in-the-browser">Changing settings in the browser</a></li><li><a href="#setting-or-resetting-an-administrator-password">Setting or resetting an administrator password</a></li><li><a href="#doing-the-same-from-the-command-line-optional">Doing the same from the command line (optional)</a></li><li><a href="#what-register_backendsh-does">What register_backend.sh does</a></li><li><a href="#recommended-rollout-sequence">Recommended rollout sequence</a></li></ul></li><li><a href="#7-configuration-reference">7. Configuration reference</a><ul><li><a href="#precedence">Precedence</a></li><li><a href="#all-settings">All settings</a></li><li><a href="#environment-variables">Environment variables</a></li></ul></li><li><a href="#8-quotas-periods-and-group-budgets">8. Quotas, periods and group budgets</a><ul><li><a href="#units">Units</a></li><li><a href="#rolling-periods">Rolling periods</a></li><li><a href="#charging-lifecycle-of-a-job">Charging lifecycle of a job</a></li><li><a href="#group-budgets">Group budgets</a></li><li><a href="#enforcement-modes">Enforcement modes</a></li><li><a href="#accounts-that-cannot-print">Accounts that cannot print</a></li><li><a href="#how-the-jobs-user-name-is-matched-to-an-account">How the job&#x27;s user name is matched to an account</a></li></ul></li><li><a href="#9-print-policies">9. Print policies</a><ul><li><a href="#rule-types">Rule types</a></li><li><a href="#scopes-and-precedence">Scopes and precedence</a></li><li><a href="#evaluation-order">Evaluation order</a></li><li><a href="#examples">Examples</a></li></ul></li><li><a href="#10-page-estimation-and-the-cost-model">10. Page estimation and the cost model</a><ul><li><a href="#pre-flight-estimation-accountingpagespy-accountingcups_spoolpy">Pre-flight estimation (accounting/pages.py, accounting/cups_spool.py)</a></li><li><a href="#cost-model-accountingcostpy">Cost model (accounting/cost.py)</a></li></ul></li><li><a href="#11-the-quotactl-command-line-tool">11. The quotactl command-line tool</a><ul><li><a href="#database">Database</a></li><li><a href="#users">Users</a></li><li><a href="#groups">Groups</a></li><li><a href="#printers">Printers</a></li><li><a href="#policies">Policies</a></li><li><a href="#reports-and-maintenance">Reports and maintenance</a></li></ul></li><li><a href="#12-web-console-and-self-service-portal">12. Web console and self-service portal</a><ul><li><a href="#pages">Pages</a></li><li><a href="#json-endpoints">JSON endpoints</a></li></ul></li><li><a href="#13-authentication">13. Authentication</a></li><li><a href="#14-alerts">14. Alerts</a></li><li><a href="#15-services-and-timers">15. Services and timers</a></li><li><a href="#16-data-model">16. Data model</a><ul><li><a href="#sqlite-vs-postgresql">SQLite vs PostgreSQL</a></li></ul></li><li><a href="#17-logging-and-monitoring">17. Logging and monitoring</a></li><li><a href="#18-backup-and-restore">18. Backup and restore</a></li><li><a href="#19-upgrades-and-database-migrations">19. Upgrades and database migrations</a></li><li><a href="#20-security-model">20. Security model</a><ul><li><a href="#trusting-the-user-name-required-before-relying-on-quotas">Trusting the user name (required before relying on quotas)</a></li><li><a href="#built-in-protections">Built-in protections</a></li><li><a href="#recommendations">Recommendations</a></li></ul></li><li><a href="#21-troubleshooting">21. Troubleshooting</a></li><li><a href="#22-development-and-testing">22. Development and testing</a><ul><li><a href="#test-suite-206-tests">Test suite (206 tests)</a></li><li><a href="#code-conventions">Code conventions</a></li></ul></li><li><a href="#23-known-limitations-and-gaps">23. Known limitations and gaps</a></li><li><a href="#24-roadmap">24. Roadmap</a></li><li><a href="#25-further-documentation">25. Further documentation</a></li><li><a href="#26-licence">26. Licence</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Reference</div><h1>printquota</h1><p>The full reference: how printquota works, configuration, console, CLI, security and troubleshooting.</p></header><div class="content"><h1 id="printquota">printquota</h1>
+<p><strong>A self-hosted print quota, policy and accounting system for CUPS on Ubuntu Server.</strong></p>
+<p>printquota covers the parts of PaperCut NG that a single organisation needs:
+per-user page quotas, department budgets, cost tracking, print policies,
+reporting, an admin console and a self-service portal. It has no licence
+fee and no user cap, and the codebase is small enough for one engineer to
+understand in full.</p>
+<div class="table-wrap"><table>
+
+<tbody>
+<tr>
+<td><strong>Version</strong></td>
+<td>0.2.5 (see <a href="changelog.html">CHANGELOG.md</a>)</td>
+</tr>
+<tr>
+<td><strong>Language</strong></td>
+<td>Python 3.10+</td>
+</tr>
+<tr>
+<td><strong>Platform</strong></td>
+<td>Ubuntu Server 22.04 LTS / 24.04 LTS with CUPS</td>
+</tr>
+<tr>
+<td><strong>Datastore</strong></td>
+<td>SQLite (default) or PostgreSQL</td>
+</tr>
+<tr>
+<td><strong>Licence</strong></td>
+<td>MIT</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="table-of-contents">Table of contents<a class="anchor" href="#table-of-contents" aria-label="Link to this section">#</a></h2>
+<ol>
+<li><a href="#1-how-it-works">How it works</a></li>
+<li><a href="#2-features">Features</a></li>
+<li><a href="#3-repository-layout">Repository layout</a></li>
+<li><a href="#4-requirements">Requirements</a></li>
+<li><a href="#5-installation">Installation</a></li>
+<li><a href="#6-first-time-setup-and-safe-rollout">First-time setup and safe rollout</a></li>
+<li><a href="#7-configuration-reference">Configuration reference</a></li>
+<li><a href="#8-quotas-periods-and-group-budgets">Quotas, periods and group budgets</a></li>
+<li><a href="#9-print-policies">Print policies</a></li>
+<li><a href="#10-page-estimation-and-the-cost-model">Page estimation and the cost model</a></li>
+<li><a href="#11-the-quotactl-command-line-tool">The <code>quotactl</code> command-line tool</a></li>
+<li><a href="#12-web-console-and-self-service-portal">Web console and self-service portal</a></li>
+<li><a href="#13-authentication">Authentication</a></li>
+<li><a href="#14-alerts">Alerts</a></li>
+<li><a href="#15-services-and-timers">Services and timers</a></li>
+<li><a href="#16-data-model">Data model</a></li>
+<li><a href="#17-logging-and-monitoring">Logging and monitoring</a></li>
+<li><a href="#18-backup-and-restore">Backup and restore</a></li>
+<li><a href="#19-upgrades-and-database-migrations">Upgrades and database migrations</a></li>
+<li><a href="#20-security-model">Security model</a></li>
+<li><a href="#21-troubleshooting">Troubleshooting</a></li>
+<li><a href="#22-development-and-testing">Development and testing</a></li>
+<li><a href="#23-known-limitations-and-gaps">Known limitations and gaps</a></li>
+<li><a href="#24-roadmap">Roadmap</a></li>
+<li><a href="#25-further-documentation">Further documentation</a></li>
+<li><a href="#26-licence">Licence</a></li>
+</ol>
+<hr />
+<h2 id="1-how-it-works">1. How it works<a class="anchor" href="#1-how-it-works" aria-label="Link to this section">#</a></h2>
+<p>CUPS records usage in <code>page_log</code>, but it does not enforce anything. To
+block a job before it reaches the printer you need a <strong>wrapper backend</strong>:
+a program that CUPS runs in place of the real device backend, and which
+decides whether to pass the job on. printquota is built around this.</p>
+<pre><code> client ──IPP──▶ CUPS queue   DeviceURI = quota:socket://10.0.0.5:9100
+                     │
+                     ▼
+   ┌──────────── /usr/lib/cups/backend/quota  (runs as root) ─────────────┐
+   │ 1. identify user     job-originating-user-name (argv[2])             │
+   │ 2. estimate pages    pdfinfo / %%Pages / form feeds / line count     │
+   │                      × copies ÷ number-up                            │
+   │ 3. evaluate policy   deny_printer, block_color, max_pages, ...       │
+   │ 4. check quota       user balance, then the group's shared pool      │
+   │ 5. debit estimate    so back-to-back jobs can't overspend a balance  │
+   └──────────────┬───────────────────────────────────┬───────────────────┘
+          ALLOW   │                                    │  DENY
+                  ▼                                    ▼
+   run real backend (socket/ipp/usb/…)        exit CUPS_BACKEND_CANCEL
+   with DEVICE_URI rewritten                  (job cancelled, queue stays up)
+                  │
+                  ▼
+      CUPS writes one page_log line per page
+                  │
+                  ▼
+   ┌──────── quota-accounting daemon (every 15 s) ────────┐
+   │ read new page_log lines → total pages per job        │
+   │ charge the difference (actual − estimate) → cost     │
+   │ → low-balance / over-quota alerts                    │
+   └──────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>Why both halves are needed.</strong> The estimate made before printing is only
+provisional. The filter chain can add banner pages, drivers can reflow or
+duplex the job, and a job can fail halfway. <code>page_log</code> is the only
+reliable count, but it exists only after the paper is out, which is too
+late to block anything. So printquota charges the estimate first, which
+stops a burst of jobs from all passing against the same balance, and
+corrects it from <code>page_log</code> afterwards.</p>
+<p><strong>Backend exit codes.</strong> These decide what CUPS does with the queue:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Exit code</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Job allowed</td>
+<td>Real backend's own code</td>
+<td>Job prints normally</td>
+</tr>
+<tr>
+<td>Job denied (policy or quota)</td>
+<td><code>CUPS_BACKEND_CANCEL</code> (5)</td>
+<td>That job is cancelled; <strong>the queue stays enabled</strong></td>
+</tr>
+<tr>
+<td>Database unreachable / backend crash</td>
+<td><code>CUPS_BACKEND_HOLD</code> (3)</td>
+<td>Job is held in the queue for an administrator to release. Nothing is lost and nothing prints unaccounted</td>
+</tr>
+<tr>
+<td>Bad <code>quota:</code> device URI or real backend missing</td>
+<td><code>CUPS_BACKEND_STOP</code> (4)</td>
+<td>Queue is stopped, so jobs cannot print for free</td>
+</tr>
+<tr>
+<td>Wrong argument count</td>
+<td><code>CUPS_BACKEND_FAILED</code> (1)</td>
+<td>Standard CUPS failure</td>
+</tr>
+</tbody>
+</table></div>
+<p>A denial never returns <code>FAILED</code>, because that disables the queue. One user
+running out of quota would then take the printer offline for everyone.</p>
+<hr />
+<h2 id="2-features">2. Features<a class="anchor" href="#2-features" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>Per-user quotas</strong>, counted in pages over a rolling period (30 days by default).</li>
+<li><strong>Group / department shared budgets.</strong> These are enforced <em>in addition to</em>
+each member's own quota, so a job must fit both.</li>
+<li><strong>Cost tracking.</strong> Separate mono and colour rates, plus a per-printer duplex
+discount, so reports show money as well as pages.</li>
+<li><strong>Print policies</strong>: block colour, force duplex, cap pages or copies per
+job, block file types, deny a printer. Each policy is scoped to a user,
+group, printer or globally, and the most specific scope wins.</li>
+<li><strong>Strict or soft enforcement.</strong> Strict mode denies the job. Soft mode lets it
+through and lets the balance go negative.</li>
+<li><strong>Everything in the browser after installation.</strong> A setup wizard creates the
+first administrator, and the admin console covers users (including CSV
+import/export and bulk actions), administrators, groups, CUPS queues and
+quota enforcement, cost models, policies, settings (quotas, costs, alerts
+and SMTP), reports with CSV export, and the audit log.</li>
+<li><strong>Self-service portal</strong>, where users check their own balance and history
+and can download it as CSV. It also has a JSON endpoint for client agents.</li>
+<li><strong>Alerts</strong> for low balance and over-quota, sent by email or webhook, with a
+per-user cooldown.</li>
+<li><strong>Admin audit log</strong>, recording every privileged action from both the console and the CLI.</li>
+<li><strong>Optional admin CLI</strong> (<code>quotactl</code>) for scripting, automation and recovery.</li>
+<li><strong>Pluggable authentication</strong>: local bcrypt passwords, PAM, or AD/LDAP.</li>
+<li><strong>Hardened systemd units</strong>, a reversible queue-wrapping script, and nightly
+backups.</li>
+</ul>
+<hr />
+<h2 id="3-repository-layout">3. Repository layout<a class="anchor" href="#3-repository-layout" aria-label="Link to this section">#</a></h2>
+<pre><code>print-quota-system/
+├── config/settings.yaml          Default configuration (copied to /etc/printquota/)
+├── .env.example                  Example PRINTQUOTA_* environment overrides
+├── alembic.ini                   Alembic config (DB URL is read from settings, not here)
+├── pyproject.toml                Package metadata, dependencies, console scripts
+├── scripts/
+│   ├── install.sh                Idempotent installer / upgrader (run as root)
+│   ├── register_backend.sh       Install the CUPS backend; wrap / unwrap a queue
+│   ├── backup.sh                 Online SQLite backup or pg_dump, keeps last N
+│   ├── build_docs.py             Regenerate the HTML docs in docs/html/
+│   └── seed_demo.py              Populate a demo database for evaluation
+├── systemd/                      Service and timer units (see §15)
+├── docs/
+│   ├── setup-and-issues.md       Setup runbook + issue log (start here)
+│   ├── html/                     Browsable HTML versions of all the docs
+│   ├── architecture.md           Design decisions, enforcement mechanics, security
+│   └── operations.md             Day-two runbook
+├── src/printquota/
+│   ├── backend/quota_backend.py  The CUPS wrapper backend (pre-flight enforcement)
+│   ├── accounting/
+│   │   ├── pages.py              Page estimation from the spool file
+│   │   ├── cost.py               Pure cost arithmetic
+│   │   └── daemon.py             page_log reader and reconciler
+│   ├── policies/engine.py        Pure policy + quota evaluation (no I/O)
+│   ├── services/
+│   │   ├── quota.py              The ONLY code that changes balances
+│   │   ├── accounts.py           Account deletion (jobs + policies)
+│   │   ├── cups_queues.py        lpstat / lpadmin wrapper for the console
+│   │   ├── user_import.py        CSV user import / export
+│   │   ├── runtime_settings.py   Console-editable settings
+│   │   └── audit.py              Audit-log writer
+│   ├── notifications/alerts.py   Email / webhook alerts with cooldown
+│   ├── api/                      FastAPI app: auth, admin console, portal, templates
+│   ├── cli/quotactl.py           Admin CLI
+│   ├── cli/reset.py              Entry point for the daily period-reset timer
+│   ├── core/                     Config loading, logging, exceptions
+│   └── db/                       SQLAlchemy models, session handling, Alembic migrations
+└── tests/                        unit/ and integration/ pytest suites (206 tests)
+</code></pre>
+<p><strong>Console scripts</strong> installed by the package:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Entry point</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>quotactl</code></td>
+<td><code>printquota.cli.quotactl:cli</code></td>
+<td>Admin CLI</td>
+</tr>
+<tr>
+<td><code>printquota-accounting</code></td>
+<td><code>printquota.accounting.daemon:main</code></td>
+<td>Accounting daemon</td>
+</tr>
+<tr>
+<td><code>printquota-reset</code></td>
+<td><code>printquota.cli.reset:main</code></td>
+<td>Roll elapsed quota periods</td>
+</tr>
+</tbody>
+</table></div>
+<p>The backend itself runs as <code>python -m printquota.backend.quota_backend</code>,
+through a small shell shim installed at <code>/usr/lib/cups/backend/quota</code>.</p>
+<hr />
+<h2 id="4-requirements">4. Requirements<a class="anchor" href="#4-requirements" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ubuntu Server 22.04 LTS or newer</td>
+<td>Tested on a Hyper-V guest</td>
+</tr>
+<tr>
+<td>Python 3.10+</td>
+<td>The stock interpreter on 22.04 and 24.04, so no PPA is needed. <code>install.sh</code> checks this first</td>
+</tr>
+<tr>
+<td>CUPS</td>
+<td>The print server being controlled</td>
+</tr>
+<tr>
+<td><code>poppler-utils</code></td>
+<td>Provides <code>pdfinfo</code> for exact PDF page counts</td>
+</tr>
+<tr>
+<td><code>build-essential</code>, <code>python3-dev</code>, <code>libsystemd-dev</code>, <code>pkg-config</code></td>
+<td>Needed to build <code>systemd-python</code> (optional journald logging)</td>
+</tr>
+<tr>
+<td>System <code>python3-yaml</code></td>
+<td>Used by <code>scripts/backup.sh</code>, which runs under the system interpreter rather than the virtualenv. Present on stock Ubuntu Server</td>
+</tr>
+<tr>
+<td>PostgreSQL + a driver (optional)</td>
+<td>e.g. <code>psycopg</code>. Install it into <code>/opt/printquota</code> if you use PostgreSQL</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Python dependencies</strong> (from <code>pyproject.toml</code>): SQLAlchemy ≥ 2.0, Alembic ≥
+1.13, Click ≥ 8.1, PyYAML ≥ 6.0, FastAPI ≥ 0.110, Uvicorn[standard] ≥ 0.29,
+Jinja2 ≥ 3.1, python-multipart ≥ 0.0.9, itsdangerous ≥ 2.1, bcrypt ≥ 4.0,
+Pydantic ≥ 2.6.
+Extras: <code>dev</code> (pytest, httpx) and <code>ldap</code> (ldap3).</p>
+<hr />
+<h2 id="5-installation">5. Installation<a class="anchor" href="#5-installation" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">git clone &lt;your-repo-url&gt; print-quota-system
+cd print-quota-system
+chmod +x scripts/*.sh scripts/seed_demo.py   # needed if the checkout lost the exec bit (e.g. copied via Windows)
+sudo ./scripts/install.sh
+</code></pre>
+<h3 id="what-installsh-does">What <code>install.sh</code> does<a class="anchor" href="#what-installsh-does" aria-label="Link to this section">#</a></h3>
+<p>The installer is idempotent, so running it again performs an upgrade.</p>
+<ol>
+<li>Checks it is running as root and that <code>python3</code> is 3.10 or newer.</li>
+<li>Installs any missing OS packages: <code>python3 python3-venv python3-dev build-essential poppler-utils cups libsystemd-dev pkg-config</code>. If they are
+all present, this step is skipped. An <code>apt-get update</code> error (e.g. a mirror
+mid-sync) is only a warning.</li>
+<li>Creates the system user <code>printquota</code> (no login shell) and adds it to
+the <code>lp</code> group (to read <code>page_log</code>) and the <code>lpadmin</code> group (so the web
+console can manage CUPS queues).</li>
+<li>Creates <code>/var/lib/printquota</code> (0750, owned by <code>printquota</code>) and
+<code>/etc/printquota</code> (0750, <code>root:printquota</code>).</li>
+<li>Builds a virtualenv at <code>/opt/printquota</code> and installs the package into
+it, plus <code>systemd-python</code> if it builds.</li>
+<li>Copies <code>config/settings.yaml</code> to <code>/etc/printquota/settings.yaml</code> <strong>only if
+that file does not already exist</strong>, pointing <code>database.url</code> at
+<code>/var/lib/printquota/printquota.db</code>.</li>
+<li>Generates <code>/etc/printquota/env</code> (0640) with <code>PRINTQUOTA_CONFIG</code> and a
+random <code>PRINTQUOTA_SECRET_KEY</code>, <strong>only if it does not already exist</strong>, and
+adds a one-time <code>PRINTQUOTA_SETUP_TOKEN</code> if there isn't one.</li>
+<li>Copies <code>backup.sh</code> and the docs to <code>/opt/printquota/share</code>, then runs
+<code>alembic upgrade head</code> against the configured database.</li>
+<li>Installs the CUPS backend shim (<code>register_backend.sh --install-only</code>).</li>
+<li>Installs the systemd units, enables <code>quota-accounting.service</code>,
+<code>quota-api.service</code>, <code>quota-reset.timer</code> and <code>quota-backup.timer</code>, and
+restarts the services so that an upgrade takes effect.</li>
+<li>Prints the web console address and the <strong>setup link</strong> (see §6).</li>
+</ol>
+<p>It <strong>does not</strong> edit <code>cupsd.conf</code> and <strong>does not</strong> wrap any queue. Queues are
+enforced from the web console (or with <code>register_backend.sh</code>).</p>
+<p>Installer paths can be overridden with environment variables:
+<code>PREFIX</code> (default <code>/opt/printquota</code>), <code>CONFIG_DIR</code> (<code>/etc/printquota</code>),
+<code>STATE_DIR</code> (<code>/var/lib/printquota</code>), <code>LOG_USER</code> (<code>printquota</code>). The systemd
+units hard-code the default paths, so if you change them, edit the units too.</p>
+<h3 id="installed-file-system-layout">Installed file-system layout<a class="anchor" href="#installed-file-system-layout" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Contents</th>
+<th>Owner / mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/opt/printquota/</code></td>
+<td>Virtualenv with the package and console scripts</td>
+<td>root</td>
+</tr>
+<tr>
+<td><code>/etc/printquota/settings.yaml</code></td>
+<td>Main configuration</td>
+<td><code>root:printquota</code> 0640</td>
+</tr>
+<tr>
+<td><code>/etc/printquota/env</code></td>
+<td><code>PRINTQUOTA_CONFIG</code>, <code>PRINTQUOTA_SECRET_KEY</code>, <code>PRINTQUOTA_SETUP_TOKEN</code> (and any other overrides)</td>
+<td><code>root:printquota</code> 0640</td>
+</tr>
+<tr>
+<td><code>/var/lib/printquota/printquota.db</code></td>
+<td>SQLite database</td>
+<td><code>printquota</code></td>
+</tr>
+<tr>
+<td><code>/var/lib/printquota/accounting.state</code></td>
+<td>Accounting daemon's <code>page_log</code> cursor (inode + offset)</td>
+<td><code>printquota</code></td>
+</tr>
+<tr>
+<td><code>/opt/printquota/share/</code></td>
+<td><code>alembic.ini</code>, <code>scripts/backup.sh</code>, <code>docs/</code></td>
+<td>root</td>
+</tr>
+<tr>
+<td><code>/usr/lib/cups/backend/quota</code></td>
+<td>Backend shim</td>
+<td><code>root:root</code> <strong>0700</strong></td>
+</tr>
+<tr>
+<td><code>/etc/systemd/system/quota-*.{service,timer}</code></td>
+<td>Units</td>
+<td>root 0644</td>
+</tr>
+<tr>
+<td><code>/var/backups/printquota/</code></td>
+<td>Backups (see §18)</td>
+<td>root</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="6-first-time-setup-and-safe-rollout">6. First-time setup and safe rollout<a class="anchor" href="#6-first-time-setup-and-safe-rollout" aria-label="Link to this section">#</a></h2>
+<p>After <code>install.sh</code> finishes, <strong>everything is done in the web browser</strong>. You
+don't need the command line again for day-to-day administration.</p>
+<h3 id="step-1-create-the-first-administrator-setup-wizard">Step 1: create the first administrator (setup wizard)<a class="anchor" href="#step-1-create-the-first-administrator-setup-wizard" aria-label="Link to this section">#</a></h3>
+<p>The installer ends by printing a link like this one:</p>
+<pre><code>http://10.0.0.20:8080/setup?token=Qm3v…
+</code></pre>
+<p>Open it, then enter a username, full name, email (optional, used for
+alerts) and a password of at least 8 characters, typed twice. Click
+<strong>Create administrator and sign in</strong>. You're signed straight in to the
+dashboard.</p>
+<ul>
+<li>The token is a one-time secret, so nobody else on the network can claim
+the server before you do. If you've lost the link, the token is the
+<code>PRINTQUOTA_SETUP_TOKEN</code> line in <code>/etc/printquota/env</code> on the server.
+Open <code>http://&lt;server&gt;:8080/setup</code> and paste it in.</li>
+<li>Until an administrator exists, the sign-in page sends you to <code>/setup</code>.
+Once one exists, <code>/setup</code> returns 404 permanently, even with the token.</li>
+<li>If you enter the username of an existing print account, that account is
+promoted to administrator and keeps its quota.</li>
+<li>With no token configured (e.g. a development checkout), setup is only
+allowed from the server itself (<code>http://localhost:8080/setup</code>).</li>
+</ul>
+<h3 id="step-2-follow-the-getting-started-checklist">Step 2: follow the &quot;Getting started&quot; checklist<a class="anchor" href="#step-2-follow-the-getting-started-checklist" aria-label="Link to this section">#</a></h3>
+<p>The dashboard shows a checklist until the essentials are done:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Where</th>
+<th>What you do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create your departments</td>
+<td><strong>Groups</strong></td>
+<td>Add groups, each with an optional shared page budget</td>
+</tr>
+<tr>
+<td>Add your users</td>
+<td><strong>Users → Import users…</strong> or the <strong>Add a user</strong> form</td>
+<td>Import many from a CSV, or add them one by one</td>
+</tr>
+<tr>
+<td>Turn on quota enforcement</td>
+<td><strong>Printers &amp; queues</strong></td>
+<td>Click <strong>Turn on</strong> for each CUPS queue that should be metered</td>
+</tr>
+<tr>
+<td>Set up alerts</td>
+<td><strong>Settings</strong></td>
+<td>Enter your SMTP server (or a webhook), then <strong>Send test alert</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>The checklist also reminds you to require logins for printing in CUPS
+(§20). That is the one step that has to be done in <code>cupsd.conf</code> on the
+server.</p>
+<h3 id="managing-users-in-the-browser">Managing users in the browser<a class="anchor" href="#managing-users-in-the-browser" aria-label="Link to this section">#</a></h3>
+<p><strong>Add one user or another administrator.</strong> On <strong>Users</strong>, fill in <em>Add a user or
+administrator</em>. Tick <strong>Administrator</strong> to give console access. For
+administrators the password is required, because an admin without a
+password could never sign in.</p>
+<p><strong>Import many users.</strong> Go to <strong>Users → Import users…</strong>:</p>
+<ol>
+<li>Upload a CSV file (save your spreadsheet as CSV, up to 2 MB / 5,000 rows)
+or paste rows into the box. Click <strong>Download a template</strong> for the exact
+format.</li>
+<li>Choose the options: default quota and alert threshold for rows that don't
+specify one, a default group, <strong>Create groups that do not exist yet</strong>, and
+<strong>Update users who already exist</strong>.</li>
+<li>Click <strong>Preview import</strong>. Every row is listed as <em>create</em>, <em>update</em>,
+<em>skip</em> or <em>error</em>, with the reason. <strong>Nothing is saved yet.</strong></li>
+<li>Click <strong>Apply</strong>. Rows with errors are left out and everything else is
+saved in one step. The whole import is recorded in the audit log.</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>username</code></td>
+<td>Required. The logon name people print as, e.g. <code>j.doe</code>: letters, digits, <code>. _ @ -</code>. No <code>DOMAIN\</code> prefix (see §8)</td>
+</tr>
+<tr>
+<td><code>display_name</code></td>
+<td>Full name</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>Where alerts go</td>
+</tr>
+<tr>
+<td><code>group</code></td>
+<td>Group (department) name</td>
+</tr>
+<tr>
+<td><code>quota</code></td>
+<td>Pages per period (blank = the default you chose)</td>
+</tr>
+<tr>
+<td><code>threshold</code></td>
+<td>Low-balance alert level in pages</td>
+</tr>
+<tr>
+<td><code>password</code></td>
+<td>Portal password, at least 8 characters (blank = none, or keep the current one)</td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td><code>yes</code> to make the user an administrator</td>
+</tr>
+<tr>
+<td><code>active</code></td>
+<td><code>no</code> to create the account disabled</td>
+</tr>
+</tbody>
+</table></div>
+<p>With a header row, the columns can be in any order and extra columns are
+ignored; common alternative names such as <code>name</code>, <code>department</code> or
+<code>quota_limit</code> are recognised. Without a header, the columns are read in the
+order above, so a plain list of usernames (one per line) works. Comma,
+semicolon and tab separators are all accepted. When updating existing users,
+<strong>blank cells leave a field unchanged</strong>.</p>
+<p><strong>Export users.</strong> <strong>Users → Export CSV</strong> downloads every account in the same
+format (never with passwords), ready to edit and re-import.</p>
+<p><strong>Bulk actions.</strong> On <strong>Users</strong>, filter by search text, group or status,
+tick users (or the header box to tick all), choose an action and click
+<strong>Apply</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Move to group</td>
+<td>Sets the group of every selected user (or clears it)</td>
+</tr>
+<tr>
+<td>Set quota to</td>
+<td>Sets the page allowance</td>
+</tr>
+<tr>
+<td>Reset usage and restart period</td>
+<td>Sets usage to zero and starts a new period now</td>
+</tr>
+<tr>
+<td>Enable / Disable</td>
+<td>Disabled users can't print or sign in</td>
+</tr>
+<tr>
+<td>Grant / Revoke admin rights</td>
+<td>Gives or removes console access</td>
+</tr>
+<tr>
+<td>Delete (with job history)</td>
+<td>Needs the <em>I understand</em> tick; removes the accounts, their jobs and policies aimed at them</td>
+</tr>
+</tbody>
+</table></div>
+<p>You can never disable, demote or delete <strong>your own</strong> account this way. It is
+skipped and the page tells you so.</p>
+<p><strong>One user.</strong> Click a username to edit their full name, email, group,
+quota, alert threshold, active/admin flags and password (typed twice), to
+reset their usage, or to delete them.</p>
+<p><strong>Groups.</strong> On <strong>Groups</strong> you can create a group, change its budget and
+description, reset its pool usage, or delete it. Deleting a group keeps
+its members' accounts (they become ungrouped) and removes policies aimed at
+that group. The member count links to the filtered user list.</p>
+<h3 id="managing-printers-and-quota-enforcement-in-the-browser">Managing printers and quota enforcement in the browser<a class="anchor" href="#managing-printers-and-quota-enforcement-in-the-browser" aria-label="Link to this section">#</a></h3>
+<p><strong>Printers &amp; queues</strong> lists every queue CUPS knows about, merged with
+printquota's cost model for each one:</p>
+<ul>
+<li><strong>Turn on</strong> puts the queue behind the quota backend. printquota first
+registers the printer with its real device URI (at the default rates if
+it's new), then points the queue at <code>quota:&lt;real-uri&gt;</code>. If CUPS refuses,
+the registration is rolled back, so a half-configured queue is never left
+behind.</li>
+<li><strong>Turn off</strong> (with the <em>confirm</em> tick) restores the real device URI. The
+queue keeps printing, but is no longer metered.</li>
+<li><strong>Edit costs</strong> sets the mono and colour rates, the duplex discount,
+<em>supports duplex</em>, and <em>Accept jobs</em>. Unticking <em>Accept jobs</em> makes every
+job on that queue be denied.</li>
+<li><strong>Add a new printer to CUPS</strong> creates a queue from a device URI
+(<code>ipp://…</code>, <code>ipps://…</code>, <code>socket://…:9100</code>, <code>lpd://…</code>, <code>usb://…</code>) with
+<strong>IPP Everywhere</strong> (driverless, recommended for network printers) or as a
+<strong>raw</strong> queue. It registers the costs and, if ticked, turns enforcement on
+straight away.</li>
+</ul>
+<p>This works because <code>install.sh</code> puts the <code>printquota</code> service account in
+CUPS's <code>lpadmin</code> group. If a button reports <em>Forbidden</em>, see §21. Queue
+names and URIs are validated before CUPS is called, and nothing runs
+through a shell.</p>
+<h3 id="changing-settings-in-the-browser">Changing settings in the browser<a class="anchor" href="#changing-settings-in-the-browser" aria-label="Link to this section">#</a></h3>
+<p><strong>Settings</strong> edits quotas (default quota, period length, default alert
+threshold, strict/soft enforcement, group budgets), costs (currency and
+default rates) and alerts (on/off, email/webhook/none, cooldown, webhook URL,
+SMTP server, port, STARTTLS, username, password, from address).</p>
+<ul>
+<li>Changes take effect immediately for new print jobs, and within 15 seconds
+in the accounting service. No restart is needed.</li>
+<li>Each field shows where its value comes from: <em>default</em>, <em>config file</em>,
+<em>set here</em> or <em>set by environment</em>. Fields set by an environment variable
+are locked, because the environment always wins (§7).</li>
+<li><strong>Use file value</strong> removes a console value so that the file or default
+applies again.</li>
+<li><strong>Send test alert</strong> sends a message to you through the saved settings and
+tells you whether it was delivered.</li>
+<li>The SMTP password is never shown back. Leave it blank to keep the current one.</li>
+<li><strong>Only what you change is saved, and a problem in one field never blocks the
+others.</strong> Every valid change is saved. A field that can't be saved is
+outlined in red, keeps what you typed, and says what's wrong (e.g. a webhook
+address without <code>https://</code>). Fields you didn't touch are never re-checked.</li>
+<li>Numbers can be typed as <code>1,000</code>, <code>0,5</code> or <code>500.0</code>.</li>
+<li>Browser autofill is switched off on this page, so saved logins can't end up
+in the webhook or SMTP boxes.</li>
+</ul>
+<p>The database location, session secret, sign-in backend, ports and CUPS paths
+are shown read-only. They decide how the services start, so they stay in
+<code>/etc/printquota/settings.yaml</code> or <code>/etc/printquota/env</code>.</p>
+<h3 id="setting-or-resetting-an-administrator-password">Setting or resetting an administrator password<a class="anchor" href="#setting-or-resetting-an-administrator-password" aria-label="Link to this section">#</a></h3>
+<p>These steps apply to the default <code>local</code> sign-in backend. With <code>pam</code> or
+<code>ldap</code>, the password is the user's system or directory password, and it
+can't be changed from printquota (see §13).</p>
+<p><strong>In the browser (normal case):</strong></p>
+<ul>
+<li><strong>Your own or another user's password:</strong> <strong>Users</strong> → click the user → type
+it in <strong>New password</strong> and <strong>Confirm new password</strong> → <strong>Save</strong>. Leave both
+blank to keep the current password.</li>
+<li><strong>Another administrator:</strong> create one on <strong>Users</strong> with <strong>Administrator</strong>
+ticked, or tick <strong>Admin</strong> on an existing user's page (a password is required
+if they don't have one yet).</li>
+</ul>
+<p><strong>Recovery when nobody can sign in</strong> (the only case that needs the server
+shell). Run this on the server. It sets a new password, restores admin
+rights and re-enables the account, without touching any other data:</p>
+<pre><code class="language-bash">sudo /opt/printquota/bin/quotactl db init --admin ceejay
+sudo /opt/printquota/bin/quotactl user enable ceejay    # only if the account was disabled
+</code></pre>
+<p><code>quotactl user set-password &lt;name&gt;</code> also works. Both commands prompt for the
+password. Avoid the <code>--password</code>/<code>--admin-password</code> flags for real
+accounts, because they leave the password in shell history.</p>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Passwords set in the console must be at least 8 characters. Only the
+first 72 bytes are used.</li>
+<li>Every password change is recorded in the audit log (<code>user.update</code> with
+<code>password_changed</code>, <code>setup.admin</code>, <code>user.set_password</code> or <code>db.init</code>). The
+password itself is never logged.</li>
+<li>Changing a password <strong>does not end sessions that are already signed in</strong>.
+Sessions expire after <code>api.session_max_age</code> (default 8 hours). To sign
+everyone out now, change <code>PRINTQUOTA_SECRET_KEY</code> in <code>/etc/printquota/env</code>
+and run <code>sudo systemctl restart quota-api</code>.</li>
+<li>The console won't let you remove your own admin rights, or disable or delete
+your own account. Another administrator has to do that.</li>
+</ul>
+<h3 id="doing-the-same-from-the-command-line-optional">Doing the same from the command line (optional)<a class="anchor" href="#doing-the-same-from-the-command-line-optional" aria-label="Link to this section">#</a></h3>
+<p>Everything above can also be scripted with <code>quotactl</code> (§11):</p>
+<pre><code class="language-bash">sudo /opt/printquota/bin/quotactl db init --admin ceejay
+sudo /opt/printquota/bin/quotactl group add finance --budget 5000
+sudo /opt/printquota/bin/quotactl user add ada --quota 500 --group finance --email ada@example.com
+sudo /opt/printquota/bin/quotactl printer add hp-mono --device-uri socket://10.0.0.5:9100 \
+     --mono 2 --color 10 --duplex --duplex-discount 0.5
+sudo ./scripts/register_backend.sh hp-mono
+</code></pre>
+<h3 id="what-register_backendsh-does">What <code>register_backend.sh</code> does<a class="anchor" href="#what-register_backendsh-does" aria-label="Link to this section">#</a></h3>
+<p>The command-line equivalent of <strong>Turn on</strong> / <strong>Turn off</strong> on the Printers &amp;
+queues page, useful for scripting:</p>
+<pre><code class="language-bash">sudo ./scripts/register_backend.sh --install-only   # (re)install the backend shim only
+sudo ./scripts/register_backend.sh &lt;queue&gt;          # wrap a queue
+sudo ./scripts/register_backend.sh &lt;queue&gt; --undo   # restore the original device URI
+</code></pre>
+<p>When wrapping a queue, the script:</p>
+<ol>
+<li>reads the current URI with <code>lpstat -v</code>;</li>
+<li>installs the backend shim;</li>
+<li>runs <code>quotactl printer add &lt;queue&gt; --device-uri &lt;current&gt;</code>, leaving any
+existing printer row and its cost model untouched;</li>
+<li>runs <code>lpadmin -p &lt;queue&gt; -v quota:&lt;current&gt;</code>.</li>
+</ol>
+<p>The original URI is embedded in the new one, so <code>--undo</code> just strips the
+<code>quota:</code> prefix and needs no other state. The script refuses to wrap a
+queue that is already wrapped.</p>
+<blockquote>
+<p><strong>Important:</strong> every wrapped queue must have a row in <code>printers</code>, because
+<code>print_jobs.printer</code> is a foreign key. If the row is missing, recording the
+job fails and the backend returns <strong>HOLD</strong>. The console's <strong>Turn on</strong> button
+and <code>register_backend.sh</code> both create the row for you. If you wrap a queue
+by hand with <code>lpadmin</code>, register the printer first.</p>
+</blockquote>
+<h3 id="recommended-rollout-sequence">Recommended rollout sequence<a class="anchor" href="#recommended-rollout-sequence" aria-label="Link to this section">#</a></h3>
+<ol>
+<li><strong>Install, but enforce nothing yet.</strong> The backend is installed, but no queue uses it.</li>
+<li><strong>Set the costs</strong> of each printer on <strong>Printers &amp; queues</strong>.</li>
+<li><strong>Give users a very large quota</strong> (e.g. import them with a default quota
+of 100000) so that the first week only <em>measures</em> usage.</li>
+<li><strong>Turn on enforcement for one low-risk queue.</strong> Print a test page, then
+check <strong>Reports</strong> (or <code>journalctl -u cups -n 50</code> on the server).</li>
+<li><strong>Compare estimated and actual pages for a few days</strong> on the Reports
+page. A large gap points to a driver that recomposes jobs (see §10).</li>
+<li><strong>Lower quotas to real values</strong> (Users → select all → <em>Set quota to</em>), then
+turn on the remaining queues.</li>
+<li><strong>Enable <code>Require valid-user</code> in <code>cupsd.conf</code></strong> before you rely on the
+numbers (see §20).</li>
+</ol>
+<hr />
+<h2 id="7-configuration-reference">7. Configuration reference<a class="anchor" href="#7-configuration-reference" aria-label="Link to this section">#</a></h2>
+<h3 id="precedence">Precedence<a class="anchor" href="#precedence" aria-label="Link to this section">#</a></h3>
+<p>Configuration is merged from four layers. Higher layers win:</p>
+<ol>
+<li><code>PRINTQUOTA_*</code> <strong>environment variables</strong> (usually set in <code>/etc/printquota/env</code>)</li>
+<li><strong>Values saved on the console's Settings page</strong> (the <code>app_settings</code>
+table). This applies only to the keys marked <strong>Console</strong> in the table
+below.</li>
+<li><strong>YAML file</strong>: the <code>--config</code> CLI option, else <code>$PRINTQUOTA_CONFIG</code>, else
+the first of <code>/etc/printquota/settings.yaml</code> or <code>./config/settings.yaml</code>
+that exists</li>
+<li><strong>Built-in defaults</strong> in <code>src/printquota/core/config.py</code></li>
+</ol>
+<p>If <code>PRINTQUOTA_CONFIG</code> or <code>--config</code> points at a missing file, loading
+fails loudly instead of silently using the defaults. Environment values are
+converted to the type of the default they replace. Booleans accept
+<code>1/true/yes/on</code> and <code>0/false/no/off</code>.</p>
+<p><strong>Console-editable settings</strong> (quotas, costs, alerts, SMTP) take effect
+without a restart. The CUPS backend starts fresh for every job, the web app
+reloads them as soon as they are saved, and the accounting daemon re-reads
+them within 15 seconds.</p>
+<p><strong>File/environment-only settings</strong> (database, secret key, <code>api.*</code>,
+<code>logging.*</code>, the CUPS paths, the setup token) decide how a process starts
+and reaches its database, so they can never come from the database.
+Settings loaded from the file are cached per process, so <strong>restart the
+services after editing <code>settings.yaml</code> or <code>env</code></strong>:</p>
+<pre><code class="language-bash">sudo systemctl restart quota-accounting quota-api
+</code></pre>
+<h3 id="all-settings">All settings<a class="anchor" href="#all-settings" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Default</th>
+<th>Console</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>database.url</code></td>
+<td><code>sqlite:///./printquota.db</code> (installer sets <code>sqlite:////var/lib/printquota/printquota.db</code>)</td>
+<td>—</td>
+<td>SQLAlchemy URL. Use <code>postgresql+psycopg://user:pass@host/db</code> for PostgreSQL</td>
+</tr>
+<tr>
+<td><code>database.echo</code></td>
+<td><code>false</code></td>
+<td>—</td>
+<td>Log every SQL statement (debugging only)</td>
+</tr>
+<tr>
+<td><code>quota.default_limit</code></td>
+<td><code>500</code></td>
+<td>Console</td>
+<td>Pages per period given to new users when none is specified</td>
+</tr>
+<tr>
+<td><code>quota.period_days</code></td>
+<td><code>30</code></td>
+<td>Console</td>
+<td>Length of the rolling quota period</td>
+</tr>
+<tr>
+<td><code>quota.default_low_balance_threshold</code></td>
+<td><code>50</code></td>
+<td>Console</td>
+<td>Remaining-pages level that triggers a low-balance alert, for new users</td>
+</tr>
+<tr>
+<td><code>quota.enforcement</code></td>
+<td><code>strict</code></td>
+<td>Console</td>
+<td><code>strict</code> denies jobs that don't fit; <code>soft</code> allows them and lets balances go negative</td>
+</tr>
+<tr>
+<td><code>quota.enforce_group_budget</code></td>
+<td><code>true</code></td>
+<td>Console</td>
+<td>Also require a job to fit the group's shared pool</td>
+</tr>
+<tr>
+<td><code>printing.default_cost_per_page_mono</code></td>
+<td><code>1.0</code></td>
+<td>Console</td>
+<td>Fallback mono rate (see §10 on how fallbacks apply)</td>
+</tr>
+<tr>
+<td><code>printing.default_cost_per_page_color</code></td>
+<td><code>5.0</code></td>
+<td>Console</td>
+<td>Fallback colour rate</td>
+</tr>
+<tr>
+<td><code>printing.default_duplex_discount</code></td>
+<td><code>0.0</code></td>
+<td>Console</td>
+<td>Duplex discount used only when a job's printer has no row</td>
+</tr>
+<tr>
+<td><code>printing.currency</code></td>
+<td><code>NGN</code></td>
+<td>Console</td>
+<td>Label shown next to costs in the UI</td>
+</tr>
+<tr>
+<td><code>printing.real_backend_dir</code></td>
+<td><code>/usr/lib/cups/backend</code></td>
+<td>—</td>
+<td>Directory the wrapped real backend must live in (security check)</td>
+</tr>
+<tr>
+<td><code>printing.page_log</code></td>
+<td><code>/var/log/cups/page_log</code></td>
+<td>—</td>
+<td>CUPS page log the daemon reads (may legitimately not exist, see §10)</td>
+</tr>
+<tr>
+<td><code>printing.spool_dir</code></td>
+<td><code>/var/spool/cups</code></td>
+<td>—</td>
+<td>CUPS spool (<code>RequestRoot</code>) where submitted documents are counted before printing</td>
+</tr>
+<tr>
+<td><code>printing.estimator_timeout</code></td>
+<td><code>15</code></td>
+<td>—</td>
+<td>Seconds allowed for <code>pdfinfo</code></td>
+</tr>
+<tr>
+<td><code>alerts.enabled</code></td>
+<td><code>true</code></td>
+<td>Console</td>
+<td>Master switch for alerts</td>
+</tr>
+<tr>
+<td><code>alerts.channel</code></td>
+<td><code>email</code></td>
+<td>Console</td>
+<td><code>email</code>, <code>webhook</code> or <code>none</code></td>
+</tr>
+<tr>
+<td><code>alerts.webhook_url</code></td>
+<td><code>&quot;&quot;</code></td>
+<td>Console</td>
+<td>JSON POST target when the channel is <code>webhook</code></td>
+</tr>
+<tr>
+<td><code>alerts.cooldown_hours</code></td>
+<td><code>24</code></td>
+<td>Console</td>
+<td>Minimum gap between two alerts of the same type to the same user (<code>0</code> disables it)</td>
+</tr>
+<tr>
+<td><code>alerts.smtp.host</code></td>
+<td><code>&quot;&quot;</code></td>
+<td>Console</td>
+<td>SMTP server. Empty means no email is sent</td>
+</tr>
+<tr>
+<td><code>alerts.smtp.port</code></td>
+<td><code>25</code></td>
+<td>Console</td>
+<td>SMTP port</td>
+</tr>
+<tr>
+<td><code>alerts.smtp.user</code> / <code>password</code></td>
+<td><code>&quot;&quot;</code></td>
+<td>Console</td>
+<td>SMTP credentials (login only happens if <code>user</code> is set)</td>
+</tr>
+<tr>
+<td><code>alerts.smtp.from_address</code></td>
+<td><code>printquota@localhost</code></td>
+<td>Console</td>
+<td>From address</td>
+</tr>
+<tr>
+<td><code>alerts.smtp.use_tls</code></td>
+<td><code>false</code></td>
+<td>Console</td>
+<td>Use STARTTLS</td>
+</tr>
+<tr>
+<td><code>api.host</code> / <code>api.port</code></td>
+<td><code>0.0.0.0</code> / <code>8080</code></td>
+<td>—</td>
+<td>Web app bind address. <strong>Note:</strong> <code>quota-api.service</code> passes <code>--host</code>/<code>--port</code> to uvicorn directly, so edit the unit to change them</td>
+</tr>
+<tr>
+<td><code>api.session_cookie</code></td>
+<td><code>printquota_session</code></td>
+<td>—</td>
+<td>Session cookie name</td>
+</tr>
+<tr>
+<td><code>api.session_max_age</code></td>
+<td><code>28800</code></td>
+<td>—</td>
+<td>Session lifetime in seconds (8 hours)</td>
+</tr>
+<tr>
+<td><code>api.auth_backend</code></td>
+<td><code>local</code></td>
+<td>—</td>
+<td><code>local</code>, <code>pam</code> or <code>ldap</code> (see §13)</td>
+</tr>
+<tr>
+<td><code>api.cookie_secure</code></td>
+<td><code>false</code></td>
+<td>—</td>
+<td><em>(not in the sample file)</em> Set <code>true</code> when the console is served over HTTPS so that the cookie is only sent over TLS</td>
+</tr>
+<tr>
+<td><code>logging.level</code></td>
+<td><code>INFO</code></td>
+<td>—</td>
+<td><code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code></td>
+</tr>
+<tr>
+<td><code>logging.use_journald</code></td>
+<td><code>true</code></td>
+<td>—</td>
+<td>Log to journald if <code>systemd-python</code> is installed, otherwise stderr</td>
+</tr>
+<tr>
+<td><code>setup_token</code></td>
+<td><code>&quot;&quot;</code></td>
+<td>—</td>
+<td>One-time token for the setup wizard (§6). Usually set as <code>PRINTQUOTA_SETUP_TOKEN</code> in <code>/etc/printquota/env</code></td>
+</tr>
+<tr>
+<td><code>secret_key</code></td>
+<td><code>&quot;&quot;</code></td>
+<td>—</td>
+<td>Signs session cookies. If it is empty, each process uses a random key, so every restart signs everyone out. The installer generates one</td>
+</tr>
+<tr>
+<td><code>ldap.*</code></td>
+<td><em>(absent)</em></td>
+<td>—</td>
+<td>AD/LDAP settings (see §13)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="environment-variables">Environment variables<a class="anchor" href="#environment-variables" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Overrides</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PRINTQUOTA_CONFIG</code></td>
+<td>Path to the YAML file</td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_DB_URL</code></td>
+<td><code>database.url</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_DB_ECHO</code></td>
+<td><code>database.echo</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_SECRET_KEY</code></td>
+<td><code>secret_key</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_LOG_LEVEL</code></td>
+<td><code>logging.level</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_PAGE_LOG</code></td>
+<td><code>printing.page_log</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_REAL_BACKEND_DIR</code></td>
+<td><code>printing.real_backend_dir</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_SPOOL_DIR</code></td>
+<td><code>printing.spool_dir</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_SMTP_HOST</code> / <code>_PORT</code> / <code>_USER</code> / <code>_PASSWORD</code> / <code>_FROM</code></td>
+<td><code>alerts.smtp.*</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_API_HOST</code> / <code>PRINTQUOTA_API_PORT</code></td>
+<td><code>api.host</code> / <code>api.port</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_AUTH_BACKEND</code></td>
+<td><code>api.auth_backend</code></td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_SETUP_TOKEN</code></td>
+<td><code>setup_token</code>: unlocks <code>/setup</code> while no administrator exists (generated by <code>install.sh</code>)</td>
+</tr>
+<tr>
+<td><code>PRINTQUOTA_STATE</code></td>
+<td>Accounting daemon cursor file (default <code>/var/lib/printquota/accounting.state</code>)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Put secrets such as the SMTP password in <code>/etc/printquota/env</code> rather than in
+<code>settings.yaml</code>. The backend shim sources that file too, but it only
+exports <code>PRINTQUOTA_CONFIG</code> and <code>PRINTQUOTA_SECRET_KEY</code> to the backend.</p>
+<hr />
+<h2 id="8-quotas-periods-and-group-budgets">8. Quotas, periods and group budgets<a class="anchor" href="#8-quotas-periods-and-group-budgets" aria-label="Link to this section">#</a></h2>
+<h3 id="units">Units<a class="anchor" href="#units" aria-label="Link to this section">#</a></h3>
+<p>Quotas are counted in <strong>pages</strong>, meaning printed sides after copies and
+N-up are applied. Cost is tracked in money alongside pages, for reporting
+and chargeback, but <strong>cost never decides whether a job may print</strong>. Mixing
+the two units in one decision would make denials hard for users to
+understand.</p>
+<h3 id="rolling-periods">Rolling periods<a class="anchor" href="#rolling-periods" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Each user (and each group) has its own <code>period_start</code> anchor.</li>
+<li>The period ends <code>quota.period_days</code> after the anchor.</li>
+<li>When the period has passed, the anchor moves forward <strong>in whole windows</strong>
+and <code>pages_used</code> resets to 0. A user who has not printed for three months
+keeps their original alignment, so periods don't drift apart across the
+organisation.</li>
+<li>Periods roll when either of these happens first:
+<ul>
+<li>the daily <code>quota-reset.timer</code> (00:30, or at the next boot if that run was missed), or</li>
+<li>the next time the user's balance is loaded (a job, the portal, <code>/api/me</code>).</li>
+</ul>
+</li>
+<li><code>quotactl user reset &lt;name&gt;</code> (or the console button) sets usage to zero
+<strong>and restarts the period from now</strong>.</li>
+</ul>
+<h3 id="charging-lifecycle-of-a-job">Charging lifecycle of a job<a class="anchor" href="#charging-lifecycle-of-a-job" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Where</th>
+<th>What happens to the balance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pre-flight allow</td>
+<td>Backend → <code>authorize_job</code></td>
+<td>Estimated pages are <strong>debited immediately</strong> from the user and their group. <code>charged_pages = estimate</code></td>
+</tr>
+<tr>
+<td>Pre-flight deny</td>
+<td>Backend → <code>authorize_job</code></td>
+<td>Nothing is charged, and the job's cost is 0</td>
+</tr>
+<tr>
+<td>Post-print</td>
+<td>Daemon → <code>charge_job</code></td>
+<td>The balance changes by <code>actual − charged</code> (up or down). <code>actual_pages</code> and <code>cost</code> are set, status becomes <code>completed</code>, and <code>reconciled = true</code></td>
+</tr>
+<tr>
+<td>Replay of old log lines</td>
+<td>Daemon</td>
+<td>No-op: reconciled jobs are never charged again</td>
+</tr>
+</tbody>
+</table></div>
+<p>Balances never go below 0 when a credit is applied. In soft mode they can go
+past the limit, so <code>remaining</code> can be negative.</p>
+<h3 id="group-budgets">Group budgets<a class="anchor" href="#group-budgets" aria-label="Link to this section">#</a></h3>
+<p>A group can have a shared pool (<code>shared_quota</code>), or none (<code>None</code> means
+unlimited). When <code>quota.enforce_group_budget</code> is true, a job must fit
+<strong>both</strong> the user's remaining quota <strong>and</strong> the group's remaining pool. The
+individual allowance stops one person from using up the pool, and the pool
+stops the department as a whole from overspending. Group usage is charged
+and corrected together with user usage.</p>
+<h3 id="enforcement-modes">Enforcement modes<a class="anchor" href="#enforcement-modes" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>User over quota</th>
+<th>Group over budget</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>strict</code></td>
+<td>Denied: <code>quota exceeded: N page(s) requested, R remaining of L</code></td>
+<td>Denied: <code>group 'X' budget exceeded: …</code></td>
+</tr>
+<tr>
+<td><code>soft</code></td>
+<td>Allowed, and the overrun is noted in the log</td>
+<td><strong>Not checked</strong> (soft mode skips all quota checks)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Policies are enforced in both modes.</p>
+<h3 id="accounts-that-cannot-print">Accounts that cannot print<a class="anchor" href="#accounts-that-cannot-print" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Unknown user</strong> (no matching account): denied, reason <code>no print account for this user</code>.</li>
+<li><strong>Disabled user</strong> (<code>is_active = false</code>): denied, reason <code>print account is disabled</code>.</li>
+<li><strong>Ambiguous name</strong> (two accounts differ only in capitals): denied, reason
+<code>'&lt;name&gt;' matches more than one print account (…)</code>.</li>
+<li><strong>Disabled printer</strong> (<code>printers.is_active = false</code>): denied, reason <code>printer '&lt;name&gt;' is disabled</code>.</li>
+</ul>
+<p>Users are <strong>not</strong> created automatically. Everyone who prints to a wrapped
+queue needs an account.</p>
+<h3 id="how-the-jobs-user-name-is-matched-to-an-account">How the job's user name is matched to an account<a class="anchor" href="#how-the-jobs-user-name-is-matched-to-an-account" aria-label="Link to this section">#</a></h3>
+<p>Windows doesn't always send the bare logon name. The same person can arrive
+as <code>j.doe</code>, <code>J.Doe</code>, <code>CORP\J.Doe</code> or, once the server is
+domain-joined, <code>j.doe@corp.example.com</code>. As in Active Directory, these are all
+one account (<code>services/identity.py</code>). For each form of the name (as sent,
+then without the <code>DOMAIN\</code> prefix, then without the <code>@realm</code>), printquota
+tries:</p>
+<ol>
+<li>an <strong>exact</strong> match, so anything that matched before still matches;</li>
+<li>a match <strong>ignoring capital letters</strong>, only if exactly one account
+qualifies. Two accounts that differ only in capitals are never guessed
+between: the job is refused as ambiguous.</li>
+</ol>
+<p>The job is then charged to, recorded under, and checked against the policies
+of the matched account. The name that was actually sent is logged
+(<code>print user matched sent_as=… account=…</code>). Portal sign-in uses the same
+matching.</p>
+<p><strong>Create accounts with the bare logon name</strong> (<code>j.doe</code>). The console,
+CLI, setup wizard and CSV import refuse names containing <code>\</code> and names
+that differ from an existing account only in capitals. In a CSV import, a
+row for <code>J.Doe</code> updates the existing <code>j.doe</code>.</p>
+<p>Matching ignores the domain, so on a network with non-domain PCs a <em>local</em>
+Windows account with the same short name counts against the domain user.
+Requiring a login in CUPS (§20) is what prevents printing under someone
+else's name.</p>
+<hr />
+<h2 id="9-print-policies">9. Print policies<a class="anchor" href="#9-print-policies" aria-label="Link to this section">#</a></h2>
+<p>A policy is one rule attached to a scope.</p>
+<h3 id="rule-types">Rule types<a class="anchor" href="#rule-types" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th><code>rule_value</code></th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>deny_printer</code></td>
+<td><code>true</code> / <code>false</code></td>
+<td>Deny every job from the matched scope. Usually scoped to a user or group, e.g. &quot;the reception group may not use <code>color-mfp</code>&quot;</td>
+</tr>
+<tr>
+<td><code>block_color</code></td>
+<td><code>true</code> / <code>false</code></td>
+<td>Deny colour jobs</td>
+</tr>
+<tr>
+<td><code>block_filetype</code></td>
+<td>Comma-separated extensions, e.g. <code>exe,zip</code></td>
+<td>Deny jobs whose spool file name has one of these extensions (case- and dot-insensitive). See the limitation in §23</td>
+</tr>
+<tr>
+<td><code>max_copies_per_job</code></td>
+<td>Positive integer</td>
+<td>Deny jobs with more copies than this</td>
+</tr>
+<tr>
+<td><code>max_pages_per_job</code></td>
+<td>Positive integer</td>
+<td>Deny jobs whose estimated total pages exceed this</td>
+</tr>
+<tr>
+<td><code>force_duplex</code></td>
+<td><code>true</code> / <code>false</code></td>
+<td><strong>Modifies instead of denying:</strong> adds <code>sides=two-sided-long-edge</code> to the options passed to the real backend, and charges the job as duplex</td>
+</tr>
+</tbody>
+</table></div>
+<p>The truthy values for boolean rules are <code>1</code>, <code>true</code>, <code>yes</code>, <code>on</code>, and the
+empty string. Rules are validated when they are created (via the CLI or the
+console). Unknown rule types stored in the database are ignored at
+evaluation time, so a stray row can never break a running backend.</p>
+<h3 id="scopes-and-precedence">Scopes and precedence<a class="anchor" href="#scopes-and-precedence" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Scope</th>
+<th><code>scope_value</code></th>
+<th>Matches when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>user</code></td>
+<td>username</td>
+<td>The job's user is this user</td>
+</tr>
+<tr>
+<td><code>group</code></td>
+<td>group name</td>
+<td>The job's user belongs to this group</td>
+</tr>
+<tr>
+<td><code>printer</code></td>
+<td>queue name</td>
+<td>The job is for this queue</td>
+</tr>
+<tr>
+<td><code>global</code></td>
+<td><em>(none)</em></td>
+<td>Always</td>
+</tr>
+</tbody>
+</table></div>
+<p>**The most specific scope wins for each rule type: user &gt; group &gt; printer</p>
+<blockquote>
+<p>global.** A more specific rule <em>replaces</em> a less specific one of the same
+type instead of adding to it. For example, a global <code>max_pages_per_job=50</code>
+plus a user-scoped <code>max_pages_per_job=200</code> gives that user a limit of 200.</p>
+</blockquote>
+<h3 id="evaluation-order">Evaluation order<a class="anchor" href="#evaluation-order" aria-label="Link to this section">#</a></h3>
+<ol>
+<li><code>deny_printer</code></li>
+<li><code>block_color</code></li>
+<li><code>block_filetype</code></li>
+<li><code>max_copies_per_job</code></li>
+<li><code>max_pages_per_job</code></li>
+<li><code>force_duplex</code> (never denies)</li>
+<li><strong>Quota</strong>: the user's balance, then the group pool</li>
+</ol>
+<p>The first failing check decides the outcome. Policies are checked before
+quota on purpose, so that a policy violation is reported as a policy
+violation and not as a confusing balance message.</p>
+<h3 id="examples">Examples<a class="anchor" href="#examples" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">quotactl policy add --scope global  --rule max_pages_per_job --rule-value 100
+quotactl policy add --scope group   --value finance --rule block_color --rule-value true
+quotactl policy add --scope printer --value hp-mono --rule force_duplex
+quotactl policy add --scope user    --value ada --rule max_pages_per_job --rule-value 300
+quotactl policy add --scope printer --value color-mfp --rule deny_printer  # nobody may use color-mfp…
+quotactl policy add --scope group   --value design --rule deny_printer --rule-value false  # …except the design group
+quotactl policy list
+quotactl policy remove 4
+</code></pre>
+<blockquote>
+<p><code>deny_printer</code> applies to every printer in the chosen scope. Because each
+rule type has only one winner, you cannot currently say &quot;group X may not use
+printer Y&quot; with a single rule. Use a <code>printer</code> scope to deny everyone on
+that queue, and a <code>user</code>/<code>group</code> scope with <code>deny_printer=false</code> to exempt
+people.</p>
+</blockquote>
+<hr />
+<h2 id="10-page-estimation-and-the-cost-model">10. Page estimation and the cost model<a class="anchor" href="#10-page-estimation-and-the-cost-model" aria-label="Link to this section">#</a></h2>
+<h3 id="pre-flight-estimation-accountingpagespy-accountingcups_spoolpy">Pre-flight estimation (<code>accounting/pages.py</code>, <code>accounting/cups_spool.py</code>)<a class="anchor" href="#pre-flight-estimation-accountingpagespy-accountingcups_spoolpy" aria-label="Link to this section">#</a></h3>
+<p>Quotas are counted in <strong>pages</strong>, and a job that doesn't fit is refused
+<strong>before anything prints</strong>. printquota never prints part of a job.</p>
+<p><strong>What is counted.</strong> On a queue with a driver (a PPD), CUPS converts each
+job into the printer's own language (PCL XL, raster, …) <em>before</em> the backend
+runs, and that data usually can't be counted. So the backend counts the
+<strong>documents the client submitted</strong>, which CUPS keeps in its spool directory
+(<code>printing.spool_dir</code>, default <code>/var/spool/cups</code>):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Spool file</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>d&lt;job&gt;-001</code>, <code>d&lt;job&gt;-002</code>, …</td>
+<td>Each submitted document, counted as below. Gzip-compressed documents are decompressed first</td>
+</tr>
+<tr>
+<td><code>c&lt;job&gt;</code></td>
+<td>The job's IPP attributes: <code>copies</code>, <code>number-up</code> and <code>page-ranges</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Only if those are missing or can't be counted does the backend fall back to
+the data it received on stdin. If neither can be counted, it charges the
+larger of the two guesses.</p>
+<p>The format of each document is identified from its first bytes:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Detected by</th>
+<th>Page count method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PDF</td>
+<td><code>%PDF</code></td>
+<td><code>pdfinfo</code> (exact). Runs with an argument list and a timeout</td>
+</tr>
+<tr>
+<td>PostScript (e.g. Windows <strong>Microsoft PS Class Driver</strong>)</td>
+<td><code>%!PS</code> / <code>%!PS-Adobe</code></td>
+<td>The last positive <code>%%Pages:</code> value (the trailer beats a header placeholder), else the number of <code>%%Page:</code> markers</td>
+</tr>
+<tr>
+<td>Apple raster (AirPrint)</td>
+<td><code>UNIRAST</code></td>
+<td>Page count stored in the header (exact)</td>
+</tr>
+<tr>
+<td>PCL</td>
+<td><code>ESC%-12345X</code> or <code>ESC E</code></td>
+<td>Number of form feeds (PCL XL has none, so it falls back)</td>
+</tr>
+<tr>
+<td>Plain text</td>
+<td>≥ 90 % printable bytes</td>
+<td>Lines ÷ 60, rounded up</td>
+</tr>
+<tr>
+<td>PWG raster, ESC/P, binary, unparseable, empty</td>
+<td>—</td>
+<td><strong>Falls back to 1 page per copy</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Then <strong>total = ⌈pages in range ÷ number-up⌉ × copies</strong>, per document. If
+estimation fails completely, the backend charges one page per copy and logs
+<code>method=error</code>. The method used is logged with every decision (e.g.
+<code>method='spool:postscript'</code>).</p>
+<p><strong>After printing.</strong> If CUPS writes a <code>page_log</code>, the accounting daemon
+corrects each charge to the real count. It reads either per-page lines or
+CUPS's <code>total</code> summary line. Many drivers never report pages, so CUPS never
+creates <code>page_log</code>. That's normal: the daemon logs it once, and charges then
+stay at the pre-print count. That count is exact for PDF, PostScript and
+Apple raster.</p>
+<p><strong>Windows clients:</strong> add the printer with the <strong>Microsoft PS Class Driver</strong>
+(PostScript), so jobs arrive in a format that can be counted exactly. Avoid
+the PCL6 and XPS class drivers. CUPS can't convert their output, and it
+can't be counted.</p>
+<p>Job attributes are read from the CUPS options string:</p>
+<ul>
+<li><strong>Colour:</strong> <code>print-color-mode</code> (anything except monochrome, auto-monochrome,
+bi-level or process-monochrome counts as colour); else <code>ColorModel</code>
+(gray/grayscale/monochrome/black/mono/bw count as mono); else a
+<code>color</code>/<code>colour</code> flag. The default is <strong>mono</strong>.</li>
+<li><strong>Duplex:</strong> <code>sides=two-sided-*</code>, or a truthy <code>Duplex</code> value (not
+<code>None</code>/<code>DuplexNone</code>/false/off/0). The daemon also marks a job as duplex if
+<code>page_log</code> shows two-sided pages.</li>
+<li><strong>N-up:</strong> <code>number-up</code>.</li>
+</ul>
+<h3 id="cost-model-accountingcostpy">Cost model (<code>accounting/cost.py</code>)<a class="anchor" href="#cost-model-accountingcostpy" aria-label="Link to this section">#</a></h3>
+<pre><code>rate  = cost_per_page_color if colour else cost_per_page_mono
+rate ×= (1 − duplex_discount)   if duplex and discount &gt; 0     # discount must be 0 ≤ d &lt; 1
+cost  = round(pages × rate, 4)
+</code></pre>
+<ul>
+<li>The rates come from the job's <code>printers</code> row. <strong>A rate of <code>0</code> on the
+printer falls back to the configured default rate</strong>, so you cannot make a
+queue free by setting its rate to 0 (see §23).</li>
+<li>If the printer has no row at all, all three values come from the
+<code>printing.default_*</code> settings.</li>
+<li>Denied jobs always cost 0.</li>
+<li>The pre-flight cost uses the estimate, and the daemon recomputes it from
+the actual page count.</li>
+</ul>
+<hr />
+<h2 id="11-the-quotactl-command-line-tool">11. The <code>quotactl</code> command-line tool<a class="anchor" href="#11-the-quotactl-command-line-tool" aria-label="Link to this section">#</a></h2>
+<p>The CLI is <strong>optional</strong>: everything below can also be done in the web console
+(§6, §12). It's useful for scripting, automation and recovery when nobody
+can sign in.</p>
+<p>On an installed system use <code>/opt/printquota/bin/quotactl</code> (with <code>sudo</code> so
+that it can read <code>/etc/printquota/env</code> and write the database), or add
+<code>/opt/printquota/bin</code> to your <code>PATH</code>. Every command that changes something
+writes an audit-log row. The actor is <code>$SUDO_USER</code>, or the current login
+if that isn't set.</p>
+<p><strong>Global options:</strong> <code>--config PATH</code>, <code>--db-url URL</code>, <code>--version</code>, <code>-h/--help</code>.</p>
+<h3 id="database">Database<a class="anchor" href="#database" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>db init [--admin NAME] [--admin-password PW]</code></td>
+<td>Create the schema if it is missing. With <code>--admin</code>, create or promote that user to administrator and set their password (prompts if <code>--admin-password</code> is omitted)</td>
+</tr>
+<tr>
+<td><code>db stats</code></td>
+<td>Row counts for users, groups, printers, policies, jobs and alerts</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="users">Users<a class="anchor" href="#users" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>user add NAME [--display-name] [--email] [--group] [--quota N] [--threshold N] [--admin] [--password PW]</code></td>
+<td>Create an account. The group must already exist. Quota and threshold default to the config values</td>
+</tr>
+<tr>
+<td><code>user list [--group G] [--inactive]</code></td>
+<td>Username, group, used/limit, remaining, active, admin</td>
+</tr>
+<tr>
+<td><code>user show NAME</code></td>
+<td>Full details, period dates, and the last 10 jobs</td>
+</tr>
+<tr>
+<td><code>user set-quota NAME PAGES</code></td>
+<td>Change the allowance (≥ 0)</td>
+</tr>
+<tr>
+<td><code>user set-password NAME [--password PW]</code></td>
+<td>Set the portal password (prompts if omitted)</td>
+</tr>
+<tr>
+<td><code>user set-group NAME GROUP</code></td>
+<td>Move to a group, or <code>-</code> to clear the group</td>
+</tr>
+<tr>
+<td><code>user enable NAME</code> / <code>user disable NAME</code></td>
+<td>A disabled account has all its jobs denied and cannot sign in</td>
+</tr>
+<tr>
+<td><code>user reset NAME</code></td>
+<td>Set usage to zero and restart the period now</td>
+</tr>
+<tr>
+<td><code>user delete NAME</code></td>
+<td>Asks for confirmation, then deletes the user <strong>and their whole job history</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="groups">Groups<a class="anchor" href="#groups" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>group add NAME [--budget N] [--description TEXT]</code></td>
+<td>Create a group. Leave out <code>--budget</code> for no shared pool</td>
+</tr>
+<tr>
+<td><code>group list</code></td>
+<td>Members, budget, used, remaining</td>
+</tr>
+<tr>
+<td><code>group set-budget NAME PAGES</code></td>
+<td>Set the pool size. <code>none</code>, <code>-</code> or <code>unlimited</code> removes the pool</td>
+</tr>
+<tr>
+<td><code>group reset NAME</code></td>
+<td>Set pool usage to zero and restart the group period</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="printers">Printers<a class="anchor" href="#printers" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>printer add NAME [--device-uri URI] [--mono X] [--color X] [--duplex/--no-duplex] [--duplex-discount D] [--description]</code></td>
+<td>Register a queue. <code>D</code> must satisfy 0 ≤ D &lt; 1</td>
+</tr>
+<tr>
+<td><code>printer list</code></td>
+<td>URI, rates, duplex, discount, active</td>
+</tr>
+<tr>
+<td><code>printer set-cost NAME [--mono X] [--color X] [--duplex-discount D]</code></td>
+<td>Update the cost model</td>
+</tr>
+<tr>
+<td><code>printer disable NAME</code> / <code>printer enable NAME</code></td>
+<td>While disabled, every job to the queue is denied</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="policies">Policies<a class="anchor" href="#policies" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>policy add --scope {user,group,printer,global} [--value V] --rule RULE [--rule-value X]</code></td>
+<td><code>--value</code> is required unless the scope is global, and must name an existing user, group or printer. <code>--rule-value</code> defaults to <code>true</code></td>
+</tr>
+<tr>
+<td><code>policy list</code></td>
+<td>ID, scope, value, rule, rule value, active</td>
+</tr>
+<tr>
+<td><code>policy remove ID</code></td>
+<td>Delete a rule</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="reports-and-maintenance">Reports and maintenance<a class="anchor" href="#reports-and-maintenance" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>usage [--days 30] [--user U] [--printer P] [--status S …] [--csv PATH|-]</code></td>
+<td>Job report with totals. <code>--status</code> can be repeated (<code>allowed</code>, <code>denied</code>, <code>completed</code>, <code>error</code>). With <code>--csv</code> it writes 13 columns to a file or to stdout</td>
+</tr>
+<tr>
+<td><code>reset-periods [--dry-run]</code></td>
+<td>Roll all elapsed periods (the same thing the timer does). <code>--dry-run</code> lists the users who are due</td>
+</tr>
+<tr>
+<td><code>audit [--limit 25]</code></td>
+<td>Most recent admin actions</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="12-web-console-and-self-service-portal">12. Web console and self-service portal<a class="anchor" href="#12-web-console-and-self-service-portal" aria-label="Link to this section">#</a></h2>
+<p>The FastAPI app is served by <code>quota-api.service</code> on port 8080. Signing in
+sets a signed <code>HttpOnly</code>, <code>SameSite=Lax</code> cookie. After sign-in,
+administrators are sent to <code>/admin</code> and other users to <code>/me</code>.</p>
+<h3 id="pages">Pages<a class="anchor" href="#pages" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Who</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/login</code>, <code>/logout</code></td>
+<td>Anyone</td>
+<td>Sign in / out. After sign-in it only redirects to relative <code>next</code> targets</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>Signed in</td>
+<td>Sends you to <code>/admin</code> or <code>/me</code></td>
+</tr>
+<tr>
+<td><code>/me</code></td>
+<td>Any user</td>
+<td>Own balance, period end, usage bar, group pool remaining, last 50 jobs</td>
+</tr>
+<tr>
+<td><code>/me/history.csv?days=90</code></td>
+<td>Any user</td>
+<td>Download own history as CSV</td>
+</tr>
+<tr>
+<td><code>/admin</code></td>
+<td>Admin</td>
+<td>Dashboard: 30-day jobs/pages/cost/denials, users at or below their threshold, top 10 users by pages, last 10 denials</td>
+</tr>
+<tr>
+<td><code>/setup</code></td>
+<td>Anyone with the setup token, only while no administrator exists</td>
+<td>Create the first administrator (§6)</td>
+</tr>
+<tr>
+<td><code>/admin</code> (checklist)</td>
+<td>Admin</td>
+<td>Also shows a <em>Getting started</em> checklist until groups, users, an enforced queue and alerts are set up</td>
+</tr>
+<tr>
+<td><code>/admin/users?q=&amp;group=&amp;status=</code></td>
+<td>Admin</td>
+<td>Search and filter users (group, <code>-</code> for no group, <code>active</code>/<code>disabled</code>/<code>admin</code>). Bulk actions. Create a user or administrator</td>
+</tr>
+<tr>
+<td><code>/admin/users/import</code></td>
+<td>Admin</td>
+<td>Upload or paste CSV, preview, apply (§6)</td>
+</tr>
+<tr>
+<td><code>/admin/users/import/template.csv</code></td>
+<td>Admin</td>
+<td>CSV template</td>
+</tr>
+<tr>
+<td><code>/admin/users.csv</code></td>
+<td>Admin</td>
+<td>Export every user in the import format (no passwords)</td>
+</tr>
+<tr>
+<td><code>/admin/users/bulk</code> (POST)</td>
+<td>Admin</td>
+<td>Apply one bulk action to the selected users</td>
+</tr>
+<tr>
+<td><code>/admin/users/{name}</code></td>
+<td>Admin</td>
+<td>Edit full name, quota, threshold, email, group, active, admin, password. Reset usage. Delete. See the user's policies, last 10 alerts and last 50 jobs. You cannot remove your own admin rights, or disable or delete yourself</td>
+</tr>
+<tr>
+<td><code>/admin/groups</code></td>
+<td>Admin</td>
+<td>Create groups, edit budget and description, reset pool usage, delete a group</td>
+</tr>
+<tr>
+<td><code>/admin/printers</code></td>
+<td>Admin</td>
+<td><strong>Printers &amp; queues</strong>: list CUPS queues, turn quota enforcement on/off, add a CUPS queue, edit each printer's cost model</td>
+</tr>
+<tr>
+<td><code>/admin/settings</code></td>
+<td>Admin</td>
+<td>Console-editable settings, test alert, revert to the file value, read-only server facts</td>
+</tr>
+<tr>
+<td><code>/admin/policies</code></td>
+<td>Admin</td>
+<td>List, create (validated) and delete rules</td>
+</tr>
+<tr>
+<td><code>/admin/reports?days=&amp;username=&amp;printer=&amp;status=</code></td>
+<td>Admin</td>
+<td>Filtered report (up to 500 rows shown) with totals</td>
+</tr>
+<tr>
+<td><code>/admin/reports.csv?…</code></td>
+<td>Admin</td>
+<td>Full filtered CSV export (14 columns). The export itself is written to the audit log</td>
+</tr>
+<tr>
+<td><code>/admin/audit?limit=100</code></td>
+<td>Admin</td>
+<td>Audit log (maximum 500 rows)</td>
+</tr>
+<tr>
+<td><code>/static/*</code></td>
+<td>Anyone</td>
+<td>Stylesheet</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="json-endpoints">JSON endpoints<a class="anchor" href="#json-endpoints" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Auth</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /healthz</code></td>
+<td>None</td>
+<td><code>{&quot;status&quot;:&quot;ok&quot;}</code>, or HTTP 503 with <code>{&quot;status&quot;:&quot;degraded&quot;,&quot;error&quot;:…}</code> if the database round-trip fails</td>
+</tr>
+<tr>
+<td><code>GET /api/me</code></td>
+<td>Session</td>
+<td><code>username, quota_limit, pages_used, remaining, group, group_remaining, period_start</code>. Intended for client agents</td>
+</tr>
+<tr>
+<td><code>GET /admin/api/summary?days=30</code></td>
+<td>Admin session</td>
+<td><code>window_days, jobs, denied, pages, cost, users, printers</code></td>
+</tr>
+<tr>
+<td><code>GET /api/docs</code>, <code>/api/openapi.json</code></td>
+<td>None</td>
+<td>Swagger UI / OpenAPI schema</td>
+</tr>
+</tbody>
+</table></div>
+<p>Unauthenticated requests to <code>/api/*</code> get a JSON 401. Unauthenticated page
+requests are redirected to <code>/login?next=…</code>. Non-admins get a 403 page.</p>
+<hr />
+<h2 id="13-authentication">13. Authentication<a class="anchor" href="#13-authentication" aria-label="Link to this section">#</a></h2>
+<p>Selected with <code>api.auth_backend</code>. For every backend, a user can only sign in
+if they <strong>also</strong> have an active row in <code>users</code>. The <code>is_admin</code> flag on that
+row decides console access.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Validates against</th>
+<th>Setup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>local</code> (default)</td>
+<td><code>users.password_hash</code> (bcrypt, 12 rounds; passwords are truncated to 72 bytes)</td>
+<td>Set passwords with <code>quotactl user set-password</code>, <code>user add --password</code>, or the console. See <a href="#setting-or-resetting-an-administrator-password">Setting or resetting an administrator password</a></td>
+</tr>
+<tr>
+<td><code>pam</code></td>
+<td>The host's PAM stack, service name <code>printquota</code></td>
+<td><code>pip install python-pam</code> into <code>/opt/printquota</code> and create <code>/etc/pam.d/printquota</code>. Note that the service runs as the unprivileged <code>printquota</code> user, which limits which PAM modules work (e.g. <code>pam_unix</code> cannot read <code>/etc/shadow</code>)</td>
+</tr>
+<tr>
+<td><code>ldap</code></td>
+<td>AD/LDAP: a service bind, a search for the user's DN, then a bind as the user</td>
+<td><code>/opt/printquota/bin/pip install 'printquota[ldap]'</code> from the repo, then add an <code>ldap:</code> section (below)</td>
+</tr>
+</tbody>
+</table></div>
+<pre><code class="language-yaml">ldap:
+  server: &quot;ldaps://dc01.example.local&quot;
+  bind_dn: &quot;CN=svc-printquota,OU=Service,DC=example,DC=local&quot;
+  bind_password: &quot;...&quot;
+  user_base: &quot;OU=Staff,DC=example,DC=local&quot;
+  user_filter: &quot;(sAMAccountName={username})&quot;
+  group_attribute: &quot;memberOf&quot;
+  group_map:
+    &quot;CN=Finance,OU=Groups,DC=example,DC=local&quot;: finance
+</code></pre>
+<p>LDAP usernames must match <code>^[A-Za-z0-9._-]{1,128}$</code>, and filter values are
+escaped according to RFC 4515. <code>group_map</code> is read by a helper function
+(<code>lookup_groups</code>) that is <strong>not yet wired to any sync job</strong>. Automatic group
+synchronisation is planned for Phase 9.</p>
+<hr />
+<h2 id="14-alerts">14. Alerts<a class="anchor" href="#14-alerts" aria-label="Link to this section">#</a></h2>
+<p>After each reconciled job, the accounting daemon checks the user's balance:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Alert type</th>
+<th>Subject</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>remaining ≤ 0</code></td>
+<td><code>over_quota</code></td>
+<td>&quot;Print quota exhausted&quot;</td>
+</tr>
+<tr>
+<td><code>remaining ≤ low_balance_threshold</code></td>
+<td><code>low_balance</code></td>
+<td>&quot;Print quota running low&quot;</td>
+</tr>
+</tbody>
+</table></div>
+<p>Only one alert is sent per check, and <code>over_quota</code> takes priority. Alerts
+are skipped for disabled users and when <code>alerts.enabled</code> is false or
+<code>alerts.channel</code> is <code>none</code>.</p>
+<ul>
+<li><strong>Email:</strong> sent to <code>users.email</code> through the configured SMTP server. If the
+user has no email address or no SMTP host is set, the attempt is logged as
+undelivered.</li>
+<li><strong>Webhook:</strong> JSON POST to <code>alerts.webhook_url</code> containing <code>type, username, display_name, subject, message, pages_used, quota_limit, remaining</code>. Any
+2xx response counts as delivered.</li>
+<li><strong>Cooldown:</strong> the same alert type is not sent to the same user again within
+<code>alerts.cooldown_hours</code>. Every attempt, delivered or not, is recorded in
+<code>alerts_log</code>, and that record is what the cooldown checks.</li>
+<li>Delivery failures are logged and <strong>never interrupt accounting</strong>.</li>
+</ul>
+<p>A third type, <code>repeated_denial</code>, is defined in code but nothing calls it yet.</p>
+<hr />
+<h2 id="15-services-and-timers">15. Services and timers<a class="anchor" href="#15-services-and-timers" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Unit</th>
+<th>Runs as</th>
+<th>Schedule / command</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>quota-accounting.service</code></td>
+<td><code>printquota</code> (+ group <code>lp</code>)</td>
+<td><code>printquota-accounting --interval 15</code></td>
+<td>Reads <code>page_log</code>, reconciles jobs, sends alerts</td>
+</tr>
+<tr>
+<td><code>quota-api.service</code></td>
+<td><code>printquota</code> (+ group <code>lpadmin</code>)</td>
+<td><code>uvicorn printquota.api.main:app --host 0.0.0.0 --port 8080 --proxy-headers</code></td>
+<td>Web console and portal</td>
+</tr>
+<tr>
+<td><code>quota-reset.timer</code> → <code>.service</code></td>
+<td><code>printquota</code></td>
+<td>Daily 00:30 (+ up to 5 min random delay, <code>Persistent=true</code>)</td>
+<td><code>printquota-reset</code>: rolls elapsed periods and writes an audit row (actor <code>system</code>, source <code>timer</code>)</td>
+</tr>
+<tr>
+<td><code>quota-backup.timer</code> → <code>.service</code></td>
+<td>root</td>
+<td>Daily 23:30 (+ up to 10 min, <code>Persistent=true</code>)</td>
+<td><code>backup.sh /var/backups/printquota</code> (enabled by <code>install.sh</code> since 0.2.0)</td>
+</tr>
+<tr>
+<td>CUPS backend (not a unit)</td>
+<td>root, run by <code>cupsd</code></td>
+<td>For each job</td>
+<td>Pre-flight enforcement</td>
+</tr>
+</tbody>
+</table></div>
+<p>The long-running services are hardened with <code>NoNewPrivileges</code>,
+<code>ProtectSystem=strict</code>, <code>ProtectHome</code>, <code>PrivateTmp</code>, <code>PrivateDevices</code>,
+kernel/cgroup protection, restricted address families and namespaces, and
+<code>ReadWritePaths=/var/lib/printquota</code>. The accounting daemon can only read
+<code>/var/log/cups</code> and <code>/etc/printquota</code>.</p>
+<p>Accounting daemon options (for manual runs):</p>
+<pre><code class="language-bash">printquota-accounting [--page-log PATH] [--state PATH] [--interval SECONDS] [--once]
+</code></pre>
+<hr />
+<h2 id="16-data-model">16. Data model<a class="anchor" href="#16-data-model" aria-label="Link to this section">#</a></h2>
+<p>Eight tables, defined in <code>src/printquota/db/models.py</code>. All timestamps are
+timezone-aware UTC and are written by Python, never by a database default,
+so SQLite and PostgreSQL behave the same.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key</th>
+<th>Main columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>groups</code></td>
+<td><code>name</code></td>
+<td><code>description</code>, <code>shared_quota</code> (NULL = no pool, ≥ 0), <code>pages_used</code>, <code>period_start</code></td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td><code>username</code> (= CUPS user name)</td>
+<td><code>display_name</code>, <code>email</code>, <code>group_name</code> → groups (SET NULL on delete), <code>quota_limit</code> ≥ 0, <code>pages_used</code>, <code>period_start</code>, <code>low_balance_threshold</code>, <code>is_active</code>, <code>is_admin</code>, <code>password_hash</code></td>
+</tr>
+<tr>
+<td><code>printers</code></td>
+<td><code>name</code> (= CUPS queue)</td>
+<td><code>description</code>, <code>real_device_uri</code>, <code>cost_per_page_mono</code>, <code>cost_per_page_color</code>, <code>supports_duplex</code>, <code>duplex_discount</code> (0 ≤ d &lt; 1), <code>is_active</code></td>
+</tr>
+<tr>
+<td><code>print_policies</code></td>
+<td><code>id</code></td>
+<td><code>scope_type</code> (user/group/printer/global), <code>scope_value</code>, <code>rule_type</code>, <code>rule_value</code>, <code>is_active</code></td>
+</tr>
+<tr>
+<td><code>print_jobs</code></td>
+<td><code>id</code> (surrogate)</td>
+<td><code>cups_job_id</code>, <code>username</code> → users (CASCADE), <code>printer</code> → printers (CASCADE), <code>title</code>, <code>copies</code>, <code>is_color</code>, <code>is_duplex</code>, <code>estimated_pages</code>, <code>actual_pages</code>, <code>charged_pages</code>, <code>cost</code>, <code>status</code> (allowed/denied/completed/error), <code>denial_reason</code>, <code>reconciled</code>, <code>submitted_at</code>, <code>completed_at</code></td>
+</tr>
+<tr>
+<td><code>alerts_log</code></td>
+<td><code>id</code></td>
+<td><code>username</code>, <code>alert_type</code>, <code>channel</code>, <code>message</code>, <code>delivered</code>, <code>sent_at</code></td>
+</tr>
+<tr>
+<td><code>admin_audit_log</code></td>
+<td><code>id</code></td>
+<td><code>admin_user</code>, <code>action</code>, <code>target</code>, <code>details</code> (JSON), <code>source</code> (cli/web/timer), <code>timestamp</code></td>
+</tr>
+<tr>
+<td><code>app_settings</code></td>
+<td><code>key</code> (dotted setting name)</td>
+<td><code>value</code> (JSON), <code>updated_by</code>, <code>updated_at</code>. Written by the Settings page. Only whitelisted keys are ever read</td>
+</tr>
+</tbody>
+</table></div>
+<p>Design notes:</p>
+<ul>
+<li><strong><code>cups_job_id</code> is not the primary key</strong>, because CUPS reuses job IDs after a restart.
+The daemon matches <code>page_log</code> lines to the newest unreconciled <code>allowed</code>
+job with the same (printer, CUPS job ID).</li>
+<li><strong><code>charged_pages</code> is stored separately from <code>estimated_pages</code> and <code>actual_pages</code>.</strong> It
+records what was actually taken from the balance, so reconciliation is a
+simple difference and is safe to repeat.</li>
+<li><strong>Job status flow:</strong> <code>allowed</code> → <code>completed</code> (after reconciliation), or
+<code>denied</code>. <code>error</code> is used by the refund helper.</li>
+<li><strong>Deleting a user or printer cascades to its jobs.</strong> Deleting a group sets its
+members' <code>group_name</code> to NULL.</li>
+<li>On SQLite, every connection enables <code>foreign_keys=ON</code>, <code>journal_mode=WAL</code>,
+<code>synchronous=NORMAL</code> and a 10-second <code>busy_timeout</code>, because three
+processes share one file.</li>
+</ul>
+<h3 id="sqlite-vs-postgresql">SQLite vs PostgreSQL<a class="anchor" href="#sqlite-vs-postgresql" aria-label="Link to this section">#</a></h3>
+<p>SQLite comfortably handles a few hundred users and a handful of busy queues.
+Move to PostgreSQL when <code>database is locked</code> warnings appear in the
+accounting log, or when you want the database on a different host from CUPS:</p>
+<pre><code class="language-yaml">database:
+  url: &quot;postgresql+psycopg://printquota:SECRET@localhost/printquota&quot;
+</code></pre>
+<p>Then run <code>/opt/printquota/bin/pip install 'psycopg[binary]'</code>, run
+<code>alembic upgrade head</code> (see §19), and restart the services. Data is not
+migrated automatically.</p>
+<hr />
+<h2 id="17-logging-and-monitoring">17. Logging and monitoring<a class="anchor" href="#17-logging-and-monitoring" aria-label="Link to this section">#</a></h2>
+<p>Logs are sent to journald (identifier <code>printquota</code>) when <code>systemd-python</code>
+is installed, and to stderr otherwise, which journald captures anyway. Each
+record carries the component name (<code>printquota.backend</code>,
+<code>printquota.accounting.daemon</code>, …) and <code>key=value</code> fields.</p>
+<pre><code class="language-bash">journalctl -u cups -f                  # backend allow/deny decisions (+ -t printquota)
+journalctl -t printquota -f            # everything printquota logs to journald
+journalctl -u quota-accounting -f      # reconciliation passes, page_log rotation
+journalctl -u quota-api -f             # sign-ins, failed sign-ins (with IP), errors
+</code></pre>
+<p>Each backend decision logs the job, user, printer, pages, estimation method,
+colour, duplex, whether it was allowed, and the reason.</p>
+<p><strong>What to monitor:</strong></p>
+<ul>
+<li><code>GET /healthz</code>: liveness plus a database round-trip.</li>
+<li><code>GET /admin/api/summary</code>: totals for dashboards.</li>
+<li>Whether <code>quota-accounting.service</code> is active. If it stops, jobs still print
+and are charged the estimate, but corrections and alerts stop.</li>
+<li><code>page_log entry with no matching allowed job</code> warnings. These usually
+mean a queue was printing without being wrapped.</li>
+</ul>
+<hr />
+<h2 id="18-backup-and-restore">18. Backup and restore<a class="anchor" href="#18-backup-and-restore" aria-label="Link to this section">#</a></h2>
+<p><code>scripts/backup.sh [DEST]</code> reads <code>database.url</code> from
+<code>$PRINTQUOTA_CONFIG</code> (default <code>/etc/printquota/settings.yaml</code>):</p>
+<ul>
+<li><strong>SQLite:</strong> uses the online backup API, which is safe while the services
+run, then gzips the copy to <code>printquota-YYYYmmdd-HHMMSS.db.gz</code>.</li>
+<li><strong>PostgreSQL:</strong> <code>pg_dump | gzip</code> to <code>printquota-YYYYmmdd-HHMMSS.sql.gz</code>.</li>
+<li>Keeps the newest <code>$KEEP</code> backups (default 14) and deletes older ones.</li>
+</ul>
+<pre><code class="language-bash">sudo ./scripts/backup.sh /var/backups/printquota
+</code></pre>
+<p><strong>Restore (SQLite):</strong></p>
+<pre><code class="language-bash">sudo systemctl stop quota-api quota-accounting
+sudo gunzip -c /var/backups/printquota/printquota-&lt;stamp&gt;.db.gz \
+     &gt; /var/lib/printquota/printquota.db
+sudo rm -f /var/lib/printquota/printquota.db-wal /var/lib/printquota/printquota.db-shm
+sudo chown printquota:printquota /var/lib/printquota/printquota.db
+sudo systemctl start quota-accounting quota-api
+</code></pre>
+<p>Losing this database loses every balance and all usage history. <strong>Copy
+backups off the VM as well.</strong></p>
+<hr />
+<h2 id="19-upgrades-and-database-migrations">19. Upgrades and database migrations<a class="anchor" href="#19-upgrades-and-database-migrations" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">cd /path/to/print-quota-system
+git pull
+sudo ./scripts/install.sh          # reinstalls the package, migrates, restarts units
+</code></pre>
+<p><code>install.sh</code> keeps your existing <code>settings.yaml</code> and <code>env</code>. Schema changes
+always ship as Alembic migrations in
+<code>src/printquota/db/migrations/versions/</code>. <strong>Never edit the schema by hand.</strong>
+The migration environment reads the database URL from printquota's own
+settings, so it always targets the same database as the services.
+SQLite migrations use Alembic's batch mode so that <code>ALTER TABLE</code> works.</p>
+<p>To run migrations by hand:</p>
+<pre><code class="language-bash">cd /path/to/print-quota-system
+sudo PRINTQUOTA_CONFIG=/etc/printquota/settings.yaml /opt/printquota/bin/alembic upgrade head
+</code></pre>
+<p>Creating a new migration during development:</p>
+<pre><code class="language-bash">PRINTQUOTA_DB_URL=sqlite:///./dev.db .venv/bin/alembic revision --autogenerate -m &quot;describe change&quot;
+</code></pre>
+<hr />
+<h2 id="20-security-model">20. Security model<a class="anchor" href="#20-security-model" aria-label="Link to this section">#</a></h2>
+<h3 id="trusting-the-user-name-required-before-relying-on-quotas">Trusting the user name (required before relying on quotas)<a class="anchor" href="#trusting-the-user-name-required-before-relying-on-quotas" aria-label="Link to this section">#</a></h3>
+<p>Enforcement is only as trustworthy as <code>job-originating-user-name</code>. By
+default CUPS takes this name from the client, which can set it to anything.
+Require authentication in <code>/etc/cups/cupsd.conf</code>:</p>
+<pre><code class="language-apache">&lt;Location /printers&gt;
+  Order allow,deny
+  Allow @LOCAL
+  AuthType Default
+  Require valid-user
+&lt;/Location&gt;
+</code></pre>
+<p>With <code>Require valid-user</code>, CUPS replaces the job's user name with the
+authenticated one. Without it, quotas are advisory at best. The installer
+deliberately does not edit <code>cupsd.conf</code>. Restart CUPS after changing it.</p>
+<h3 id="built-in-protections">Built-in protections<a class="anchor" href="#built-in-protections" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>No shell anywhere in the backend.</strong> <code>pdfinfo</code> and the real backend are run
+with argument lists; <code>pdfinfo</code> also has a timeout.</li>
+<li><strong>Real backend path validation.</strong> The backend scheme must match
+<code>[a-z0-9][a-z0-9+.-]*</code> and resolve to an executable directly inside
+<code>printing.real_backend_dir</code>, so a crafted device URI cannot run an
+arbitrary binary.</li>
+<li><strong>Backend permissions</strong> are <code>0700 root:root</code>. CUPS runs 0700 backends as
+root (needed to read other users' spool files) and 0755 backends as <code>lp</code>.</li>
+<li><strong>Fail-safe defaults:</strong> a database outage or backend crash <strong>holds</strong> the job;
+a broken URI <strong>stops</strong> the queue. Neither lets a job print without being counted.</li>
+<li><strong>Web app:</strong> bcrypt password hashes, signed and expiring session cookies
+(<code>HttpOnly</code>, <code>SameSite=Lax</code>, optionally <code>Secure</code>), relative-only redirects
+after sign-in, failed sign-ins logged with the client IP.</li>
+<li><strong>Audit trail:</strong> every privileged action from the CLI, console or timer is
+recorded with the actor, target, details and source.</li>
+<li><strong>Least privilege:</strong> the services run as the unprivileged <code>printquota</code>
+user under systemd hardening. Configuration is <code>0640 root:printquota</code>.</li>
+<li><strong>First-run protection:</strong> the setup wizard needs the one-time
+<code>PRINTQUOTA_SETUP_TOKEN</code> (compared in constant time) and closes for good
+once an administrator exists. Without a token it only accepts requests
+from the server itself.</li>
+<li><strong>CUPS administration:</strong> the web service is in CUPS's <code>lpadmin</code> group so
+it can enforce, release and create queues. It never runs a shell. Queue
+names and URIs are validated against strict patterns (never starting with
+<code>-</code>), and every call is an argument list with a timeout. It is still an
+administrative privilege, so anyone with an admin account on the console
+can change CUPS queues.</li>
+<li><strong>Console settings</strong> can never change the database URL, secret key, ports,
+sign-in backend or CUPS paths. The SMTP password is never shown back and is
+masked in the audit log.</li>
+</ul>
+<h3 id="recommendations">Recommendations<a class="anchor" href="#recommendations" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Put the console behind a TLS reverse proxy (nginx/Caddy) and set
+<code>api.cookie_secure: true</code>. Or bind it to a management network by editing
+<code>--host</code> in <code>quota-api.service</code>.</li>
+<li>Keep <code>/etc/printquota/env</code> readable only by root and <code>printquota</code>. It
+holds the session secret.</li>
+<li>Rotating <code>PRINTQUOTA_SECRET_KEY</code> signs everyone out, and nothing else.</li>
+<li>Complete the setup wizard soon after installing. The setup link contains
+the token and may appear in proxy or access logs, but it stops working once
+the first administrator exists.</li>
+</ul>
+<hr />
+<h2 id="21-troubleshooting">21. Troubleshooting<a class="anchor" href="#21-troubleshooting" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Job disappears, user sees no reason</td>
+<td>Denied by policy or quota</td>
+<td><code>quotactl usage --days 1 --status denied</code>; <code>journalctl -u cups -n 100 | grep -i printquota</code>. <code>denial_reason</code> on the job is the definitive answer</td>
+</tr>
+<tr>
+<td>Denied job not in the reports</td>
+<td>Unknown or disabled user: these denials are <strong>not</strong> stored in <code>print_jobs</code></td>
+<td>CUPS journal / <code>error_log</code>; create or enable the account</td>
+</tr>
+<tr>
+<td>Queue stopped</td>
+<td>Bad <code>quota:</code> URI, missing real backend, or the real backend failed</td>
+<td><code>lpstat -v &lt;queue&gt;</code> should read <code>quota:&lt;real-uri&gt;</code>; <code>ls -l /usr/lib/cups/backend/quota</code> should be <code>0700 root:root</code>; then <code>cupsenable &lt;queue&gt;</code></td>
+</tr>
+<tr>
+<td>Jobs held instead of printing</td>
+<td>Backend could not write to the database: DB down or unreadable, <strong>printer not registered</strong> (foreign key), or the backend crashed</td>
+<td><code>quotactl printer list</code>; DB file permissions; <code>journalctl -u cups</code>. Release held jobs with <code>lp -i &lt;job&gt; -H resume</code></td>
+</tr>
+<tr>
+<td>A job printed although it was over the quota, or was charged 1 page</td>
+<td>The document couldn't be counted: an uncountable format (PCL6/XPS driver), or the spool couldn't be read</td>
+<td><code>journalctl -u cups -n 50 | grep method=</code> shows how it was counted. <code>spool:postscript</code>/<code>spool:pdf</code> are exact; <code>…:fallback</code> means guessed. Use the Microsoft PS Class Driver on Windows (§10)</td>
+</tr>
+<tr>
+<td>Balances don't change after printing</td>
+<td>Daemon not running or cannot read <code>page_log</code></td>
+<td><code>systemctl status quota-accounting</code>; <code>sudo -u printquota head /var/log/cups/page_log</code>; <code>PageLogFormat</code> must be the CUPS default</td>
+</tr>
+<tr>
+<td>Estimates consistently wrong</td>
+<td>PCL/raw drivers</td>
+<td>See §10. Billing is still corrected by the daemon</td>
+</tr>
+<tr>
+<td>User charged for a jammed job</td>
+<td>Pages were imaged and logged</td>
+<td><code>quotactl user set-quota</code> (raise it) or <code>quotactl user reset</code>; both are audited</td>
+</tr>
+<tr>
+<td><code>database is locked</code> warnings</td>
+<td>SQLite contention</td>
+<td>Move to PostgreSQL (§16)</td>
+</tr>
+<tr>
+<td>Everyone signed out after a restart</td>
+<td><code>secret_key</code> is empty</td>
+<td>Set <code>PRINTQUOTA_SECRET_KEY</code> in <code>/etc/printquota/env</code></td>
+</tr>
+<tr>
+<td>Config change has no effect</td>
+<td>File settings are cached per process, or an environment variable overrides it</td>
+<td>Console settings apply within 15 s. After editing <code>settings.yaml</code>/<code>env</code>, restart <code>quota-accounting</code> and <code>quota-api</code>. A <em>set by environment</em> badge means <code>/etc/printquota/env</code> wins</td>
+</tr>
+<tr>
+<td><strong>Turn on</strong> / <strong>Add printer</strong> says <em>Forbidden</em></td>
+<td>The <code>printquota</code> account isn't in the <code>lpadmin</code> group, or <code>quota-api</code> was started before it was added</td>
+<td><code>id printquota</code> should list <code>lpadmin</code>. Fix with <code>sudo usermod -a -G lpadmin printquota &amp;&amp; sudo systemctl restart quota-api</code> (re-running <code>install.sh</code> does both)</td>
+</tr>
+<tr>
+<td>Printers page says <em>Could not read the CUPS queues</em></td>
+<td>CUPS not running, or <code>cups-client</code> missing</td>
+<td><code>systemctl status cups</code>; <code>lpstat -v</code></td>
+</tr>
+<tr>
+<td>Printers page says <em>quota backend is not installed</em></td>
+<td><code>install.sh</code> hasn't been run on this server</td>
+<td><code>sudo ./scripts/install.sh</code></td>
+</tr>
+<tr>
+<td>IPP Everywhere queue creation fails</td>
+<td>The printer is unreachable or doesn't speak IPP Everywhere</td>
+<td>Check the URI with <code>ipptool -tv &lt;uri&gt; get-printer-attributes.test</code>, or choose <em>Raw queue</em></td>
+</tr>
+<tr>
+<td>A user's jobs never reach the server (no new job in <code>lpstat -W all -o</code>); <code>error_log</code> shows <code>Unable to encrypt connection: A TLS fatal alert has been received</code></td>
+<td>The PC uses a printer Windows discovered by itself, which connects with encryption and rejects CUPS's self-signed certificate</td>
+<td>Remove the auto-discovered printer and add <code>http://&lt;server-ip&gt;:631/printers/&lt;QUEUE&gt;</code> by address with the Microsoft PS Class Driver (<a href="setup-and-issues.html">issue log B23</a>)</td>
+</tr>
+<tr>
+<td>A new price doesn't show in Reports</td>
+<td>The printer has its own price (copied from the default when it was registered), and past jobs keep the price they printed at</td>
+<td>Set the price in <strong>Printers &amp; queues → Edit costs</strong>; only new jobs use it (<a href="setup-and-issues.html">issue log B24</a>)</td>
+</tr>
+<tr>
+<td>Lost the setup link</td>
+<td>—</td>
+<td>The token is <code>PRINTQUOTA_SETUP_TOKEN</code> in <code>/etc/printquota/env</code>. Open <code>/setup</code> and paste it</td>
+</tr>
+<tr>
+<td>Locked out (no administrator can sign in)</td>
+<td>Forgotten password or disabled account</td>
+<td><code>sudo /opt/printquota/bin/quotactl db init --admin &lt;name&gt;</code> (§6)</td>
+</tr>
+</tbody>
+</table></div>
+<p>More detail is in <a href="operations.html">docs/operations.md</a>, and every issue met so far, with its fix, is in <a href="setup-and-issues.html">docs/setup-and-issues.md</a>.</p>
+<hr />
+<h2 id="22-development-and-testing">22. Development and testing<a class="anchor" href="#22-development-and-testing" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e &quot;.[dev]&quot;
+export PRINTQUOTA_DB_URL=sqlite:///./dev.db
+.venv/bin/alembic upgrade head
+.venv/bin/pytest                                   # full suite
+.venv/bin/python scripts/seed_demo.py              # demo data; every password is 'printquota'
+.venv/bin/uvicorn printquota.api.main:app --reload # http://127.0.0.1:8000
+</code></pre>
+<p><code>seed_demo.py</code> creates the groups <code>finance</code> (budget 2000), <code>engineering</code>
+(6000) and <code>reception</code> (unlimited), the printers <code>hp-mono</code> and <code>color-mfp</code>,
+the users <code>ceejay</code> (admin), <code>ada</code>, <code>tunde</code> and <code>reception</code>, and 60
+randomised jobs, most of them reconciled.</p>
+<h3 id="test-suite-206-tests">Test suite (206 tests)<a class="anchor" href="#test-suite-206-tests" aria-label="Link to this section">#</a></h3>
+<p>Every test runs against a throwaway SQLite file and settings file, so none
+of them can touch a real deployment. Nothing calls the real CUPS: queue tests
+replace <code>services.cups_queues.runner</code> with a fake. Two backend tests execute
+a shell-script stand-in for the printer backend, so they only pass on Linux
+or macOS.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unit/test_policy_engine.py</code></td>
+<td>Rule behaviour, scope precedence, soft vs strict, group pools, validation</td>
+</tr>
+<tr>
+<td><code>unit/test_pages.py</code></td>
+<td>PDF, PostScript, PCL and text estimation, fallbacks, copies, N-up</td>
+</tr>
+<tr>
+<td><code>unit/test_cost.py</code></td>
+<td>Rates, duplex discount, sheet counts, default fallbacks</td>
+</tr>
+<tr>
+<td><code>unit/test_config.py</code></td>
+<td>Defaults → YAML → console → env precedence, type conversion, whitelist of console keys</td>
+</tr>
+<tr>
+<td><code>integration/test_backend.py</code></td>
+<td>Runs the CUPS backend exactly as CUPS does, with a stand-in real backend: allow, deny, forced duplex, unknown user, broken URI → STOP, DB failure → HOLD, path traversal</td>
+</tr>
+<tr>
+<td><code>integration/test_quota_flow.py</code></td>
+<td>Immediate debit, double-spend protection, group pools, reconciliation up/down, idempotency, refunds, period rolling</td>
+</tr>
+<tr>
+<td><code>integration/test_daemon.py</code></td>
+<td><code>page_log</code> parsing (per-page and <code>total</code> lines), cursor, rotation, partial lines, unmatched entries</td>
+</tr>
+<tr>
+<td><code>integration/test_spool_counting.py</code></td>
+<td>Counting the submitted documents from the CUPS spool when the backend receives uncountable driver output: over-quota refusal before printing, copies/number-up/page-ranges from the control file, multiple documents, gzip, fallbacks</td>
+</tr>
+<tr>
+<td><code>integration/test_alerts.py</code></td>
+<td>Thresholds, cooldown, disabled alerts, transport failures</td>
+</tr>
+<tr>
+<td><code>integration/test_cli.py</code></td>
+<td>Every <code>quotactl</code> command group</td>
+</tr>
+<tr>
+<td><code>integration/test_api.py</code></td>
+<td>Auth, portal, console CRUD, CSV, audit, health, redirects</td>
+</tr>
+<tr>
+<td><code>integration/test_identity.py</code></td>
+<td>Name matching: <code>DOMAIN\user</code>, capitals, <code>user@realm</code>, exact-match priority, ambiguity refusal, jobs charged to the matched account, sign-in, and the creation rules in the console, CLI, import and setup</td>
+</tr>
+<tr>
+<td><code>integration/test_console.py</code></td>
+<td>Setup wizard and its token, admin creation, password rules, self-protection, user filters, CSV import (preview/apply/upload/update), export, bulk actions, user and group deletion, Settings page (save, validation, env lock, secret handling, revert, live effect), queue enforce/release/add against a fake CUPS, input validation, permission errors</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="code-conventions">Code conventions<a class="anchor" href="#code-conventions" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><code>policies/engine.py</code> and <code>accounting/cost.py</code> are <strong>pure functions</strong> over
+dataclasses (no ORM, config or I/O). Keep them that way so they stay
+fully unit-testable.</li>
+<li><code>services/quota.py</code> is the <strong>only</strong> module that changes balances.</li>
+<li>Every privileged change must call <code>record_audit</code>.</li>
+<li>Operational values come from settings, never from hard-coded constants.</li>
+</ul>
+<hr />
+<h2 id="23-known-limitations-and-gaps">23. Known limitations and gaps<a class="anchor" href="#23-known-limitations-and-gaps" aria-label="Link to this section">#</a></h2>
+<p>These were found by reviewing the code as of 0.2.0 and are listed so that
+future maintainers don't trip over them. The backup-install gap, the JSON
+401 on <code>/admin/api/*</code>, and the failing user deletion from 0.1.1 are fixed
+(see <a href="changelog.html">CHANGELOG.md</a>).</p>
+<ol>
+<li><strong>A printer rate of 0 falls back to the default rate</strong>, so a free queue
+or a mono-only printer with colour set to 0 is still charged
+<code>printing.default_cost_per_page_*</code>. Workaround: set the defaults to 0 on
+the Settings page, or use a tiny non-zero rate.</li>
+<li><strong><code>block_filetype</code> rarely matches in practice.</strong> It compares the spool
+file's extension, and CUPS spool files (<code>/var/spool/cups/dNNNNN-001</code>)
+usually have none.</li>
+<li><strong>Soft enforcement skips the group budget check</strong> as well as the user check.</li>
+<li><strong>Denials for unknown or disabled users are not stored</strong> in <code>print_jobs</code>,
+so they appear only in the CUPS logs and not in reports or on the dashboard.</li>
+<li><strong>Some features exist in code but are not wired up:</strong> the <code>repeated_denial</code>
+alert, per-job refunds (<code>refund_job</code>, which has no CLI or console command),
+and LDAP group sync (<code>lookup_groups</code>).</li>
+<li><strong><code>api.host</code>/<code>api.port</code> are ignored by the systemd unit</strong>, which passes
+fixed uvicorn flags.</li>
+<li><strong>Only the default CUPS <code>PageLogFormat</code> is supported</strong> by the daemon's parser.
+Many drivers never report pages, so there may be no <code>page_log</code> at all. Charges
+then rely on the pre-print count, which is only exact for PDF, PostScript
+and Apple raster documents (§10).</li>
+<li><strong><code>cupsd.conf</code> is not managed from the console.</strong> Requiring logins for
+printing (§20) is still a one-time edit on the server.</li>
+<li><strong>Large imports with passwords are slow.</strong> Each password is bcrypt-hashed
+(about 0.25 s each), so importing 1,000 users <em>with</em> passwords takes a few
+minutes in one request. Imports without passwords are fast. For very large
+batches, import without passwords and let people use PAM/LDAP sign-in, or
+split the file.</li>
+<li><strong>Script executable bits:</strong> a Windows checkout can drop the executable
+bit from <code>scripts/*.sh</code>, <code>scripts/seed_demo.py</code> and <code>quota_backend.py</code>
+(git shows a 100755 → 100644 mode change). Run <code>chmod +x scripts/*.sh</code>
+on the server before installing, and don't commit the mode change.</li>
+</ol>
+<hr />
+<h2 id="24-roadmap">24. Roadmap<a class="anchor" href="#24-roadmap" aria-label="Link to this section">#</a></h2>
+<p>From <a href="changelog.html">CHANGELOG.md</a>:</p>
+<ul>
+<li><strong>Phase 9:</strong> AD/LDAP group synchronisation using the existing hook.</li>
+<li><strong>Phase 10:</strong> hardening pass once there is real traffic.</li>
+<li><strong>Phase 11 (stretch):</strong> secure/pull printing and a client-side confirmation popup.</li>
+</ul>
+<p><strong>Out of scope by design:</strong> multi-tenancy, payment/billing integration,
+native mobile apps, document watermarking, and MFP scan/copy tracking.</p>
+<hr />
+<h2 id="25-further-documentation">25. Further documentation<a class="anchor" href="#25-further-documentation" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="architecture.html">docs/architecture.md</a>: why a custom system, the
+enforcement mechanism, the data model, the policy engine, the security
+model, and scaling.</li>
+<li><strong>Easy-reading HTML versions</strong> of all these documents are in <a href="../../docs/html">docs/html/</a>. Open
+<code>docs/html/setup-and-issues.html</code> in any browser; they work offline. After editing any
+Markdown document, regenerate them with <code>python3 scripts/build_docs.py</code> (needs
+<code>pip install -e &quot;.[docs]&quot;</code>) and commit the result.</li>
+<li><a href="setup-and-issues.html">docs/setup-and-issues.md</a>: <strong>start here for a new server or a problem.</strong> A step-by-step setup runbook, plus a log of every issue met in the real deployment (symptom, cause, fix, version).</li>
+<li><a href="operations.html">docs/operations.md</a>: rollout, troubleshooting,
+backup and restore, upgrades, monitoring.</li>
+<li><a href="changelog.html">CHANGELOG.md</a>: release history.</li>
+</ul>
+<hr />
+<h2 id="26-licence">26. Licence<a class="anchor" href="#26-licence" aria-label="Link to this section">#</a></h2>
+<p>MIT. See <a href="../../LICENSE">LICENSE</a>.</p>
+</div><footer class="foot">Generated from <code>README.md</code> by <code>scripts/build_docs.py</code>. Edit the Markdown, then re-run the script.</footer></main></div><script>
+(function(){
+  function copyText(btn, text){
+    function done(ok){btn.textContent = ok ? 'Copied' : 'Select + Ctrl+C'; setTimeout(function(){btn.textContent='Copy';}, 1600);}
+    try{
+      navigator.clipboard.writeText(text).then(function(){done(true);}, function(){select(btn); done(false);});
+    }catch(e){select(btn); done(false);}
+  }
+  function select(btn){
+    var code = btn.parentNode.querySelector('code'); var r = document.createRange();
+    r.selectNodeContents(code); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  document.querySelectorAll('.doc pre').forEach(function(pre){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+    b.addEventListener('click', function(){copyText(b, pre.querySelector('code').innerText);});
+    pre.appendChild(b);
+  });
+
+  // Filter the contents list by what the reader types (e.g. "TLS", "B22", "price").
+  document.querySelectorAll('.side').forEach(function(side){
+    var box = side.querySelector('.find'); if(!box) return;
+    box.addEventListener('input', function(){
+      var q = box.value.trim().toLowerCase(); var any = false;
+      side.querySelectorAll('.toc>li').forEach(function(li){
+        var subs = li.querySelectorAll('ul>li'); var subHit = false;
+        subs.forEach(function(s){ var hit = !q || s.textContent.toLowerCase().indexOf(q) > -1; s.hidden = !hit; subHit = subHit || (hit && !!q); });
+        var own = li.querySelector('a').textContent.toLowerCase().indexOf(q) > -1;
+        var show = !q || own || subHit;
+        if(show && own && q){ subs.forEach(function(s){ s.hidden = false; }); }
+        li.hidden = !show; any = any || show;
+      });
+      var none = side.querySelector('.none'); if(none) none.hidden = any;
+    });
+  });
+
+  // Tabs for the single-page edition: one document visible at a time.
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.docsec'));
+  function show(sec, target){
+    sections.forEach(function(s){ s.hidden = s !== sec; });
+    document.querySelectorAll('.tabs a').forEach(function(a){
+      if(a.getAttribute('data-doc') === sec.id){ a.setAttribute('aria-current','page'); } else { a.removeAttribute('aria-current'); }
+    });
+    if(target && target !== sec){ target.scrollIntoView(); } else { window.scrollTo(0, 0); }
+  }
+  function route(){
+    if(!sections.length) return;
+    var id = decodeURIComponent(location.hash.slice(1)); var el = id && document.getElementById(id);
+    if(!el){ show(sections[0]); return; }
+    var sec = el.closest('section.docsec') || el; show(sec, el);
+  }
+  if(sections.length){ window.addEventListener('hashchange', route); route(); }
+
+  // Highlight where the reader is in the contents list.
+  if('IntersectionObserver' in window){
+    var links = {}; document.querySelectorAll('.toc a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          document.querySelectorAll('.toc a.here').forEach(function(a){ a.classList.remove('here'); });
+          var a = links[e.target.id]; if(a) a.classList.add('here');
+        }
+      });
+    }, {rootMargin:'-80px 0px -70% 0px'});
+    document.querySelectorAll('.doc h2[id], .doc h3[id]').forEach(function(h){ io.observe(h); });
+  }
+})();
+</script></body></html>

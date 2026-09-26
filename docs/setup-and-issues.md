@@ -13,12 +13,18 @@ The README is the full reference. This document is the practical, lived-in
 version.
 
 **Keep it current:** when a new problem is solved, add an entry to Part B
-(next number), and if it changes the setup steps, update Part A too.
+(next number), and if it changes the setup steps, update Part A too. Then
+regenerate the HTML copy with `python3 scripts/build_docs.py` and commit both.
+
+**Easier to read in a browser:** open `docs/html/setup-and-issues.html`
+(on the server: `/opt/printquota/share/docs/html/`). All the project
+documents are there, with a contents sidebar you can filter, copy buttons on
+commands, and status badges on every issue.
 
 | | |
 |---|---|
-| Last updated | 2026-09-25 |
-| Current version | 0.2.4 |
+| Last updated | 2026-09-26 |
+| Current version | 0.2.5 |
 | Reference server | Ubuntu 22.04 LTS (jammy), Python 3.10, Hyper-V VM `printserver` |
 | Reference printer | CUPS queue `Office_Printer` → `lpd://192.0.2.20/lp` (PPD driver) |
 | Clients | Windows PCs on Active Directory |
@@ -520,6 +526,23 @@ confirmed on the real server. **Config** = solved by configuration, not code.
   free (README §23). For a free printer, set the default to 0 as well.
 - **Status:** Config.
 
+### B25. The web console doesn't come back after rebooting a new server
+
+- **Symptom:** on a freshly installed server, `http://<server>:8080` works
+  until the first reboot, then doesn't answer.
+  `systemctl is-enabled quota-api` says `disabled`.
+- **Cause:** found in a code review on 2026-09-26, before it hit a real
+  server. Since 0.2.0, `install.sh` *restarted* `quota-api` but no longer
+  *enabled* it, so it wasn't set to start at boot. Servers first installed
+  with an older version (like the reference server) were enabled then, and
+  are unaffected.
+- **Fix:** the installer enables every unit again
+  (`systemctl enable --now quota-accounting quota-api quota-reset.timer quota-backup.timer`).
+  On an affected server: `sudo systemctl enable --now quota-api`.
+- **Check:** `systemctl is-enabled quota-api quota-accounting` should print
+  `enabled` twice.
+- **Status:** Fixed 0.2.5.
+
 ---
 
 ## Part C: Quick health checks
@@ -528,6 +551,7 @@ confirmed on the real server. **Config** = solved by configuration, not code.
 # Versions and services
 /opt/printquota/bin/pip show printquota | grep Version
 systemctl status quota-api quota-accounting --no-pager | grep -E "●|Active"
+systemctl is-enabled quota-api quota-accounting            # both "enabled" (B25)
 systemctl list-timers quota-reset.timer quota-backup.timer --no-pager
 
 # CUPS queues (quota: prefix = enforced) and recent jobs with usernames
@@ -562,6 +586,7 @@ ls -l /usr/lib/cups/backend/quota               # must be -rwx------ root root
 | 0.2.1 | 2026-09-24 | Count pages from the submitted document. B15, B16 |
 | 0.2.2 | 2026-09-24 | Settings page saves reliably. B17 |
 | 0.2.3 | 2026-09-24 | Installer survives `apt-get update` errors. B19 |
+| 0.2.5 | 2026-09-26 | HTML docs (`docs/html/`); installer enables `quota-api` again. B25 |
 | 0.2.4 | 2026-09-25 | Match `DOMAIN\user` and different capitals to one account. B22 (verified). Client setup documented: B23, B24 |
 
 Full details are in [CHANGELOG.md](../CHANGELOG.md).

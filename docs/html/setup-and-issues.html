@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Setup guide and issue log · printquota</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"><style>
+:root{
+  --ground:#F4F6F9; --surface:#FFFFFF; --ink:#172033; --muted:#5A6478; --faint:#8C95A6;
+  --rule:#DAE0E8; --accent:#0B6E99; --accent-soft:#E3F1F8; --code:#EEF2F6; --code-ink:#1E2A3D;
+  --ok:#13795B; --ok-soft:#E4F4EE; --warn:#9A5B00; --warn-soft:#FBF1E0; --info:#4B5566; --info-soft:#EDF0F4;
+  --mark:#FFF3B0;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  --display:"IBM Plex Sans Condensed","Arial Narrow","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+    --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+    --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+    --mark:#5A4A0A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F141B; --surface:#161D27; --ink:#E4E9F0; --muted:#9AA6B8; --faint:#6F7B8E;
+  --rule:#2A3444; --accent:#5BB7DE; --accent-soft:#16303D; --code:#1B2431; --code-ink:#D8E1EC;
+  --ok:#4CC49A; --ok-soft:#133126; --warn:#E6A94A; --warn-soft:#352812; --info:#AEB8C7; --info-soft:#232C39;
+  --mark:#5A4A0A;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(76px + env(safe-area-inset-top, 0px))}
+body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.65 var(--body);-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--rule)}
+.topbar-inner{max-width:1320px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;min-height:56px}
+.brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink);padding-block:10px}
+.brand b{font:700 19px/1 var(--display);letter-spacing:-.2px}
+.brand span{font:500 12px/1 var(--mono);color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.tabs a{display:block;padding:17px 10px 15px;font:600 14px/1 var(--display);letter-spacing:.2px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.layout{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:48px}
+.side{position:sticky;top:calc(76px + env(safe-area-inset-top, 0px));align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px}
+.side .find{width:100%;font:14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin-bottom:12px}
+.side .find::placeholder{color:var(--faint)}
+.toc,.toc ul{list-style:none;margin:0;padding:0}
+.toc>li{margin:2px 0}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:13.5px;line-height:1.4}
+.toc a:hover{background:var(--accent-soft);color:var(--ink)}
+.toc>li>a{color:var(--ink);font-weight:500}
+.toc ul{margin:2px 0 6px 10px;border-left:1px solid var(--rule);padding-left:6px}
+.toc a.here{color:var(--accent);background:var(--accent-soft)}
+.toc .none{color:var(--faint);font-size:13px;padding:4px 8px}
+
+.doc{min-width:0;max-width:78ch}
+.doc-head{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.doc-head .kicker{font:500 12px/1 var(--mono);color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.doc-head p{margin:10px 0 0;color:var(--muted);max-width:65ch}
+.doc h1{font:700 34px/1.15 var(--display);letter-spacing:-.4px;margin:10px 0 0;text-wrap:balance}
+.doc .content>h1:first-child{display:none}
+.doc h2{font:700 25px/1.25 var(--display);letter-spacing:-.2px;margin:46px 0 14px;padding-top:14px;border-top:1px solid var(--rule);text-wrap:balance}
+.doc h3{font:600 19px/1.3 var(--display);margin:32px 0 10px;text-wrap:balance}
+.doc h4{font:600 16px/1.35 var(--body);margin:24px 0 8px}
+.doc h2 .anchor,.doc h3 .anchor{margin-left:8px;font:500 .8em var(--mono);color:var(--faint);text-decoration:none;opacity:0}
+.doc h2:hover .anchor,.doc h3:hover .anchor,.doc .anchor:focus{opacity:1}
+.doc p,.doc li{max-width:72ch}
+.doc ul,.doc ol{padding-left:1.4em}
+.doc li{margin:4px 0}
+.doc li>ul,.doc li>ol{margin:4px 0}
+.doc hr{border:0;border-top:1px solid var(--rule);margin:36px 0}
+.doc hr:has(+ h2){display:none}
+.doc blockquote{margin:18px 0;padding:10px 16px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 6px 6px 0}
+.doc blockquote p{margin:6px 0}
+.doc code{font:13.5px/1.5 var(--mono);background:var(--code);color:var(--code-ink);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.doc pre{position:relative;margin:14px 0;background:var(--code);border:1px solid var(--rule);border-radius:7px;overflow-x:auto}
+.doc pre code{display:block;padding:14px 16px;background:none;border-radius:0;white-space:pre;overflow-wrap:normal;font-size:13px;line-height:1.55}
+.copy{position:absolute;top:7px;right:7px;font:500 12px/1 var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:5px 9px;cursor:pointer;opacity:.9}
+.copy:hover{color:var(--ink);border-color:var(--faint)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:7px;background:var(--surface)}
+.doc table{border-collapse:collapse;width:100%;font-size:14px}
+.doc th,.doc td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+.doc th{font:600 12px/1.3 var(--body);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--ground)}
+.doc tr:last-child td{border-bottom:0}
+.doc td code{white-space:nowrap}
+.status-line{list-style:none;margin-left:-1.4em !important;padding:8px 10px;background:var(--surface);border:1px solid var(--rule);border-radius:7px}
+.status-label{font:600 11px/1 var(--body);text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:6px}
+.badge{display:inline-block;font:600 12px/1 var(--body);padding:4px 8px;border-radius:99px;margin:1px 4px 1px 0;border:1px solid transparent;white-space:nowrap}
+.badge.fixed{color:var(--accent);background:var(--accent-soft)}
+.badge.verified{color:var(--ok);background:var(--ok-soft)}
+.badge.pending{color:var(--warn);background:var(--warn-soft)}
+.badge.config,.badge.info{color:var(--info);background:var(--info-soft)}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.menu{display:none}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:18px 48px}
+  .side{position:static;max-height:none;overflow:visible;padding:0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  .side>details>summary{list-style:none;cursor:pointer;padding:12px 14px;font:600 14px var(--display);color:var(--ink)}
+  .side>details>summary::-webkit-details-marker{display:none}
+  .side>details>summary::after{content:"+";float:right;color:var(--muted)}
+  .side>details[open]>summary::after{content:"\2212"}
+  .side .toc-body{padding:0 12px 12px;max-height:60vh;overflow:auto}
+  .doc h1{font-size:28px}
+  .doc h2{font-size:22px}
+  .tabs a{padding:12px 8px 10px}
+  html{scroll-padding-top:calc(120px + env(safe-area-inset-top, 0px))}
+}
+@media (min-width:961px){
+  .side>details>summary{display:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup-and-issues.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup-and-issues.html" data-doc="doc-setup-and-issues" aria-current="page">Setup &amp; issue log</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-setup-and-issues" placeholder="Filter contents (e.g. TLS, B22, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#part-a-setting-up-a-new-server">Part A: Setting up a new server</a><ul><li><a href="#a1-get-the-code-onto-the-server">A1. Get the code onto the server</a></li><li><a href="#a2-run-the-installer">A2. Run the installer</a></li><li><a href="#a3-create-the-first-administrator-browser">A3. Create the first administrator (browser)</a></li><li><a href="#a4-share-the-printer-queues-on-the-network-one-time-server-shell">A4. Share the printer queues on the network (one-time, server shell)</a></li><li><a href="#a5-clean-up-cups-queues-see-b9-b10">A5. Clean up CUPS queues (see B9, B10)</a></li><li><a href="#a6-add-printers-and-turn-on-enforcement-browser">A6. Add printers and turn on enforcement (browser)</a></li><li><a href="#a7-create-users-browser">A7. Create users (browser)</a></li><li><a href="#a8-settings-browser">A8. Settings (browser)</a></li><li><a href="#a9-connect-each-windows-pc-b11-b23">A9. Connect each Windows PC (B11, B23)</a></li><li><a href="#a10-test-see-part-c-for-the-commands">A10. Test (see Part C for the commands)</a></li><li><a href="#a11-before-relying-on-the-numbers-b21">A11. Before relying on the numbers (B21)</a></li><li><a href="#upgrading-an-existing-server">Upgrading an existing server</a></li></ul></li><li><a href="#part-b-issue-log">Part B: Issue log</a><ul><li><a href="#b1-scripts-lose-their-executable-bit-when-copied-from-windows">B1. Scripts lose their executable bit when copied from Windows</a></li><li><a href="#b2-the-first-administrator-had-to-be-created-on-the-command-line">B2. The first administrator had to be created on the command line</a></li><li><a href="#b3-setting-or-resetting-an-administrator-password">B3. Setting or resetting an administrator password</a></li><li><a href="#b4-everyday-setup-needed-the-command-line">B4. Everyday setup needed the command line</a></li><li><a href="#b5-deleting-a-user-who-had-printed-failed">B5. Deleting a user who had printed failed</a></li><li><a href="#b6-nightly-backups-never-ran">B6. Nightly backups never ran</a></li><li><a href="#b7-how-users-print-through-printquota">B7. How users print &quot;through&quot; printquota</a></li><li><a href="#b8-queue-name-vs-device-uri">B8. Queue name vs device URI</a></li><li><a href="#b9-a-test-queue-pointing-at-devnull">B9. A test queue pointing at /dev/null</a></li><li><a href="#b10-implicitclass-hp-queues-appear-on-their-own">B10. implicitclass:// HP queues appear on their own</a></li><li><a href="#b11-which-windows-driver-to-choose">B11. Which Windows driver to choose</a></li><li><a href="#b12-cups-error_log-messages-that-are-harmless">B12. CUPS error_log messages that are harmless</a></li><li><a href="#b13-job-cancelled-no-print-account-for-this-user">B13. Job cancelled: &quot;no print account for this user&quot;</a></li><li><a href="#b14-active-directory-usernames">B14. Active Directory usernames</a></li><li><a href="#b15-over-quota-job-printed-a-4-page-job-counted-as-1-page">B15. Over-quota job printed; a 4-page job counted as 1 page</a></li><li><a href="#b16-no-page_log-file">B16. No page_log file</a></li><li><a href="#b17-settings-nothing-was-saved-webhook-url-must-start-with-http">B17. Settings: &quot;Nothing was saved. Webhook URL: must start with http://…&quot;</a></li><li><a href="#b18-reinstalled-but-the-old-behaviour-is-still-there">B18. Reinstalled, but the old behaviour is still there</a></li><li><a href="#b19-installsh-stops-at-installing-os-dependencies">B19. install.sh stops at &quot;Installing OS dependencies&quot;</a></li><li><a href="#b20-console-buttons-turn-on--add-printer-say-forbidden">B20. Console buttons (Turn on / Add printer) say &quot;Forbidden&quot;</a></li><li><a href="#b21-loopholes-to-close-before-relying-on-the-quotas">B21. Loopholes to close before relying on the quotas</a></li><li><a href="#b22-jobs-from-one-pc-refused-the-name-arrives-as-corpjdoe">B22. Jobs from one PC refused: the name arrives as CORP\J.Doe</a></li><li><a href="#b23-a-pcs-jobs-never-reach-the-server-auto-discovered-printer-tls-refused">B23. A PC&#x27;s jobs never reach the server (auto-discovered printer, TLS refused)</a></li><li><a href="#b24-changed-the-price-but-reports-still-shows-100-per-page">B24. Changed the price, but Reports still shows ₦1.00 per page</a></li><li><a href="#b25-the-web-console-doesnt-come-back-after-rebooting-a-new-server">B25. The web console doesn&#x27;t come back after rebooting a new server</a></li></ul></li><li><a href="#part-c-quick-health-checks">Part C: Quick health checks</a></li><li><a href="#version-history">Version history</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Setup &amp; issue log</div><h1>Setup guide and issue log</h1><p>Start here: step-by-step setup for a new server, and every issue met so far with its fix.</p></header><div class="content"><h1 id="setup-guide-and-issue-log">Setup guide and issue log</h1>
+<p>This is a working record of how printquota was deployed, every problem hit
+along the way, what caused it, and how it was solved. Use it when building a
+new server or when something breaks.</p>
+<ul>
+<li><strong>Part A</strong> is the setup runbook for a new server, in order, with the lessons
+below already built in.</li>
+<li><strong>Part B</strong> is the issue log: symptom → cause → fix → status.</li>
+<li><strong>Part C</strong> lists quick health checks.</li>
+</ul>
+<p>The README is the full reference. This document is the practical, lived-in
+version.</p>
+<p><strong>Keep it current:</strong> when a new problem is solved, add an entry to Part B
+(next number), and if it changes the setup steps, update Part A too. Then
+regenerate the HTML copy with <code>python3 scripts/build_docs.py</code> and commit both.</p>
+<p><strong>Easier to read in a browser:</strong> open <code>docs/html/setup-and-issues.html</code>
+(on the server: <code>/opt/printquota/share/docs/html/</code>). All the project
+documents are there, with a contents sidebar you can filter, copy buttons on
+commands, and status badges on every issue.</p>
+<div class="table-wrap"><table>
+
+<tbody>
+<tr>
+<td>Last updated</td>
+<td>2026-09-26</td>
+</tr>
+<tr>
+<td>Current version</td>
+<td>0.2.5</td>
+</tr>
+<tr>
+<td>Reference server</td>
+<td>Ubuntu 22.04 LTS (jammy), Python 3.10, Hyper-V VM <code>printserver</code></td>
+</tr>
+<tr>
+<td>Reference printer</td>
+<td>CUPS queue <code>Office_Printer</code> → <code>lpd://192.0.2.20/lp</code> (PPD driver)</td>
+</tr>
+<tr>
+<td>Clients</td>
+<td>Windows PCs on Active Directory</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="part-a-setting-up-a-new-server">Part A: Setting up a new server<a class="anchor" href="#part-a-setting-up-a-new-server" aria-label="Link to this section">#</a></h2>
+<h3 id="a1-get-the-code-onto-the-server">A1. Get the code onto the server<a class="anchor" href="#a1-get-the-code-onto-the-server" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">git clone https://github.com/Emmaceejay/print-quota-system.git
+cd print-quota-system
+chmod +x scripts/*.sh          # harmless if already executable (see B1)
+</code></pre>
+<p>Always install from a <strong>git clone on the server</strong>. Don't copy the folder from
+a Windows PC, because that can strip the executable bit from the scripts (B1).</p>
+<h3 id="a2-run-the-installer">A2. Run the installer<a class="anchor" href="#a2-run-the-installer" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">sudo ./scripts/install.sh 2&gt;&amp;1 | tail -30
+</code></pre>
+<p>It must end with <strong>&quot;printquota is installed.&quot;</strong> plus a setup link. If it
+stops earlier, read the last lines (B19). Then confirm:</p>
+<pre><code class="language-bash">/opt/printquota/bin/pip show printquota | grep Version    # expected version
+systemctl status quota-api --no-pager | grep Active       # &quot;since&quot; = just now
+</code></pre>
+<h3 id="a3-create-the-first-administrator-browser">A3. Create the first administrator (browser)<a class="anchor" href="#a3-create-the-first-administrator-browser" aria-label="Link to this section">#</a></h3>
+<p>Open the link the installer printed:
+<code>http://&lt;server-ip&gt;:8080/setup?token=…</code>. If you've lost it, run
+<code>sudo grep SETUP_TOKEN /etc/printquota/env</code> and open <code>/setup</code>. See B2.</p>
+<h3 id="a4-share-the-printer-queues-on-the-network-one-time-server-shell">A4. Share the printer queues on the network (one-time, server shell)<a class="anchor" href="#a4-share-the-printer-queues-on-the-network-one-time-server-shell" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">sudo cupsctl --share-printers --remote-any
+sudo lpadmin -p &lt;QUEUE&gt; -o printer-is-shared=true      # for each queue
+sudo ufw allow 631/tcp                                 # only if ufw is enabled
+</code></pre>
+<h3 id="a5-clean-up-cups-queues-see-b9-b10">A5. Clean up CUPS queues (see B9, B10)<a class="anchor" href="#a5-clean-up-cups-queues-see-b9-b10" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">lpstat -v                                  # list queues: &quot;device for &lt;QUEUE&gt;: &lt;URI&gt;&quot;
+sudo systemctl disable --now cups-browsed  # stop auto-created implicitclass:// queues
+sudo lpadmin -x &lt;leftover-or-test-queue&gt;   # e.g. a hp-mono queue pointing at /dev/null
+</code></pre>
+<h3 id="a6-add-printers-and-turn-on-enforcement-browser">A6. Add printers and turn on enforcement (browser)<a class="anchor" href="#a6-add-printers-and-turn-on-enforcement-browser" aria-label="Link to this section">#</a></h3>
+<p>Go to <strong>Printers &amp; queues</strong>:</p>
+<ul>
+<li>For an existing queue, click <strong>Turn on</strong> (quota enforcement).</li>
+<li>For a new printer, use <strong>Add a new printer to CUPS</strong>. Give it a simple name
+with no spaces (e.g. <code>Finance_M426</code>), the device URI
+<code>ipp://&lt;printer-ip&gt;/ipp/print</code>, driver <strong>IPP Everywhere</strong>, and tick
+<strong>Turn on quota enforcement</strong>.</li>
+<li>Give every printer a <strong>fixed IP</strong> (DHCP reservation).</li>
+<li>Set the <strong>costs</strong> with <strong>Edit costs</strong>.</li>
+</ul>
+<p>The queue name is the name <strong>before the colon</strong> in <code>lpstat -v</code>, not the device
+URI (B8).</p>
+<h3 id="a7-create-users-browser">A7. Create users (browser)<a class="anchor" href="#a7-create-users-browser" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Create each user with their <strong>bare logon name</strong>, e.g. <code>j.doe</code> (the AD
+<code>sAMAccountName</code>). Since 0.2.4, jobs sent as <code>CORP\J.Doe</code>,
+<code>J.Doe</code> or <code>j.doe@corp.example.com</code> are matched to it automatically
+(B22).</li>
+<li>For many users: export from AD with PowerShell (B14), then use <strong>Users →
+Import users…</strong>, preview, and apply.</li>
+</ul>
+<h3 id="a8-settings-browser">A8. Settings (browser)<a class="anchor" href="#a8-settings-browser" aria-label="Link to this section">#</a></h3>
+<p>On <strong>Settings</strong>, set the default quota, period, enforcement mode, costs and
+currency, and alerts/SMTP. Then click <strong>Send test alert</strong>. If the Webhook URL
+box contains a username, clear it (B17).</p>
+<h3 id="a9-connect-each-windows-pc-b11-b23">A9. Connect each Windows PC (B11, B23)<a class="anchor" href="#a9-connect-each-windows-pc-b11-b23" aria-label="Link to this section">#</a></h3>
+<ol>
+<li><strong>Remove</strong> any existing entries for the printer first, especially ones
+Windows found by itself (e.g. <em>&quot;Office_Printer @ printserver&quot;</em>).
+<strong>Don't use auto-discovered printers</strong>: they connect with encryption that
+Windows refuses, and jobs never reach the server (B23).</li>
+<li>Check the address works: open <code>http://&lt;server-ip&gt;:631/printers/&lt;QUEUE&gt;</code> in
+the PC's browser. The printer's CUPS page must load.</li>
+<li>Settings → Printers &amp; scanners → <strong>Add device</strong> → <strong>Add manually</strong> →
+<strong>Select a shared printer by name</strong>, and enter that same address:
+<code>http://&lt;server-ip&gt;:631/printers/&lt;QUEUE&gt;</code>. Use the <strong>IP address</strong>,
+<strong><code>http</code></strong> (not <code>https</code>), and the exact queue name (case-sensitive), e.g.
+<code>http://192.0.2.10:631/printers/Office_Printer</code>.</li>
+<li>Driver: <strong>Microsoft → Microsoft PS Class Driver</strong>. If it's not listed,
+choose <strong>Generic → MS Publisher Imagesetter</strong>. Never choose PCL6 or XPS.</li>
+<li>In Printing preferences, set the paper size to <strong>A4</strong>.</li>
+<li>Print a test page and confirm a new job appears on the server
+(<code>lpstat -W all -o &lt;QUEUE&gt; | tail -2</code>).</li>
+</ol>
+<h3 id="a10-test-see-part-c-for-the-commands">A10. Test (see Part C for the commands)<a class="anchor" href="#a10-test-see-part-c-for-the-commands" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Reset your test user's usage. Set the quota to <strong>3</strong>.</li>
+<li>Print <strong>2 pages</strong>. They print, and the user shows used 2, remaining 1.</li>
+<li>Print <strong>4 pages</strong>. <strong>Nothing prints</strong>, and the job is cancelled with
+&quot;quota exceeded&quot;.</li>
+<li><code>sudo journalctl -u cups -n 50 --no-pager | grep -o &quot;method='[^']*'&quot;</code>
+should show <code>spool:postscript</code> (B15).</li>
+</ol>
+<h3 id="a11-before-relying-on-the-numbers-b21">A11. Before relying on the numbers (B21)<a class="anchor" href="#a11-before-relying-on-the-numbers-b21" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>On each printer's web admin page, allow printing <strong>only from the server's
+IP</strong>, and remove any direct printer connections from the PCs.</li>
+<li>Require a login for printing in <code>/etc/cups/cupsd.conf</code>
+(<code>Require valid-user</code>, README §20). On AD, that means joining the server to
+the domain (B14).</li>
+</ul>
+<h3 id="upgrading-an-existing-server">Upgrading an existing server<a class="anchor" href="#upgrading-an-existing-server" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">cd ~/print-quota-system
+git pull origin main
+sudo ./scripts/install.sh 2&gt;&amp;1 | tail -25
+/opt/printquota/bin/pip show printquota | grep Version    # must match the new version
+</code></pre>
+<p>If the version didn't change, see B18.</p>
+<hr />
+<h2 id="part-b-issue-log">Part B: Issue log<a class="anchor" href="#part-b-issue-log" aria-label="Link to this section">#</a></h2>
+<p>Status: <strong>Fixed x.y.z</strong> = fixed in code in that version. <strong>Verified</strong> =
+confirmed on the real server. <strong>Config</strong> = solved by configuration, not code.
+<strong>Info</strong> = expected behaviour, no action.</p>
+<h3 id="b1-scripts-lose-their-executable-bit-when-copied-from-windows">B1. Scripts lose their executable bit when copied from Windows<a class="anchor" href="#b1-scripts-lose-their-executable-bit-when-copied-from-windows" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> <code>./scripts/install.sh: Permission denied</code>. On Windows, <code>git status</code> shows <code>scripts/*.sh</code> as modified with only a mode change
+(100755 → 100644).</li>
+<li><strong>Cause:</strong> a Windows checkout doesn't keep Unix permissions.</li>
+<li><strong>Fix:</strong> on the server, <code>chmod +x scripts/*.sh</code>. On the Windows development
+copy, <code>git config core.fileMode false</code>, so the mode change is never
+committed. The files are 100755 in git.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span></li>
+</ul>
+<h3 id="b2-the-first-administrator-had-to-be-created-on-the-command-line">B2. The first administrator had to be created on the command line<a class="anchor" href="#b2-the-first-administrator-had-to-be-created-on-the-command-line" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> a fresh install needed <code>quotactl db init --admin</code>.</li>
+<li><strong>Fix:</strong> a browser <strong>setup wizard</strong> at <code>/setup</code>, protected by a one-time
+<code>PRINTQUOTA_SETUP_TOKEN</code> that the installer generates and prints. It closes
+for good once an admin exists, and <code>/login</code> redirects to it until then.</li>
+<li><strong>Lost the link:</strong> <code>sudo grep SETUP_TOKEN /etc/printquota/env</code>, then open
+<code>http://&lt;server&gt;:8080/setup</code> and paste the token.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.0</span></li>
+</ul>
+<h3 id="b3-setting-or-resetting-an-administrator-password">B3. Setting or resetting an administrator password<a class="anchor" href="#b3-setting-or-resetting-an-administrator-password" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Normal:</strong> <strong>Users</strong> → click the user → <em>New password</em> + <em>Confirm</em> →
+<strong>Save</strong>. To create another admin, tick <strong>Administrator</strong> on the Add form
+(a password is required).</li>
+<li><strong>Locked out (nobody can sign in):</strong><pre><code class="language-bash">sudo /opt/printquota/bin/quotactl db init --admin &lt;name&gt;   # new password + admin rights
+sudo /opt/printquota/bin/quotactl user enable &lt;name&gt;       # if it was disabled
+</code></pre>
+</li>
+<li>Changing a password doesn't end existing sessions. Those expire after 8 h,
+or immediately if you change <code>PRINTQUOTA_SECRET_KEY</code> and restart <code>quota-api</code>.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.0</span> (console) The CLI is only needed for recovery.</li>
+</ul>
+<h3 id="b4-everyday-setup-needed-the-command-line">B4. Everyday setup needed the command line<a class="anchor" href="#b4-everyday-setup-needed-the-command-line" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> users, groups, printers, enforcement and settings all needed
+<code>quotactl</code> or <code>register_backend.sh</code>.</li>
+<li><strong>Fix:</strong> the web console covers all of it: user CSV import/export, bulk
+actions, groups, <strong>Printers &amp; queues</strong> (Turn on / Turn off / Add printer),
+<strong>Settings</strong>, and a &quot;Getting started&quot; checklist on the dashboard.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.0</span></li>
+</ul>
+<h3 id="b5-deleting-a-user-who-had-printed-failed">B5. Deleting a user who had printed failed<a class="anchor" href="#b5-deleting-a-user-who-had-printed-failed" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> <code>NOT NULL constraint failed: print_jobs.username</code>. This
+affected <code>quotactl user delete</code> too.</li>
+<li><strong>Fix:</strong> the user's job history and user-scoped policies are deleted with
+the user.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.0</span></li>
+</ul>
+<h3 id="b6-nightly-backups-never-ran">B6. Nightly backups never ran<a class="anchor" href="#b6-nightly-backups-never-ran" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Cause:</strong> <code>install.sh</code> never copied <code>backup.sh</code> to <code>/opt/printquota/share</code>
+and never enabled <code>quota-backup.timer</code>.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.0</span> Check with <code>systemctl list-timers quota-backup.timer</code>.</li>
+</ul>
+<h3 id="b7-how-users-print-through-printquota">B7. How users print &quot;through&quot; printquota<a class="anchor" href="#b7-how-users-print-through-printquota" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Answer:</strong> PCs never print to the printer directly. They print to the CUPS
+queue on the server. printquota checks each job against the user's quota,
+then passes it to the printer or cancels it.</li>
+<li><strong>Requirements:</strong> the queue is shared (A4), enforcement is on (A6), the
+username matches (A7), and the PC is connected to the server queue (A9).</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span></li>
+</ul>
+<h3 id="b8-queue-name-vs-device-uri">B8. Queue name vs device URI<a class="anchor" href="#b8-queue-name-vs-device-uri" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Confusion:</strong> <code>lpd://192.0.2.20/lp</code> is a <strong>device URI</strong> (protocol, the
+printer's IP, and the printer's internal queue <code>lp</code>), not a queue name.</li>
+<li><strong>Queue name:</strong> in <code>lpstat -v</code>, the part between <code>device for</code> and the colon:
+<code>device for Office_Printer: quota:lpd://192.0.2.20/lp</code> → <strong><code>Office_Printer</code></strong>.
+The <code>quota:</code> prefix means enforcement is on.</li>
+<li>The client address is <code>http://&lt;server&gt;:631/printers/Office_Printer</code>
+(case-sensitive).</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge info">Info</span></li>
+</ul>
+<h3 id="b9-a-test-queue-pointing-at-devnull">B9. A test queue pointing at <code>/dev/null</code><a class="anchor" href="#b9-a-test-queue-pointing-at-devnull" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> <code>device for hp-mono: ///dev/null</code>.</li>
+<li><strong>Cause:</strong> a leftover test queue named after the README example. Jobs to it
+go nowhere.</li>
+<li><strong>Fix:</strong> <code>sudo lpadmin -x hp-mono</code>.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span></li>
+</ul>
+<h3 id="b10-implicitclass-hp-queues-appear-on-their-own">B10. <code>implicitclass://</code> HP queues appear on their own<a class="anchor" href="#b10-implicitclass-hp-queues-appear-on-their-own" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> queues such as <code>HP_LaserJet_MFP_M426dw_CD736C</code> with
+<code>implicitclass://…</code> URIs, sometimes duplicated.</li>
+<li><strong>Cause:</strong> <code>cups-browsed</code> auto-creates queues for printers it discovers.
+They are <strong>not enforced</strong> (printing to them bypasses the quota), and CUPS can
+recreate them at any time, which undoes enforcement.</li>
+<li><strong>Fix:</strong> create a permanent queue per printer (A6), then
+<code>sudo systemctl disable --now cups-browsed</code>. Find printer addresses with
+<code>lpinfo --include-schemes dnssd,ipp,socket,lpd -v</code>.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span></li>
+</ul>
+<h3 id="b11-which-windows-driver-to-choose">B11. Which Windows driver to choose<a class="anchor" href="#b11-which-windows-driver-to-choose" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> &quot;Microsoft IPP Class Driver&quot; isn't in the list when adding the
+printer by address. The list shows MS-XPS, OpenXPS, PCL6 and similar.</li>
+<li><strong>Cause:</strong> Windows only offers the IPP class driver for printers it
+discovers itself.</li>
+<li><strong>Fix:</strong> <strong>Microsoft PS Class Driver</strong> (PostScript), or if that's missing,
+<strong>Generic → MS Publisher Imagesetter</strong>. The server queue has a PPD driver,
+so CUPS converts PostScript for the printer. PostScript can also be counted
+exactly (B15).</li>
+<li><strong>Never use:</strong> the PCL6 class driver (CUPS can't convert it) or the XPS
+drivers (CUPS can't read them).</li>
+<li><strong>Check the queue type:</strong> <code>lpstat -l -p &lt;QUEUE&gt; | grep -i interface</code>. A
+<code>.ppd</code> means a driver is on the server, so no HP driver is needed on the
+PCs. No <code>.ppd</code> means a raw queue, which needs the HP driver on every PC, or
+switch it: <code>sudo lpadmin -p &lt;QUEUE&gt; -E -v ipp://&lt;ip&gt;/ipp/print -m everywhere</code>,
+then click <strong>Turn on</strong> again.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span> Verified: the PS Class Driver prints on <code>Office_Printer</code>.</li>
+</ul>
+<h3 id="b12-cups-error_log-messages-that-are-harmless">B12. CUPS <code>error_log</code> messages that are harmless<a class="anchor" href="#b12-cups-error_log-messages-that-are-harmless" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Printer drivers are deprecated and will stop working…</code></td>
+<td>General CUPS notice about PPD drivers. Ignore</td>
+</tr>
+<tr>
+<td><code>CreateProfile failed … AlreadyExists</code></td>
+<td>Colour-profile noise from the <code>implicitclass</code> queues. It stops after B10</td>
+</tr>
+<tr>
+<td><code>Returning IPP client-error-bad-request for windows-ext … from &lt;PC-IP&gt;</code></td>
+<td>A Windows PC probing while it adds the printer. Ignore</td>
+</tr>
+<tr>
+<td><code>Scheduler shutting down due to program error</code> (once)</td>
+<td>CUPS restarted itself. Only investigate if it repeats: <code>sudo journalctl -u cups --since &quot;&lt;time&gt;&quot;</code></td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge info">Info</span></li>
+</ul>
+<h3 id="b13-job-cancelled-no-print-account-for-this-user">B13. Job cancelled: &quot;no print account for this user&quot;<a class="anchor" href="#b13-job-cancelled-no-print-account-for-this-user" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> in <code>error_log</code>: <code>[Job N] print job denied: no print account for this user</code> and <code>Backend returned status 5 (cancel job)</code>.</li>
+<li><strong>Meaning:</strong> printing through the server <strong>works</strong>. The username sent by the
+PC just has no printquota account. These jobs don't appear in Reports.</li>
+<li><strong>Fix:</strong> find the name with <code>lpstat -W all -o &lt;QUEUE&gt;</code> (second column),
+then create that user in <strong>Users</strong> with the bare logon name. Since 0.2.4,
+capitals and a <code>DOMAIN\</code> prefix don't matter (B22).</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span> Verified: fixed by creating the user, after which
+printing worked.</li>
+</ul>
+<h3 id="b14-active-directory-usernames">B14. Active Directory usernames<a class="anchor" href="#b14-active-directory-usernames" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Domain PCs usually send the <strong><code>sAMAccountName</code></strong> (e.g. <code>jsmith</code>), but some
+send <code>DOMAIN\JSmith</code> (B22). Create the account as the bare logon name;
+since 0.2.4 every form matches it.</li>
+<li>If the server is later joined to the domain (<code>realm join</code>) and CUPS requires
+a login, names may become <code>jsmith@corp.example.com</code>. Set
+<code>use_fully_qualified_names = False</code> in <code>/etc/sssd/sssd.conf</code>, or create
+users in that form. Use one form consistently.</li>
+<li><strong>Bulk import from AD</strong> (run on a DC or a PC with the AD tools), then use
+<strong>Users → Import users…</strong> with <em>Create groups that do not exist yet</em> ticked:<pre><code class="language-powershell">Get-ADUser -Filter 'Enabled -eq $true' -Properties mail,Department |
+  Select-Object @{n='username';e={$_.SamAccountName}},
+                @{n='display_name';e={$_.Name}},
+                @{n='email';e={$_.mail}},
+                @{n='group';e={$_.Department}} |
+  Export-Csv users.csv -NoTypeInformation -Encoding UTF8
+</code></pre>
+</li>
+<li>Portal passwords are separate. To use AD passwords for the portal, set
+<code>api.auth_backend: ldap</code> plus an <code>ldap:</code> section (README §13).</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span></li>
+</ul>
+<h3 id="b15-over-quota-job-printed-a-4-page-job-counted-as-1-page">B15. Over-quota job printed; a 4-page job counted as 1 page<a class="anchor" href="#b15-over-quota-job-printed-a-4-page-job-counted-as-1-page" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> quota 3, a 4-page document printed in full, and the user showed
+used 1, remaining 2.</li>
+<li><strong>Cause 1:</strong> on a queue with a driver (PPD), CUPS converts the job to the
+printer's language (e.g. PCL XL) <strong>before</strong> printquota sees it. That can't
+be counted, so the estimate fell back to 1 page.</li>
+<li><strong>Cause 2:</strong> this driver never reports pages to CUPS, so
+<code>/var/log/cups/page_log</code> <strong>doesn't exist</strong> and the after-print correction
+never happened (see B16).</li>
+<li><strong>Fix:</strong> printquota now counts the <strong>original document</strong> in the CUPS spool
+(<code>/var/spool/cups/d&lt;job&gt;-NNN</code>), and reads copies, N-up and page ranges from
+<code>c&lt;job&gt;</code>. A job that doesn't fit is refused <strong>before</strong> printing; nothing is
+ever printed partially.</li>
+<li><strong>Verify:</strong> <code>sudo journalctl -u cups -n 50 --no-pager | grep -o &quot;method='[^']*'\|pages=[0-9]*&quot;</code>.
+<code>spool:postscript</code> / <code>spool:pdf</code> means exact. <code>…:fallback</code> means guessed:
+check the Windows driver (B11).</li>
+<li><strong>Setting:</strong> <code>printing.spool_dir</code> (default <code>/var/spool/cups</code>).</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.1</span> <span class="badge pending">Awaiting verification</span> (test A10).</li>
+</ul>
+<h3 id="b16-no-page_log-file">B16. No <code>page_log</code> file<a class="anchor" href="#b16-no-page_log-file" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> <code>tail: cannot open '/var/log/cups/page_log'</code>. The accounting
+log shows only &quot;started&quot; lines.</li>
+<li><strong>Meaning:</strong> normal for drivers that don't report pages. Since 0.2.1 the
+accounting service logs this once, and charges stay at the pre-print count,
+which is exact for PDF and PostScript (B15). When CUPS does write the file,
+both per-page lines and <code>total</code> lines are read.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge info">Info</span> (daemon handling fixed in 0.2.1)</li>
+</ul>
+<h3 id="b17-settings-nothing-was-saved-webhook-url-must-start-with-http">B17. Settings: &quot;Nothing was saved. Webhook URL: must start with http://…&quot;<a class="anchor" href="#b17-settings-nothing-was-saved-webhook-url-must-start-with-http" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> changing costs failed with an error about a field that wasn't
+touched.</li>
+<li><strong>Cause:</strong> the whole form was re-validated on every save, and the Webhook
+URL box contained a value from <strong>browser autofill</strong> (the page has a
+password box, the SMTP password). A second bug: the page could show and
+cache old values for 15 s after a save.</li>
+<li><strong>Fix:</strong> only changed fields are validated, every valid change is saved,
+and a bad field is outlined in red with the typed value kept and a plain
+message. Autofill is off. Numbers accept <code>1,000</code> / <code>0,5</code> / <code>500.0</code>. The
+save is committed before the page is re-read.</li>
+<li><strong>If you still see it:</strong> you're on old code (B18). If a box is red, clear
+it and save.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.2</span> <span class="badge pending">Awaiting verification</span></li>
+</ul>
+<h3 id="b18-reinstalled-but-the-old-behaviour-is-still-there">B18. Reinstalled, but the old behaviour is still there<a class="anchor" href="#b18-reinstalled-but-the-old-behaviour-is-still-there" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Diagnosis:</strong><pre><code class="language-bash">cd ~/print-quota-system &amp;&amp; git log --oneline -1        # latest commit?
+/opt/printquota/bin/pip show printquota | grep Version  # installed version?
+systemctl status quota-api --no-pager | grep Active     # restarted?
+</code></pre>
+When this happened: the code was at <code>7a0e9c1</code> (0.2.2), but the installed
+version was <strong>0.2.0</strong> and <code>quota-api</code> had been running since boot. The pull
+worked, but the install never completed (B19).</li>
+<li><strong>Quick fix (no installer):</strong><pre><code class="language-bash">sudo /opt/printquota/bin/pip install --upgrade ~/print-quota-system
+sudo systemctl restart quota-api quota-accounting
+</code></pre>
+This is enough when there are no new database migrations. Otherwise run
+<code>install.sh</code> or <code>alembic upgrade head</code>.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span></li>
+</ul>
+<h3 id="b19-installsh-stops-at-installing-os-dependencies">B19. <code>install.sh</code> stops at &quot;Installing OS dependencies&quot;<a class="anchor" href="#b19-installsh-stops-at-installing-os-dependencies" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> <code>E: Failed to fetch … File has unexpected size … Mirror sync in progress?</code>, then the output ends. Nothing is upgraded or restarted.</li>
+<li><strong>Cause:</strong> <code>apt-get update</code> failed (an Ubuntu mirror mid-sync; a broken
+third-party repo such as Docker's <code>focal</code> entry can do the same), and the
+script aborted.</li>
+<li><strong>Fix:</strong> the installer skips the package step when everything is already
+installed, and treats <code>apt-get update</code> errors as warnings. It only fails if
+a missing package can't be installed. Workaround on older versions: B18's
+quick fix.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.3</span> <span class="badge pending">Awaiting verification</span></li>
+</ul>
+<h3 id="b20-console-buttons-turn-on--add-printer-say-forbidden">B20. Console buttons (Turn on / Add printer) say &quot;Forbidden&quot;<a class="anchor" href="#b20-console-buttons-turn-on--add-printer-say-forbidden" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Cause:</strong> the <code>printquota</code> account isn't in CUPS's <code>lpadmin</code> group, or
+<code>quota-api</code> started before it was added.</li>
+<li><strong>Fix:</strong> <code>sudo usermod -a -G lpadmin printquota &amp;&amp; sudo systemctl restart quota-api</code>.
+Re-running <code>install.sh</code> also does this. Check with <code>id printquota</code>.</li>
+<li class="status-line"><span class="status-label">Status</span> Config (the installer handles it since 0.2.0). Not yet seen on
+the real server.</li>
+</ul>
+<h3 id="b21-loopholes-to-close-before-relying-on-the-quotas">B21. Loopholes to close before relying on the quotas<a class="anchor" href="#b21-loopholes-to-close-before-relying-on-the-quotas" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Direct printing:</strong> PCs that can reach a printer's IP can add it directly
+and bypass printquota. Restrict each printer (its web admin → IP filtering
+/ access control) to the server's IP, and remove direct connections from
+the PCs.</li>
+<li><strong>Name spoofing:</strong> by default CUPS trusts the username the PC sends. Add
+<code>Require valid-user</code> for <code>/printers</code> in <code>/etc/cups/cupsd.conf</code>
+(README §20) and restart CUPS. On AD, join the server to the domain first
+(B14).</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span> Not done yet.</li>
+</ul>
+<h3 id="b22-jobs-from-one-pc-refused-the-name-arrives-as-corpjdoe">B22. Jobs from one PC refused: the name arrives as <code>CORP\J.Doe</code><a class="anchor" href="#b22-jobs-from-one-pc-refused-the-name-arrives-as-corpjdoe" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> one user's jobs never print. <code>lpstat -W all -o Office_Printer</code>
+shows the user as <strong><code>CORP\J.Doe</code></strong> (domain prefix plus capitals), while
+everyone else appears as <code>firstname.lastname</code>. In <code>error_log</code>:
+<code>print job denied: no print account for this user</code>.</li>
+<li><strong>Cause:</strong> printquota matched names exactly. Windows sends the domain form
+on some PCs, depending on how the user signed in and how the printer was
+added. The account <code>j.doe</code> was never matched. Creating an account
+called <code>CORP\J.Doe</code> was a poor workaround: browsers turn <code>\</code> into
+<code>/</code> in web addresses, so that account couldn't be opened in the console,
+and the person would have two accounts with a split quota.</li>
+<li><strong>Fix:</strong> names are now matched the way Active Directory does
+(<code>services/identity.py</code>). For the name as sent, then without <code>DOMAIN\</code>,
+then without <code>@realm</code>: an exact match first, then a match ignoring
+capitals, only if exactly one account qualifies.
+<ul>
+<li>Jobs are charged to, recorded under and checked against the policies of
+the matched account (<code>j.doe</code>). The name actually sent is logged:
+<code>journalctl -u cups | grep &quot;print user matched&quot;</code>.</li>
+<li>Two accounts differing only in capitals are never guessed between: the
+job is refused with <code>'&lt;name&gt;' matches more than one print account (…)</code>.</li>
+<li>Portal sign-in accepts every form.</li>
+<li>New accounts may not contain <code>\</code> or differ from an existing one only in
+capitals (console, CLI, import, setup). A CSV row for <code>J.Doe</code>
+updates <code>j.doe</code>.</li>
+<li>Console links URL-encode usernames, so an older account containing <code>\</code>
+can still be opened and deleted.</li>
+</ul>
+</li>
+<li><strong>After upgrading:</strong> make sure the user exists as <code>j.doe</code>. If a
+<code>CORP\J.Doe</code> workaround account was created, move its quota to
+<code>j.doe</code> and delete it. Exact matches win, so while it exists, jobs
+sent as <code>CORP\J.Doe</code> are still charged to it.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.4</span> <span class="badge verified">Verified 2026-09-25</span> Jane Doe's jobs (sent as <code>CORP\J.Doe</code>) print and are charged to <code>j.doe</code>. Once his PC was reconnected, see B23.</li>
+</ul>
+<h3 id="b23-a-pcs-jobs-never-reach-the-server-auto-discovered-printer-tls-refused">B23. A PC's jobs never reach the server (auto-discovered printer, TLS refused)<a class="anchor" href="#b23-a-pcs-jobs-never-reach-the-server-auto-discovered-printer-tls-refused" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> one user can't print, even though their printquota account is
+fine (active, pages remaining) and printquota is up to date. On the
+server, <code>lpstat -W all -o &lt;QUEUE&gt;</code> shows <strong>no new jobs</strong> from that user, so
+printquota never sees them. Often the user also got <em>&quot;the printer name is
+not correct&quot;</em> when adding the printer by address, then added it through
+Windows' automatic discovery instead. In <code>/var/log/cups/error_log</code>,
+repeated lines:<pre><code>E [...] [Client 775] Unable to encrypt connection: A TLS fatal alert has been received.
+</code></pre>
+</li>
+<li><strong>Cause:</strong> a printer that Windows discovers by itself (e.g. <em>&quot;Office_Printer @
+printserver&quot;</em>) connects to CUPS over an <strong>encrypted</strong> connection
+(<code>ipps</code>/<code>https</code>, using the server's <code>.local</code> name). CUPS answers with its
+<strong>self-signed certificate</strong>, Windows rejects it (the &quot;TLS fatal alert&quot;), and
+every job fails on the PC before it is sent. The PC's own print queue shows
+the job as <em>Error</em>.</li>
+<li><strong>Diagnosis:</strong>
+<ol>
+<li>On the server, <code>lpstat -W all -o &lt;QUEUE&gt; | tail</code>. No job from the user
+after their attempt means the problem is between the PC and the server,
+not in printquota.</li>
+<li><code>sudo grep &quot;Unable to encrypt connection&quot; /var/log/cups/error_log | tail</code>
+shows TLS failures at the times the user tried to print.</li>
+<li>Match them to the PC: <code>sudo grep &quot;&lt;dd/Mon/yyyy:HH:MM&gt;&quot; /var/log/cups/access_log | awk '{print $1}' | sort | uniq -c</code>,
+and compare with the PC's address (<code>ipconfig</code> on the PC).</li>
+</ol>
+</li>
+<li><strong>Fix (on the PC):</strong>
+<ol>
+<li>Remove <strong>every</strong> entry for the printer, including the auto-discovered
+one, and cancel anything stuck in its queue.</li>
+<li>In the PC's browser, open <code>http://&lt;server-ip&gt;:631/printers/&lt;QUEUE&gt;</code>. It
+must load. If it doesn't, something blocks port 631 between the PC and
+the server (firewall, antivirus, proxy). Test with
+<code>Test-NetConnection &lt;server-ip&gt; -Port 631</code> in PowerShell.</li>
+<li><strong>Add manually → Select a shared printer by name</strong> →
+<code>http://&lt;server-ip&gt;:631/printers/&lt;QUEUE&gt;</code>, with the IP address, <code>http</code>
+and the exact capitals. Use the <strong>Microsoft PS Class Driver</strong> (B11).</li>
+<li>Print a test page and confirm the job appears in <code>lpstat</code> and Reports.</li>
+</ol>
+</li>
+<li><strong>Prevention:</strong> always connect PCs by the plain <code>http://&lt;IP&gt;</code> address (A9).
+Disabling <code>cups-browsed</code> (B10) also removes the automatic HP queues that
+kept reappearing in the log.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span> <span class="badge verified">Verified 2026-09-25</span> Jane Doe's PC. After
+removing the auto-discovered printer and re-adding
+<code>http://192.0.2.10:631/printers/Office_Printer</code>, his jobs arrived as
+<code>CORP\J.Doe</code> and were charged to <code>j.doe</code> (B22).</li>
+</ul>
+<h3 id="b24-changed-the-price-but-reports-still-shows-100-per-page">B24. Changed the price, but Reports still shows ₦1.00 per page<a class="anchor" href="#b24-changed-the-price-but-reports-still-shows-100-per-page" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> after setting a new price, every job in <strong>Reports</strong> still costs
+₦1.00 per page.</li>
+<li><strong>Cause 1:</strong> when a printer is registered, it gets <strong>its own price</strong>,
+copied from the default at that moment (₦1). A printer's own price always
+wins, so changing <em>Default cost per mono page</em> on the <strong>Settings</strong> page
+doesn't affect it. That default is only used for printers with no price of
+their own.</li>
+<li><strong>Cause 2:</strong> a job's cost is recorded <strong>when it prints</strong> and never changes
+afterwards, like a receipt. Jobs printed before a price change keep the old
+price.</li>
+<li><strong>Fix:</strong> <strong>Printers &amp; queues</strong> → the printer → <strong>Edit costs</strong> → set
+<em>Cost / mono page</em> (and <em>Cost / colour page</em>) → <strong>Save</strong>. The table's
+<em>Mono</em> column shows the price that applies. Print one page, and the new job
+in Reports has the new cost.</li>
+<li><strong>Note:</strong> a printer price of <strong>0</strong> means &quot;use the Settings default&quot;, not
+free (README §23). For a free printer, set the default to 0 as well.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge config">Config</span></li>
+</ul>
+<h3 id="b25-the-web-console-doesnt-come-back-after-rebooting-a-new-server">B25. The web console doesn't come back after rebooting a new server<a class="anchor" href="#b25-the-web-console-doesnt-come-back-after-rebooting-a-new-server" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Symptom:</strong> on a freshly installed server, <code>http://&lt;server&gt;:8080</code> works
+until the first reboot, then doesn't answer.
+<code>systemctl is-enabled quota-api</code> says <code>disabled</code>.</li>
+<li><strong>Cause:</strong> found in a code review on 2026-09-26, before it hit a real
+server. Since 0.2.0, <code>install.sh</code> <em>restarted</em> <code>quota-api</code> but no longer
+<em>enabled</em> it, so it wasn't set to start at boot. Servers first installed
+with an older version (like the reference server) were enabled then, and
+are unaffected.</li>
+<li><strong>Fix:</strong> the installer enables every unit again
+(<code>systemctl enable --now quota-accounting quota-api quota-reset.timer quota-backup.timer</code>).
+On an affected server: <code>sudo systemctl enable --now quota-api</code>.</li>
+<li><strong>Check:</strong> <code>systemctl is-enabled quota-api quota-accounting</code> should print
+<code>enabled</code> twice.</li>
+<li class="status-line"><span class="status-label">Status</span> <span class="badge fixed">Fixed 0.2.5</span></li>
+</ul>
+<hr />
+<h2 id="part-c-quick-health-checks">Part C: Quick health checks<a class="anchor" href="#part-c-quick-health-checks" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash"># Versions and services
+/opt/printquota/bin/pip show printquota | grep Version
+systemctl status quota-api quota-accounting --no-pager | grep -E &quot;●|Active&quot;
+systemctl is-enabled quota-api quota-accounting            # both &quot;enabled&quot; (B25)
+systemctl list-timers quota-reset.timer quota-backup.timer --no-pager
+
+# CUPS queues (quota: prefix = enforced) and recent jobs with usernames
+lpstat -v
+lpstat -W all -o
+
+# Why a job was allowed or denied, and how its pages were counted
+sudo journalctl -u cups -n 50 --no-pager | grep -i printquota
+sudo tail -n 30 /var/log/cups/error_log
+
+# Which PCs are connecting, and any TLS (encryption) failures (B23)
+sudo tail -n 20 /var/log/cups/access_log | awk '{print $1, $4, $6, $7}'
+sudo grep -c &quot;Unable to encrypt connection&quot; /var/log/cups/error_log
+
+# Web console reachable and database OK
+curl -s http://localhost:8080/healthz          # {&quot;status&quot;:&quot;ok&quot;}
+
+# Permissions the console needs
+id printquota                                   # must include lp and lpadmin
+ls -l /usr/lib/cups/backend/quota               # must be -rwx------ root root
+</code></pre>
+<hr />
+<h2 id="version-history">Version history<a class="anchor" href="#version-history" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Main change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.1.0</td>
+<td>2026-09-22</td>
+<td>Initial release</td>
+</tr>
+<tr>
+<td>0.1.1</td>
+<td>2026-09-23</td>
+<td>Python 3.10 support (Ubuntu 22.04)</td>
+</tr>
+<tr>
+<td>0.2.0</td>
+<td>2026-09-23</td>
+<td>Web console for everything (setup wizard, import, bulk actions, queues, settings). B2–B6</td>
+</tr>
+<tr>
+<td>0.2.1</td>
+<td>2026-09-24</td>
+<td>Count pages from the submitted document. B15, B16</td>
+</tr>
+<tr>
+<td>0.2.2</td>
+<td>2026-09-24</td>
+<td>Settings page saves reliably. B17</td>
+</tr>
+<tr>
+<td>0.2.3</td>
+<td>2026-09-24</td>
+<td>Installer survives <code>apt-get update</code> errors. B19</td>
+</tr>
+<tr>
+<td>0.2.5</td>
+<td>2026-09-26</td>
+<td>HTML docs (<code>docs/html/</code>); installer enables <code>quota-api</code> again. B25</td>
+</tr>
+<tr>
+<td>0.2.4</td>
+<td>2026-09-25</td>
+<td>Match <code>DOMAIN\user</code> and different capitals to one account. B22 (verified). Client setup documented: B23, B24</td>
+</tr>
+</tbody>
+</table></div>
+<p>Full details are in <a href="changelog.html">CHANGELOG.md</a>.</p>
+</div><footer class="foot">Generated from <code>docs/setup-and-issues.md</code> by <code>scripts/build_docs.py</code>. Edit the Markdown, then re-run the script.</footer></main></div><script>
+(function(){
+  function copyText(btn, text){
+    function done(ok){btn.textContent = ok ? 'Copied' : 'Select + Ctrl+C'; setTimeout(function(){btn.textContent='Copy';}, 1600);}
+    try{
+      navigator.clipboard.writeText(text).then(function(){done(true);}, function(){select(btn); done(false);});
+    }catch(e){select(btn); done(false);}
+  }
+  function select(btn){
+    var code = btn.parentNode.querySelector('code'); var r = document.createRange();
+    r.selectNodeContents(code); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  document.querySelectorAll('.doc pre').forEach(function(pre){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+    b.addEventListener('click', function(){copyText(b, pre.querySelector('code').innerText);});
+    pre.appendChild(b);
+  });
+
+  // Filter the contents list by what the reader types (e.g. "TLS", "B22", "price").
+  document.querySelectorAll('.side').forEach(function(side){
+    var box = side.querySelector('.find'); if(!box) return;
+    box.addEventListener('input', function(){
+      var q = box.value.trim().toLowerCase(); var any = false;
+      side.querySelectorAll('.toc>li').forEach(function(li){
+        var subs = li.querySelectorAll('ul>li'); var subHit = false;
+        subs.forEach(function(s){ var hit = !q || s.textContent.toLowerCase().indexOf(q) > -1; s.hidden = !hit; subHit = subHit || (hit && !!q); });
+        var own = li.querySelector('a').textContent.toLowerCase().indexOf(q) > -1;
+        var show = !q || own || subHit;
+        if(show && own && q){ subs.forEach(function(s){ s.hidden = false; }); }
+        li.hidden = !show; any = any || show;
+      });
+      var none = side.querySelector('.none'); if(none) none.hidden = any;
+    });
+  });
+
+  // Tabs for the single-page edition: one document visible at a time.
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.docsec'));
+  function show(sec, target){
+    sections.forEach(function(s){ s.hidden = s !== sec; });
+    document.querySelectorAll('.tabs a').forEach(function(a){
+      if(a.getAttribute('data-doc') === sec.id){ a.setAttribute('aria-current','page'); } else { a.removeAttribute('aria-current'); }
+    });
+    if(target && target !== sec){ target.scrollIntoView(); } else { window.scrollTo(0, 0); }
+  }
+  function route(){
+    if(!sections.length) return;
+    var id = decodeURIComponent(location.hash.slice(1)); var el = id && document.getElementById(id);
+    if(!el){ show(sections[0]); return; }
+    var sec = el.closest('section.docsec') || el; show(sec, el);
+  }
+  if(sections.length){ window.addEventListener('hashchange', route); route(); }
+
+  // Highlight where the reader is in the contents list.
+  if('IntersectionObserver' in window){
+    var links = {}; document.querySelectorAll('.toc a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          document.querySelectorAll('.toc a.here').forEach(function(a){ a.classList.remove('here'); });
+          var a = links[e.target.id]; if(a) a.classList.add('here');
+        }
+      });
+    }, {rootMargin:'-80px 0px -70% 0px'});
+    document.querySelectorAll('.doc h2[id], .doc h3[id]').forEach(function(h){ io.observe(h); });
+  }
+})();
+</script></body></html>

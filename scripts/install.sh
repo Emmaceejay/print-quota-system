@@ -94,6 +94,11 @@ install -d -m 0755 "$PREFIX/share" "$PREFIX/share/scripts" "$PREFIX/share/docs"
 cp -r "$REPO_DIR/alembic.ini" "$PREFIX/share/alembic.ini"
 install -m 0755 "$REPO_DIR/scripts/backup.sh" "$PREFIX/share/scripts/backup.sh"
 install -m 0644 "$REPO_DIR"/docs/*.md "$PREFIX/share/docs/"
+# Browsable HTML copy of the docs (open docs/html/setup-and-issues.html in a browser).
+if [[ -d "$REPO_DIR/docs/html" ]]; then
+    install -d -m 0755 "$PREFIX/share/docs/html"
+    install -m 0644 "$REPO_DIR"/docs/html/*.html "$PREFIX/share/docs/html/"
+fi
 ( cd "$REPO_DIR" && PRINTQUOTA_CONFIG="$CONFIG_DIR/settings.yaml" "$PREFIX/bin/alembic" upgrade head )
 chown "$LOG_USER":"$LOG_USER" "$STATE_DIR"/printquota.db* 2>/dev/null || true
 
@@ -103,9 +108,9 @@ log "Installing the CUPS wrapper backend"
 log "Installing systemd units"
 install -m 0644 "$REPO_DIR"/systemd/*.service "$REPO_DIR"/systemd/*.timer /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now quota-accounting.service
-systemctl enable --now quota-reset.timer
-systemctl enable --now quota-backup.timer
+# enable = start at every boot; --now = start immediately as well
+systemctl enable --now quota-accounting.service quota-api.service
+systemctl enable --now quota-reset.timer quota-backup.timer
 # restart (not just start) so an upgrade picks up new code and group membership
 systemctl restart quota-accounting.service quota-api.service
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "printquota"
-version = "0.2.4"
+version = "0.2.5"
 description = "Self-hosted CUPS print quota, policy and accounting system"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,6 +27,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "httpx>=0.27"]
 ldap = ["ldap3>=2.9"]
+docs = ["markdown-it-py>=3.0", "mdit-py-plugins>=0.4"]
 
 [project.scripts]
 quotactl = "printquota.cli.quotactl:cli"
