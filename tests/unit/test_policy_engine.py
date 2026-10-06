@@ -12,6 +12,7 @@ from printquota.policies.engine import (
     evaluate,
     evaluate_policies,
     evaluate_quota,
+    quota_pages,
     resolve_rules,
     validate_rule,
 )
@@ -45,6 +46,32 @@ def test_force_duplex_is_not_applied_where_the_printer_cannot_act_on_it():
     rules = [PolicyRule("printer", "hp-mono", "force_duplex", "true")]
     decision = evaluate_policies(rules, ctx(is_duplex=False, can_force_sides=False))
     assert decision.allowed and "sides" not in decision.forced_options
+
+
+@pytest.mark.parametrize("sides,copies,two_sided,by_sheet,expected", [
+    (10, 1, True, True, 5),     # 10 pages on both sides: 5 sheets
+    (3, 1, True, True, 2),      # an odd last page still takes a sheet
+    (6, 2, True, True, 4),      # 2 copies of a 3-page document: 2 sheets each
+    (1, 1, True, True, 1),
+    (0, 1, True, True, 0),
+    (10, 1, False, True, 10),   # one-sided: every side is a sheet
+    (10, 1, True, False, 10),   # counting sides
+])
+def test_quota_pages(sides, copies, two_sided, by_sheet, expected):
+    assert quota_pages(sides, copies=copies, two_sided=two_sided, by_sheet=by_sheet) == expected
+
+
+def test_a_two_sided_job_that_fits_by_sheet_is_allowed():
+    state = QuotaState(user_limit=10, user_used=5)  # 5 pages left
+    job = ctx(estimated_pages=10, is_duplex=True)   # 10 sides = 5 sheets
+    assert evaluate([], job, state, count_two_sided_as_sheets=True).allowed
+    assert not evaluate([], job, state, count_two_sided_as_sheets=False).allowed
+
+
+def test_forced_duplex_is_also_counted_by_sheet():
+    rules = [PolicyRule("global", None, "force_duplex", "true")]
+    state = QuotaState(user_limit=10, user_used=5)
+    assert evaluate(rules, ctx(estimated_pages=10), state, count_two_sided_as_sheets=True).allowed
 
 
 def test_max_pages_and_copies_limits():

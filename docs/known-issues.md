@@ -134,11 +134,27 @@ Then click **Turn on** for the queue again in **Printers & queues**.
 **Symptom.** Jobs print on one side of the paper, even when the user chose
 *Print on both sides*, or the option is missing on the computer.
 
+Windows programs may offer only *Print on both sides manually*.
+
 **Cause.** Two-sided printing is decided by the CUPS queue on the server.
 Queues print one-sided unless set otherwise, and a Windows computer
 connected by address doesn't pass its own two-sided choice to the server.
-Before 0.3.0, the *Supports duplex* tick in the console was only recorded
-and didn't change the queue.
+The Microsoft PS Class Driver has no two-sided option, which is why Windows
+programs only offer the manual method. Before 0.3.0, the *Supports duplex*
+tick in the console was only recorded and didn't change the queue.
+
+The queue's driver on the server must have a two-sided option. Vendor
+drivers come in one version per model, and the version for a model without
+a duplex unit has no two-sided option. For example, the `RICOH MP 2014`
+driver has none, while the printer may be an `MP 2014AD` with automatic
+duplex. Check which driver a queue uses:
+
+```bash
+curl -s http://localhost:631/printers/<queue>.ppd | grep -E '^\*(NickName|OpenUI \*Duplex)'
+```
+
+A `*NickName` line without an `*OpenUI *Duplex` line means the driver has no
+two-sided option.
 
 **Resolution.**
 
@@ -151,12 +167,22 @@ and didn't change the queue.
      driver can print two-sided. Convert the queue to a driverless one (see
      [Which Windows driver to use](#which-windows-driver-to-use)), then set
      it again.
-   - *no two-sided option*: the printer didn't report a duplex unit. Check
-     that it has one. For a driverless queue, recreate it with the
-     **IPP Everywhere** driver so CUPS reads the printer's capabilities
-     again.
+   - *no two-sided option*: the queue's driver can't print two-sided. If the
+     printer has a duplex unit, switch the queue to the driver for the
+     duplex model. List the installed versions, then pick the one with
+     `D` or `AD` in its name:
+     ```bash
+     lpinfo -m | grep -i '<model, e.g. MP 2014>'
+     sudo lpadmin -p <queue> -m '<first column of the chosen line>'
+     ```
+     This keeps quota enforcement on: only the driver changes. If the
+     printer supports driverless printing, use `-m everywhere` instead. If
+     no duplex version is installed, get the full Linux driver package from
+     the manufacturer. Then save **Print on both sides by default** again.
 4. Check the queue with `lpoptions -p <queue> -l | grep -i duplex`. The
    starred choice should be `DuplexNoTumble`.
+5. Print a 2-page document normally (not *manually*). It should come out on
+   one sheet and use 1 page of quota.
 
 A `force_duplex` policy can't fix this on `socket://`, `lpd://` or `usb://`
 printers. It is applied after the job is rendered, and only IPP printers act

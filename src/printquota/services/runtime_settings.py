@@ -58,6 +58,9 @@ FIELDS: tuple[Field, ...] = (
           choices=("strict", "soft")),
     Field("quota.enforce_group_budget", "Enforce group budgets", "bool", "Quotas",
           "A job must also fit the group's shared pool."),
+    Field("quota.count_two_sided_as_sheets", "Count two-sided printing by sheet", "bool", "Quotas",
+          "A two-sided job uses one page of quota per sheet of paper, so a 10-page document "
+          "printed on both sides uses 5. Off: every printed side counts as a page."),
     Field("printing.currency", "Currency label", "text", "Costs",
           "Shown next to every cost figure, e.g. NGN, USD."),
     Field("printing.default_cost_per_page_mono", "Default cost per mono page", "float", "Costs",

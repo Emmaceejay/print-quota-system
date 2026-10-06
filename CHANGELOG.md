@@ -56,9 +56,32 @@ Initial release.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
-## [Unreleased]
+## [0.4.0] - 2026-10-06
+
+### Changed
+
+- **Two-sided jobs use one page of quota per sheet of paper.** A 10-page
+  document printed on both sides now uses 5 pages of quota, not 10, both
+  when it is checked before printing and when CUPS's page log is
+  reconciled. Controlled by the new console setting **Count two-sided
+  printing by sheet** (`quota.count_two_sided_as_sheets`, on by default). Turn
+  it off to keep counting every printed side. Money cost is unchanged: it
+  still uses each printer's duplex discount.
+
+### Fixed
+
+- **The "no two-sided option" warning now says how to fix it.** The usual
+  cause is a vendor driver for a model without a duplex unit (for example
+  `RICOH MP 2014` instead of `MP 2014AD`). The warning and the known issue
+  now explain how to switch the queue to the duplex model's driver without
+  turning off quota enforcement.
 
 ### Documentation
+
+- **Print on both sides manually** is explained: the Microsoft PS Class
+  Driver has no two-sided option, so Windows programs offer only the manual
+  method, which sends two separate one-sided jobs. Users should print
+  normally to a two-sided queue.
 
 - **Upgrades no longer reinstall the old version after a failed pull.** The
   install steps set `git config pull.ff only`, the upgrade steps run

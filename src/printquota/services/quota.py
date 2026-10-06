@@ -18,7 +18,7 @@ from ..accounting.cost import PrinterRates, job_cost
 from ..core.config import Settings, get_settings
 from ..core.logging import get_logger
 from ..db.models import Group, PrintJob, PrintPolicy, Printer, User, utcnow
-from ..policies.engine import Decision, JobContext, PolicyRule, QuotaState, evaluate
+from ..policies.engine import Decision, JobContext, PolicyRule, QuotaState, evaluate, quota_pages
 from .identity import resolve_user
 
 log = get_logger("services.quota")
@@ -162,6 +162,7 @@ def authorize_job(
         state,
         enforcement=str(settings.get("quota.enforcement", "strict")),
         enforce_group_budget=bool(settings.get("quota.enforce_group_budget", True)),
+        count_two_sided_as_sheets=_by_sheet(settings),
     )
 
     printer = session.get(Printer, ctx.printer)
@@ -193,8 +194,9 @@ def authorize_job(
     )
 
     if decision.allowed and charge_on_allow:
-        _apply_charge(session, user, pages)
-        job.charged_pages = pages
+        quota_cost = quota_pages(pages, copies=ctx.copies, two_sided=is_duplex, by_sheet=_by_sheet(settings))
+        _apply_charge(session, user, quota_cost)
+        job.charged_pages = quota_cost
     session.add(job)
     session.flush()  # assign job.id so callers can reference the row
     log.info(
@@ -209,6 +211,11 @@ def authorize_job(
         },
     )
     return decision, job
+
+
+def _by_sheet(settings: Settings) -> bool:
+    """Whether a two-sided sheet counts as one page (``quota.count_two_sided_as_sheets``)."""
+    return bool(settings.get("quota.count_two_sided_as_sheets", True))
 
 
 def _apply_charge(session: Session, user: User, pages: int) -> None:
@@ -241,11 +248,14 @@ def charge_job(
     if job.reconciled:
         return job
     actual_pages = max(int(actual_pages), 0)
-    delta = actual_pages - job.charged_pages
+    quota_cost = quota_pages(
+        actual_pages, copies=job.copies, two_sided=job.is_duplex, by_sheet=_by_sheet(settings)
+    )
+    delta = quota_cost - job.charged_pages
     user = session.get(User, job.username)
     if user is not None and delta:
         _apply_charge(session, user, delta)
-    job.charged_pages = actual_pages
+    job.charged_pages = quota_cost
     job.actual_pages = actual_pages
     printer = session.get(Printer, job.printer)
     rates = PrinterRates.from_printer(printer, settings.section("printing"))

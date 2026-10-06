@@ -317,9 +317,11 @@ def set_duplex_default(name: str, two_sided: bool) -> DuplexResult:
     if two_sided and choice_option is None:
         if options:
             warning = (
-                f"CUPS's driver for {name} has no two-sided option, so the printer may not "
-                "have a duplex unit. Check the printer, or recreate the queue with the "
-                "IPP Everywhere driver so CUPS reads its capabilities."
+                f"CUPS's driver for {name} has no two-sided option, so the printer will keep "
+                "printing one-sided. If the printer has a duplex unit, the queue is usually "
+                "using the driver for a model without one: switch it to the variant with "
+                "duplex (often a name ending in D or AD; list them with lpinfo -m), or to "
+                "IPP Everywhere if the printer supports it. Then save this setting again."
             )
         else:
             warning = (

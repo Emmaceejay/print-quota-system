@@ -92,6 +92,12 @@ windows — a user who did not print for three months restarts aligned to
 their original anchor, not to "now", so quotas do not drift across the
 organisation.
 
+A two-sided job is charged per **sheet** (`quota.count_two_sided_as_sheets`,
+on by default; `policies.engine.quota_pages`). That rewards saving paper, and
+it is what a user sees: one sheet, one page. Per-job limits such as
+`max_pages_per_job` still apply to printed sides, because they limit the
+size of a job, not the paper used.
+
 Cost is tracked in money alongside pages, for reporting and chargeback. It
 does not gate printing; mixing the two units in one enforcement decision
 makes denials hard for users to reason about.

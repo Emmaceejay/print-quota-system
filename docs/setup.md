@@ -147,8 +147,16 @@ choice to the server.
   driver has no two-sided option, the printer has no duplex unit, or the
   queue's driver doesn't know about it
   ([details](known-issues.md#jobs-print-on-one-side-only)).
-- **Prices:** two-sided jobs are recorded as duplex and get the printer's
-  duplex discount. Quotas still count printed sides.
+- **Quotas count sheets of paper** for two-sided jobs: a 10-page document
+  printed on both sides uses 5 pages of quota. To count every printed side
+  instead, turn off **Settings → Count two-sided printing by sheet**.
+  Two-sided jobs also get the printer's duplex discount in **Reports**.
+- **Tell users not to choose *Print on both sides manually*** (shown by Word
+  and other programs). With the Microsoft PS Class Driver, Windows doesn't
+  know the printer can print two-sided, so programs offer only the manual
+  method. That sends the odd and even pages as two separate one-sided jobs,
+  each charged in full, and asks the user to turn the paper over. Users
+  should print normally: a two-sided queue prints both sides automatically.
 
 ## 6. Create users (web console)
 

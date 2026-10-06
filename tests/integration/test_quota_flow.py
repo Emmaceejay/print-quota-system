@@ -171,3 +171,61 @@ def test_reset_expired_periods_reports_what_it_rolled(seeded):
     with db_session.session_scope() as session:
         result = reset_expired_periods(session)
     assert result["users"] == 1 and result["groups"] == 1
+
+
+# --------------------------------------------------------------- two-sided by sheet
+def _settings(**quota):
+    from printquota.core.config import Settings, get_settings
+
+    data = {"quota": get_settings().section("quota"), "printing": get_settings().section("printing")}
+    data["quota"].update(quota)
+    return Settings(data)
+
+
+def test_a_two_sided_job_is_charged_per_sheet(seeded):
+    with db_session.session_scope() as session:
+        decision, job = authorize_job(session, ctx(estimated_pages=10, is_duplex=True))
+        assert decision.allowed
+        assert job.estimated_pages == 10 and job.charged_pages == 5
+    with db_session.session_scope() as session:
+        assert session.get(User, "alex").pages_used == 5
+        assert session.get(Group, "finance").pages_used == 5
+
+
+def test_copies_of_an_odd_length_document_are_charged_per_sheet(seeded):
+    with db_session.session_scope() as session:
+        _, job = authorize_job(session, ctx(estimated_pages=6, copies=2, is_duplex=True))
+        assert job.charged_pages == 4  # 2 copies x 3 pages = 2 x 2 sheets
+
+
+def test_reconciliation_of_a_two_sided_job_stays_per_sheet(seeded):
+    with db_session.session_scope() as session:
+        _, job = authorize_job(session, ctx(estimated_pages=10, is_duplex=True))
+        job_id = job.id
+    with db_session.session_scope() as session:
+        charge_job(session, session.get(PrintJob, job_id), 12)  # CUPS logged 12 sides
+    with db_session.session_scope() as session:
+        job = session.get(PrintJob, job_id)
+        assert job.actual_pages == 12 and job.charged_pages == 6
+        assert session.get(User, "alex").pages_used == 6
+
+
+def test_page_log_showing_two_sided_converts_the_charge_to_sheets(seeded):
+    """A job not seen as duplex up front, but logged two-sided by CUPS."""
+    with db_session.session_scope() as session:
+        _, job = authorize_job(session, ctx(estimated_pages=10))
+        job_id = job.id
+        assert job.charged_pages == 10
+    with db_session.session_scope() as session:
+        job = session.get(PrintJob, job_id)
+        job.is_duplex = True  # what the accounting daemon does
+        charge_job(session, job, 10)
+    with db_session.session_scope() as session:
+        assert session.get(User, "alex").pages_used == 5
+
+
+def test_counting_sides_can_be_chosen_instead(seeded):
+    by_side = _settings(count_two_sided_as_sheets=False)
+    with db_session.session_scope() as session:
+        _, job = authorize_job(session, ctx(estimated_pages=10, is_duplex=True), settings=by_side)
+        assert job.charged_pages == 10

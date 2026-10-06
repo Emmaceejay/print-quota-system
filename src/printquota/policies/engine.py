@@ -251,6 +251,21 @@ def evaluate_quota(
     return decision
 
 
+def quota_pages(sides: int, *, copies: int = 1, two_sided: bool = False, by_sheet: bool = False) -> int:
+    """How many pages a job takes from a quota.
+
+    ``sides`` is the printed sides for all copies. Normally every side is
+    a page. With ``by_sheet``, a two-sided job is charged per sheet of
+    paper instead: each copy of a 3-page document uses 2 sheets.
+    """
+    sides = max(int(sides), 0)
+    if not (two_sided and by_sheet) or sides == 0:
+        return sides
+    copies = max(int(copies or 1), 1)
+    sides_per_copy = -(-sides // copies)
+    return -(-sides_per_copy // 2) * copies
+
+
 def evaluate(
     rules: Sequence[PolicyRule],
     ctx: JobContext,
@@ -258,6 +273,7 @@ def evaluate(
     *,
     enforcement: str = "strict",
     enforce_group_budget: bool = True,
+    count_two_sided_as_sheets: bool = False,
 ) -> Decision:
     """Full pre-flight evaluation: policies first, then quota.
 
@@ -269,7 +285,10 @@ def evaluate(
     if not decision.allowed:
         return decision
 
-    pages = max(int(ctx.estimated_pages), 0)
+    two_sided = ctx.is_duplex or "sides" in decision.forced_options
+    pages = quota_pages(
+        ctx.estimated_pages, copies=ctx.copies, two_sided=two_sided, by_sheet=count_two_sided_as_sheets
+    )
     quota_decision = evaluate_quota(
         state,
         pages,

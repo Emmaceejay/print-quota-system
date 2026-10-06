@@ -15,6 +15,9 @@ quota:
   enforcement: strict          # strict | soft
   # Enforce a group's shared pool in addition to the user's own quota.
   enforce_group_budget: true
+  # A two-sided job takes one page of quota per SHEET of paper (a 10-page
+  # document printed on both sides uses 5). false counts every printed side.
+  count_two_sided_as_sheets: true
 
 printing:
   # Fallback per-page costs used when a printer has no explicit cost row.

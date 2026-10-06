@@ -606,6 +606,7 @@ sudo systemctl restart quota-accounting quota-api
 | `quota.default_low_balance_threshold` | `50` | Console | Remaining-pages level that triggers a low-balance alert, for new users |
 | `quota.enforcement` | `strict` | Console | `strict` denies jobs that don't fit; `soft` allows them and lets balances go negative |
 | `quota.enforce_group_budget` | `true` | Console | Also require a job to fit the group's shared pool |
+| `quota.count_two_sided_as_sheets` | `true` | Console | A two-sided job uses one page of quota per sheet of paper (10 pages on both sides = 5). `false` counts every printed side |
 | `printing.default_cost_per_page_mono` | `1.0` | Console | Fallback mono rate (see §10 on how fallbacks apply) |
 | `printing.default_cost_per_page_color` | `5.0` | Console | Fallback colour rate |
 | `printing.default_duplex_discount` | `0.0` | Console | Duplex discount used only when a job's printer has no row |
@@ -693,6 +694,13 @@ understand.
 
 Balances never go below 0 when a credit is applied. In soft mode they can go
 past the limit, so `remaining` can be negative.
+
+**Two-sided jobs** are charged per sheet of paper while
+`quota.count_two_sided_as_sheets` is on (the default): each copy takes
+⌈sides ÷ 2⌉ pages, so a 10-page document printed on both sides uses 5 and a
+3-page one uses 2. `estimated_pages` and `actual_pages` still record printed
+sides, and `charged_pages` records what was taken from the quota. A job that
+CUPS logs as two-sided is converted when it is reconciled.
 
 ### Group budgets
 

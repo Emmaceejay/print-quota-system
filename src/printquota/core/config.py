@@ -41,6 +41,7 @@ DEFAULTS: dict[str, Any] = {
         "default_low_balance_threshold": 50,
         "enforcement": "strict",
         "enforce_group_budget": True,
+        "count_two_sided_as_sheets": True,
     },
     "printing": {
         "default_cost_per_page_mono": 1.0,
@@ -89,6 +90,7 @@ RUNTIME_KEYS: dict[str, type] = {
     "quota.default_low_balance_threshold": int,
     "quota.enforcement": str,
     "quota.enforce_group_budget": bool,
+    "quota.count_two_sided_as_sheets": bool,
     "printing.default_cost_per_page_mono": float,
     "printing.default_cost_per_page_color": float,
     "printing.default_duplex_discount": float,
