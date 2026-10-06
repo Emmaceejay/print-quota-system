@@ -711,3 +711,21 @@ def test_the_printers_page_offers_a_two_sided_copy_for_one_sided_queues(admin_cl
     assert 'action="/admin/printers/front-desk/two-sided-copy"' in body
     assert 'value="front-desk-2sided"' in body
 
+
+
+VENDOR_DUPLEX_DEFAULT_PPD = "Duplex/2-sided Printing: None *DuplexNoTumble DuplexTumble\n"  # e.g. RICOH MP 2014AD
+
+
+def test_saving_fixes_a_one_sided_queue_whose_driver_prints_two_sided(admin_client, fake_cups):
+    register("front-desk")
+    fake_cups.ppd_options["front-desk"] = VENDOR_DUPLEX_DEFAULT_PPD
+    body = admin_client.post("/admin/printers/save", data=printer_form("front-desk"), follow_redirects=True).text
+    assert fake_cups.options["front-desk"] == {"sides-default": "one-sided", "Duplex": "None"}
+    assert "prints on one side by default" in body
+
+
+def test_a_new_printer_whose_driver_defaults_to_two_sided_is_made_one_sided(admin_client, fake_cups):
+    fake_cups.ppd_options["lab-mfp"] = VENDOR_DUPLEX_DEFAULT_PPD
+    admin_client.post("/admin/printers/add-queue", data={
+        "name": "lab-mfp", "device_uri": "ipp://10.0.0.20/ipp/print", "driver": "everywhere", "enforce": "true"})
+    assert fake_cups.options["lab-mfp"] == {"sides-default": "one-sided", "Duplex": "None"}

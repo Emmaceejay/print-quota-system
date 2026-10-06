@@ -298,8 +298,10 @@ def queue_add(
 
     problems: list[str] = []
     notes: list[str] = []
-    if duplex_default:
-        note, error = apply_duplex_default(session, admin, printer, True)
+    if duplex_default or cups_queues.duplex_default_in_cups(name):
+        # A one-sided queue must really be one-sided: some vendor drivers
+        # default to two-sided, which printquota would then charge per side.
+        note, error = apply_duplex_default(session, admin, printer, bool(duplex_default))
         problems += [error] if error else []
         notes += [note] if note else []
 

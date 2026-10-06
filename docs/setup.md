@@ -139,6 +139,12 @@ choice to the server.
 - **Existing printer:** on its row, open **Add a two-sided copy**, keep or
   change the suggested name (`<queue>-2sided`) and click **Create**. The copy
   uses the same driver and costs as the original.
+- **Keep the original one-sided.** Some vendor drivers print two-sided by
+  default (for example `RICOH MP 2014AD`). printquota makes new queues
+  one-sided. For an existing queue, or after changing its driver, open
+  **Edit costs**, leave **Print on both sides by default** unticked and click
+  **Save**: this corrects the queue if its driver disagrees. Check with
+  `lpoptions -p <queue> -l | grep -i duplex`; `*None` should be starred.
 - **On each computer**, add the two-sided queue the same way as the first
   ([step 8](#8-connect-client-computers)), e.g.
   `http://192.0.2.10:631/printers/Office_Printer-2sided`.

@@ -293,6 +293,22 @@ def _duplex_unit_options(options: dict[str, PpdOption]) -> list[PpdOption]:
     ]
 
 
+def duplex_default_in_cups(name: str) -> Optional[bool]:
+    """Whether the queue's driver prints two-sided unless told otherwise.
+
+    ``None`` when the driver has no two-sided option (or the queue is raw
+    or missing). Some vendor drivers default to two-sided, which would make
+    a queue printquota treats as one-sided print on both sides.
+    """
+    try:
+        option = _duplex_choice_option(queue_options(name))
+    except CupsError:
+        return None
+    if option is None:
+        return None
+    return option.default not in (None, "None")
+
+
 def set_duplex_default(name: str, two_sided: bool) -> DuplexResult:
     """Make a queue print two-sided (or one-sided) unless a job asks otherwise.
 

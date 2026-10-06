@@ -29,6 +29,7 @@ from ...services.audit import record_audit
 from ...services.quota import reset_user, usage_rows
 from ..auth import get_db, hash_password, require_admin
 from ..deps import redirect, render
+from ...services import cups_queues
 from .queues import apply_duplex_default
 
 router = APIRouter(prefix="/admin")
@@ -448,7 +449,12 @@ def printers_save(
     record_audit(
         session, admin.username, "printer.add" if created else "printer.update", name, source="web"
     )
-    if bool(duplex_default) != bool(printer.duplex_default):
+    # Also correct a queue whose driver disagrees with the setting, e.g. a
+    # vendor driver that prints two-sided by default on a one-sided queue.
+    in_cups = cups_queues.duplex_default_in_cups(name)
+    if bool(duplex_default) != bool(printer.duplex_default) or (
+        in_cups is not None and in_cups != bool(duplex_default)
+    ):
         session.flush()
         note, error = apply_duplex_default(session, admin, printer, bool(duplex_default))
         if error:

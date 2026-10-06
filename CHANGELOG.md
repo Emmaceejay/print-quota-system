@@ -56,6 +56,17 @@ Initial release.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.5.1] - 2026-10-06
+
+### Fixed
+
+- **A one-sided queue could print two-sided and be charged per side.** Some
+  vendor drivers print two-sided by default (for example `RICOH MP 2014AD`),
+  so the original queue printed on both sides while printquota treated it as
+  one-sided. New queues are now set one-sided when their driver disagrees,
+  and **Save** in **Edit costs** corrects an existing queue whose driver
+  doesn't match its setting.
+
 ## [0.5.0] - 2026-10-06
 
 ### Added
