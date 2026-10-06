@@ -15,9 +15,13 @@ so they can never be read as options.
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
+import tempfile
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
@@ -334,3 +338,68 @@ def set_duplex_default(name: str, two_sided: bool) -> DuplexResult:
         args += ["-o", f"{key}={value}"]
     _run(args)
     return DuplexResult(two_sided, ppd_settings, warning)
+
+
+# ------------------------------------------------------- one- and two-sided copies
+#: Where CUPS serves each queue's driver (PPD) file. Local requests need no
+#: authentication, and it avoids needing read access to /etc/cups/ppd.
+CUPS_URL = "http://localhost:631"
+
+
+def _default_ppd_fetcher(name: str) -> Optional[bytes]:
+    try:
+        with urllib.request.urlopen(f"{CUPS_URL}/printers/{name}.ppd", timeout=20) as response:
+            return response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:  # a raw queue has no driver
+            return None
+        raise CupsError(f"CUPS would not send the driver for {name}: HTTP {exc.code}") from None
+    except (urllib.error.URLError, OSError) as exc:
+        raise CupsError(f"could not reach CUPS at {CUPS_URL}: {exc}") from None
+
+
+#: Fetches a queue's PPD, or None for a raw queue. Tests replace it.
+ppd_fetcher: Callable[[str], Optional[bytes]] = _default_ppd_fetcher
+
+
+def copy_queue(source: str, name: str, backend_dir: str, description: Optional[str] = None) -> Queue:
+    """Create queue ``name`` for the same printer as ``source``, with the same driver.
+
+    The copy is shared and enforced from the start, so it can never be a
+    way around the quota. Returns the source queue.
+    """
+    source = validate_queue_name(source)
+    name = validate_queue_name(name)
+    queues = list_queues()
+    original = next((q for q in queues if q.name == source), None)
+    if original is None:
+        raise CupsError(f"CUPS has no queue named '{source}'.")
+    if any(q.name.lower() == name.lower() for q in queues):
+        raise CupsError(f"CUPS already has a queue named '{name}'.")
+    if not backend_installed(backend_dir):
+        raise CupsError(
+            f"The quota backend is not installed at {Path(backend_dir) / SCHEME}. "
+            "Run scripts/install.sh on the server first."
+        )
+
+    ppd = ppd_fetcher(source)
+    args = [
+        "lpadmin", "-p", name, "-E", "-v", f"{SCHEME}:{original.real_uri}",
+        "-o", "printer-is-shared=true",
+    ]
+    if description:
+        args += ["-D", description.strip()[:127]]
+    temp: Optional[str] = None
+    try:
+        if ppd:
+            handle, temp = tempfile.mkstemp(prefix="printquota-", suffix=".ppd")
+            with os.fdopen(handle, "wb") as out:
+                out.write(ppd)
+            args += ["-P", temp]
+        else:
+            args += ["-m", "raw"]
+        _run(args, timeout=60)
+    finally:
+        if temp:
+            Path(temp).unlink(missing_ok=True)
+    return original

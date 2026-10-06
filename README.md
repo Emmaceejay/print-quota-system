@@ -118,10 +118,10 @@ running out of quota would then take the printer offline for everyone.
 - **Per-user quotas**, counted in pages over a rolling period (30 days by default).
 - **Group / department shared budgets.** These are enforced *in addition to*
   each member's own quota, so a job must fit both.
-- **Two-sided printing by default.** Any queue can be set to print on both
-  sides of the paper unless a job asks for one-sided. printquota configures
-  the CUPS queue itself, so it works whatever computer or driver sends the
-  job.
+- **Two-sided printing users can choose.** Each printer can have a
+  two-sided copy of its queue, so users choose one- or two-sided by picking
+  the printer, from any computer or driver. A queue can also be made
+  two-sided for every job. Two-sided jobs use one page of quota per sheet.
 - **Cost tracking.** Separate mono and colour rates, plus a per-printer duplex
   discount, so reports show money as well as pages.
 - **Print policies**: block colour, force duplex, cap pages or copies per
@@ -413,6 +413,11 @@ printquota's cost model for each one:
 - **Edit costs** sets the mono and colour rates, the duplex discount,
   *supports duplex*, *Print on both sides by default*, and *Accept jobs*.
   Unticking *Accept jobs* makes every job on that queue be denied.
+- **Add a two-sided copy** creates a second queue for the same printer
+  (`<queue>-2sided` by default), with the same driver and costs, quota
+  enforcement on, and **Print on both sides by default** set. Users choose
+  one- or two-sided by picking the printer. **Add a new printer to CUPS**
+  does this too unless you untick **Also add a two-sided copy**.
 - **Print on both sides by default** sets the CUPS queue's default to
   two-sided (`sides-default=two-sided-long-edge`, plus the driver's own
   `Duplex` option and, for vendor drivers, its *duplex unit installed*

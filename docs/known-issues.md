@@ -159,10 +159,11 @@ two-sided option.
 **Resolution.**
 
 1. Upgrade to 0.3.0 or later.
-2. In **Printers & queues**, open **Edit costs** for the queue, tick
-   **Print on both sides by default** and click **Save**. See
+2. In **Printers & queues**, open **Add a two-sided copy** for the queue
+   and click **Create**. Add the new `-2sided` printer on users' computers,
+   and have them choose it to print on both sides. See
    [Two-sided printing](setup.md#two-sided-printing).
-3. Read the message shown after saving:
+3. Read the message shown after creating it:
    - *raw queue*: CUPS passes jobs through unchanged, so only the computer's
      driver can print two-sided. Convert the queue to a driverless one (see
      [Which Windows driver to use](#which-windows-driver-to-use)), then set
@@ -178,11 +179,13 @@ two-sided option.
      This keeps quota enforcement on: only the driver changes. If the
      printer supports driverless printing, use `-m everywhere` instead. If
      no duplex version is installed, get the full Linux driver package from
-     the manufacturer. Then save **Print on both sides by default** again.
-4. Check the queue with `lpoptions -p <queue> -l | grep -i duplex`. The
-   starred choice should be `DuplexNoTumble`.
-5. Print a 2-page document normally (not *manually*). It should come out on
-   one sheet and use 1 page of quota.
+     the manufacturer. Change the driver on both queues (the original and the
+     `-2sided` copy), then save **Print on both sides by default** on the
+     copy again.
+4. Check the queue with `lpoptions -p <queue>-2sided -l | grep -i duplex`.
+   The starred choice should be `DuplexNoTumble`.
+5. Print a 2-page document to the `-2sided` printer (don't choose
+   *manually*). It should come out on one sheet and use 1 page of quota.
 
 A `force_duplex` policy can't fix this on `socket://`, `lpd://` or `usb://`
 printers. It is applied after the job is rendered, and only IPP printers act

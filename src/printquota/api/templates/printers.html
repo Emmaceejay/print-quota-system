@@ -64,6 +64,18 @@
             <button type="submit" class="secondary">Save</button>
           </form>
         </details>
+        {% if row.cups and not row.printer.duplex_default %}
+        <details style="margin-top:6px">
+          <summary>Add a two-sided copy</summary>
+          <form method="post" action="/admin/printers/{{ row.name }}/two-sided-copy" class="stack" style="min-width:220px">
+            <p class="hint">Creates a second queue for the same printer that prints on both sides. Users choose
+              one- or two-sided by picking the printer.</p>
+            <div><label>Name of the two-sided queue</label>
+              <input name="copy_name" required pattern="[A-Za-z0-9_][A-Za-z0-9_.\-]{0,126}" value="{{ row.name }}-2sided"></div>
+            <button type="submit" class="secondary" {{ 'disabled' if not backend_ok }}>Create</button>
+          </form>
+        </details>
+        {% endif %}
       </td>
       {% else %}
       <td class="num muted">-</td><td class="num muted">-</td><td class="muted">-</td><td class="num muted">-</td>
@@ -77,9 +89,9 @@
   </table>
   <p class="hint" style="margin-top:12px">Costs are in {{ currency }}. A rate of 0 falls back to the default rate on the
     <a href="/admin/settings">Settings</a> page. Jobs on a queue whose accounting is off are denied.</p>
-  <p class="hint"><strong>Sides:</strong> a two-sided queue prints every job on both sides of the paper unless the job
-    asks for one-sided. Many computers can't ask, so for occasional one-sided printing add a second queue for the same
-    printer and leave it one-sided.</p>
+  <p class="hint"><strong>Sides:</strong> Windows computers can't choose one- or two-sided per document, so give each
+    printer two queues: the normal one-sided queue, and a two-sided copy (<em>Add a two-sided copy</em>). Users choose
+    by picking the printer. A two-sided job uses one page of quota per sheet.</p>
 </div>
 
 <div class="card">
@@ -98,8 +110,10 @@
     <div><label for="qc">Cost / colour page</label><input id="qc" name="cost_per_page_color" type="number" step="0.01" min="0" value="{{ settings.get('printing.default_cost_per_page_color') }}"></div>
     <div><label for="qx">Duplex discount</label><input id="qx" name="duplex_discount" type="number" step="0.05" min="0" max="0.95" value="0"></div>
     <div class="wide"><label class="check"><input name="supports_duplex" type="checkbox" value="true"> Printer supports duplex</label></div>
-    <div class="wide"><label class="check"><input name="duplex_default" type="checkbox" value="true" checked>
-      Print on both sides by default (saves paper)</label></div>
+    <div class="wide"><label class="check"><input name="two_sided_copy" type="checkbox" value="true" checked {{ 'disabled' if not backend_ok }}>
+      Also add a two-sided copy (<em>name</em>-2sided), so users can choose one- or two-sided</label></div>
+    <div class="wide"><label class="check"><input name="duplex_default" type="checkbox" value="true">
+      Make this queue itself print on both sides by default</label></div>
     <div class="wide"><label class="check"><input name="enforce" type="checkbox" value="true" checked {{ 'disabled' if not backend_ok }}>
       Turn on quota enforcement straight away</label></div>
     <div class="wide"><button type="submit">Add printer</button>

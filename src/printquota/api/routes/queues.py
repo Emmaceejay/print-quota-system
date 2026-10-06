@@ -161,6 +161,87 @@ def queue_release(
     return redirect("/admin/printers", message=f"{name} now prints directly; quotas no longer apply to it.")
 
 
+def two_sided_copy_name(name: str) -> str:
+    """The suggested name for a queue's two-sided copy."""
+    return f"{name}-2sided"
+
+
+def create_two_sided_copy(
+    session: Session, admin: User, name: str, copy_name: str
+) -> tuple[Optional[str], Optional[str]]:
+    """Add a second queue for the same printer that prints on both sides.
+
+    Windows computers connected by address can't choose one- or two-sided
+    per job, so offering both queues lets users choose by picking the
+    printer. The copy gets the source's driver and costs, and quota
+    enforcement from the start. Returns ``(message, error)``.
+    """
+    copy_name = copy_name.strip()
+    try:
+        cups_queues.validate_queue_name(name)
+        cups_queues.validate_queue_name(copy_name)
+    except cups_queues.CupsError as exc:
+        return None, str(exc)
+    if session.get(Printer, copy_name) is not None:
+        return None, f"A printer named {copy_name} is already registered."
+
+    source = session.get(Printer, name)
+    settings = get_settings()
+    printer = Printer(
+        name=copy_name,
+        description=f"{name}, two-sided",
+        cost_per_page_mono=(
+            source.cost_per_page_mono if source
+            else float(settings.get("printing.default_cost_per_page_mono", 0.0))
+        ),
+        cost_per_page_color=(
+            source.cost_per_page_color if source
+            else float(settings.get("printing.default_cost_per_page_color", 0.0))
+        ),
+        duplex_discount=source.duplex_discount if source else 0.0,
+        supports_duplex=True,
+    )
+    session.add(printer)
+    session.flush()  # the backend needs the row before the queue accepts jobs
+    try:
+        original = cups_queues.copy_queue(name, copy_name, _backend_dir(), description=printer.description)
+    except cups_queues.CupsError as exc:
+        # Undo only this row: the caller may have saved other changes.
+        session.delete(printer)
+        session.flush()
+        return None, f"Could not create {copy_name}: {exc}"
+    printer.real_device_uri = original.real_uri
+    record_audit(
+        session, admin.username, "queue.two_sided_copy", copy_name,
+        {"source": name, "real_uri": original.real_uri}, source="web",
+    )
+    log.info("two-sided copy created", extra={"queue": copy_name, "source": name, "admin": admin.username})
+
+    note, error = apply_duplex_default(session, admin, printer, True)
+    if error:
+        return None, f"Created {copy_name}, but: {error}"
+    message = (
+        f"{copy_name} prints on both sides on the same printer, with quota enforcement on. "
+        f"Add it on users' computers the same way as {name}; they choose one- or two-sided "
+        "by picking the printer."
+    )
+    return " ".join(filter(None, [message, note])), None
+
+
+@router.post("/printers/{name}/two-sided-copy", include_in_schema=False)
+def queue_two_sided_copy(
+    name: str,
+    copy_name: str = Form(...),
+    admin: User = Depends(require_admin),
+    session: Session = Depends(get_db),
+):
+    """Add a two-sided copy of an existing queue."""
+    message, error = create_two_sided_copy(session, admin, name, copy_name)
+    if error:
+        return redirect("/admin/printers", error=error)
+    return redirect("/admin/printers", message=f"Created {copy_name.strip()}. {message}")
+
+
 @router.post("/printers/add-queue", include_in_schema=False)
 def queue_add(
     name: str = Form(...),
@@ -173,11 +254,16 @@ def queue_add(
     duplex_discount: float = Form(0.0),
     supports_duplex: bool = Form(False),
     duplex_default: bool = Form(False),
+    two_sided_copy: bool = Form(False),
     enforce: bool = Form(False),
     admin: User = Depends(require_admin),
     session: Session = Depends(get_db),
 ):
-    """Create a new CUPS queue, register its costs, and optionally enforce it."""
+    """Create a new CUPS queue, register its costs, and optionally enforce it.
+
+    With ``two_sided_copy`` a second, two-sided queue for the same printer
+    is created too, so users choose one- or two-sided by picking a printer.
+    """
     name = name.strip()
     if not 0 <= duplex_discount < 1:
         return redirect("/admin/printers", error="Duplex discount must be at least 0 and below 1.")
@@ -227,6 +313,11 @@ def queue_add(
                 session, admin.username, "queue.enforce", name,
                 {"real_uri": device_uri.strip()}, source="web",
             )
+
+    if two_sided_copy and not printer.duplex_default:
+        copy_message, error = create_two_sided_copy(session, admin, name, two_sided_copy_name(name))
+        problems += [error] if error else []
+        notes += [f"Also created {two_sided_copy_name(name)}: {copy_message}"] if copy_message else []
 
     if problems:
         return redirect("/admin/printers", error=f"Created {name}, but: " + " ".join(problems))

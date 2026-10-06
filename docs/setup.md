@@ -124,39 +124,41 @@ prefix.
 
 ### Two-sided printing
 
-To save paper, make queues print on both sides by default. New printers
-added from the console are two-sided by default (the **Print on both sides
-by default** tick). For an existing queue, open **Edit costs**, tick **Print
-on both sides by default** and click **Save**. The **Sides** column then
-shows *two-sided*. From the server shell, the equivalent is
-`sudo /opt/printquota/bin/quotactl printer sides <queue> two-sided`.
+Give each printer **two queues**: the normal one-sided queue, and a
+**two-sided copy** for the same printer. Users choose for each document by
+picking the printer in the print dialog: `Office_Printer` for one-sided,
+`Office_Printer-2sided` for both sides.
 
-This is set on the CUPS queue, so it applies to every computer and driver.
-The client's own setting isn't enough: a Windows computer connected as in
-[step 8](#8-connect-client-computers) doesn't pass its *Print on both sides*
+Two queues are needed because a Windows computer connected as in
+[step 8](#8-connect-client-computers) can't choose one- or two-sided per
+document. Its driver has no two-sided option, and Windows doesn't pass the
 choice to the server.
 
-- **One-sided when needed.** A job that asks for one-sided still prints
-  one-sided (macOS, Linux, and other clients that send the IPP `sides`
-  option). For Windows users who sometimes need one-sided pages (forms,
-  labels), add a second queue for the same printer, e.g.
-  `Office_Printer_1-sided`. Leave it one-sided, turn on enforcement for it,
-  and connect it on the computers that need it.
-- **Check the result** with `lpoptions -p <queue> -l | grep -i duplex`. The
-  starred value should be `DuplexNoTumble`. If the console warns that the
-  driver has no two-sided option, the printer has no duplex unit, or the
-  queue's driver doesn't know about it
-  ([details](known-issues.md#jobs-print-on-one-side-only)).
+- **New printer:** in **Add a new printer to CUPS**, leave **Also add a
+  two-sided copy** ticked. Both queues are created, with quota enforcement on.
+- **Existing printer:** on its row, open **Add a two-sided copy**, keep or
+  change the suggested name (`<queue>-2sided`) and click **Create**. The copy
+  uses the same driver and costs as the original.
+- **On each computer**, add the two-sided queue the same way as the first
+  ([step 8](#8-connect-client-computers)), e.g.
+  `http://192.0.2.10:631/printers/Office_Printer-2sided`.
+- **Check the result** with `lpoptions -p <queue>-2sided -l | grep -i duplex`.
+  The starred value should be `DuplexNoTumble`. If the console warns that the
+  driver has no two-sided option, see
+  [Jobs print on one side only](known-issues.md#jobs-print-on-one-side-only).
 - **Quotas count sheets of paper** for two-sided jobs: a 10-page document
   printed on both sides uses 5 pages of quota. To count every printed side
   instead, turn off **Settings → Count two-sided printing by sheet**.
   Two-sided jobs also get the printer's duplex discount in **Reports**.
 - **Tell users not to choose *Print on both sides manually*** (shown by Word
-  and other programs). With the Microsoft PS Class Driver, Windows doesn't
-  know the printer can print two-sided, so programs offer only the manual
-  method. That sends the odd and even pages as two separate one-sided jobs,
-  each charged in full, and asks the user to turn the paper over. Users
-  should print normally: a two-sided queue prints both sides automatically.
+  and other programs). That sends the odd and even pages as two separate
+  one-sided jobs, each charged in full, and asks the user to turn the paper
+  over. To print on both sides, choose the `-2sided` printer.
+
+To make a queue itself two-sided instead (for example, on a printer where
+everything should be two-sided), open **Edit costs**, tick **Print on both
+sides by default** and click **Save**. From the server shell, the equivalent
+is `sudo /opt/printquota/bin/quotactl printer sides <queue> two-sided`.
 
 ## 6. Create users (web console)
 

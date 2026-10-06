@@ -423,6 +423,8 @@ class FakeCups:
         self.ppd_options: dict[str, str] = {}
         #: queue -> options set with `lpadmin -o`
         self.options: dict[str, dict[str, str]] = {}
+        #: queue -> driver file uploaded with `lpadmin -P`
+        self.uploaded_ppds: dict[str, bytes] = {}
 
     def __call__(self, args, timeout):
         self.calls.append(list(args))
@@ -442,6 +444,9 @@ class FakeCups:
             name = args[args.index("-p") + 1]
             if "-v" in args:
                 self.queues[name] = args[args.index("-v") + 1]
+            if "-P" in args:
+                self.uploaded_ppds[name] = Path(args[args.index("-P") + 1]).read_bytes()
+                self.ppd_options[name] = self.ppd_options.get(name, EVERYWHERE_PPD)
             for i, arg in enumerate(args):
                 if arg == "-o":
                     key, _, value = args[i + 1].partition("=")
@@ -459,6 +464,11 @@ class FakeCups:
 def fake_cups(admin_client, monkeypatch):
     fake = FakeCups({"hp-mono": "socket://10.0.0.5:9100", "front-desk": "ipp://10.0.0.9/ipp/print"})
     monkeypatch.setattr(cups_queues, "runner", fake)
+    # `curl http://localhost:631/printers/<queue>.ppd`; a raw queue has none
+    monkeypatch.setattr(
+        cups_queues, "ppd_fetcher",
+        lambda name: f"*PPD-Adobe: \"4.3\"\n*NickName: \"{name}\"\n".encode() if name in fake.ppd_options else None,
+    )
     # the wrapper backend must exist before a queue can be enforced
     (Path(get_settings().get("printing.real_backend_dir")) / "quota").write_text("#!/bin/sh\n")
     return fake
@@ -628,4 +638,76 @@ def test_a_new_queue_can_be_two_sided_from_the_start(admin_client, fake_cups):
     assert fake_cups.options["lab-mfp"]["sides-default"] == "two-sided-long-edge"
     with db_session.session_scope() as session:
         assert session.get(Printer, "lab-mfp").duplex_default
+
+
+# --------------------------------------------------------------- two-sided copies
+def test_a_two_sided_copy_is_the_same_printer_enforced_and_two_sided(admin_client, fake_cups):
+    fake_cups.queues["front-desk"] = "quota:ipp://10.0.0.9/ipp/print"
+    fake_cups.ppd_options["front-desk"] = EVERYWHERE_PPD
+    register("front-desk")
+    body = admin_client.post("/admin/printers/front-desk/two-sided-copy",
+                             data={"copy_name": "front-desk-2sided"}, follow_redirects=True).text
+    assert "Created front-desk-2sided" in body
+    assert fake_cups.queues["front-desk-2sided"] == "quota:ipp://10.0.0.9/ipp/print"
+    assert b'*NickName: "front-desk"' in fake_cups.uploaded_ppds["front-desk-2sided"]  # same driver
+    create = next(c for c in fake_cups.calls if c[:3] == ["lpadmin", "-p", "front-desk-2sided"] and "-v" in c)
+    assert "-E" in create and "printer-is-shared=true" in create
+    assert fake_cups.options["front-desk-2sided"]["sides-default"] == "two-sided-long-edge"
+    assert "sides-default" not in fake_cups.options.get("front-desk", {})  # the original stays one-sided
+    with db_session.session_scope() as session:
+        copy = session.get(Printer, "front-desk-2sided")
+        assert copy.duplex_default and copy.cost_per_page_mono == 1 and copy.cost_per_page_color == 5
+        assert copy.real_device_uri == "ipp://10.0.0.9/ipp/print"
+    assert "queue.two_sided_copy" in audit_actions()
+
+
+def test_a_copy_of_an_unenforced_queue_is_still_enforced(admin_client, fake_cups):
+    fake_cups.ppd_options["hp-mono"] = EVERYWHERE_PPD
+    admin_client.post("/admin/printers/hp-mono/two-sided-copy", data={"copy_name": "hp-mono-2sided"})
+    assert fake_cups.queues["hp-mono-2sided"] == "quota:socket://10.0.0.5:9100"
+
+
+def test_a_copy_of_a_raw_queue_is_raw_and_the_admin_is_warned(admin_client, fake_cups):
+    body = admin_client.post("/admin/printers/hp-mono/two-sided-copy",
+                             data={"copy_name": "hp-2"}, follow_redirects=True).text
+    create = next(c for c in fake_cups.calls if c[:3] == ["lpadmin", "-p", "hp-2"] and "-v" in c)
+    assert create[create.index("-m") + 1] == "raw"
+    assert "raw queue" in body
+
+
+@pytest.mark.parametrize("copy_name", ["front-desk", "color-mfp", "bad name"])
+def test_a_copy_needs_a_new_valid_name(admin_client, fake_cups, copy_name):
+    admin_client.post("/admin/printers/hp-mono/two-sided-copy", data={"copy_name": copy_name})
+    assert not any(c[0] == "lpadmin" for c in fake_cups.calls)
+
+
+def test_a_failed_copy_leaves_nothing_behind(admin_client, fake_cups):
+    fake_cups.forbid = True
+    body = admin_client.post("/admin/printers/hp-mono/two-sided-copy",
+                             data={"copy_name": "hp-mono-2sided"}, follow_redirects=True).text
+    assert "Could not create hp-mono-2sided" in body
+    with db_session.session_scope() as session:
+        assert session.get(Printer, "hp-mono-2sided") is None
+
+
+def test_a_new_printer_can_come_with_its_two_sided_copy(admin_client, fake_cups):
+    body = admin_client.post("/admin/printers/add-queue", data={
+        "name": "lab-mfp", "device_uri": "ipp://10.0.0.20/ipp/print", "driver": "everywhere",
+        "cost_per_page_mono": "2", "two_sided_copy": "true", "enforce": "true"}, follow_redirects=True).text
+    assert "Also created lab-mfp-2sided" in body
+    assert fake_cups.queues["lab-mfp"] == "quota:ipp://10.0.0.20/ipp/print"
+    assert fake_cups.queues["lab-mfp-2sided"] == "quota:ipp://10.0.0.20/ipp/print"
+    assert "sides-default" not in fake_cups.options.get("lab-mfp", {})
+    assert fake_cups.options["lab-mfp-2sided"]["sides-default"] == "two-sided-long-edge"
+    with db_session.session_scope() as session:
+        assert not session.get(Printer, "lab-mfp").duplex_default
+        copy = session.get(Printer, "lab-mfp-2sided")
+        assert copy.duplex_default and copy.cost_per_page_mono == 2
+
+
+def test_the_printers_page_offers_a_two_sided_copy_for_one_sided_queues(admin_client, fake_cups):
+    register("front-desk")
+    body = admin_client.get("/admin/printers").text
+    assert 'action="/admin/printers/front-desk/two-sided-copy"' in body
+    assert 'value="front-desk-2sided"' in body
 

@@ -56,6 +56,24 @@ Initial release.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.5.0] - 2026-10-06
+
+### Added
+
+- **Users can choose one- or two-sided.** **Add a two-sided copy** in
+  **Printers & queues** creates a second queue for the same printer
+  (`<queue>-2sided`), with the same driver (copied from CUPS) and costs,
+  shared, with quota enforcement on and two-sided by default. Users choose
+  by picking the printer, which works from Windows computers, whose driver
+  can't choose per document. **Add a new printer to CUPS** creates the copy
+  too (**Also add a two-sided copy**, ticked by default).
+
+### Changed
+
+- **New printers are one-sided by default**, with a two-sided copy beside
+  them, instead of two-sided for every job. **Make this queue itself print
+  on both sides by default** is still available.
+
 ## [0.4.0] - 2026-10-06
 
 ### Changed
