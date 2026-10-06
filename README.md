@@ -417,7 +417,7 @@ printquota's cost model for each one:
   (`<queue>-2sided` by default), with the same driver and costs, quota
   enforcement on, and **Print on both sides by default** set. Users choose
   one- or two-sided by picking the printer. **Add a new printer to CUPS**
-  does this too unless you untick **Also add a two-sided copy**.
+  does this too when you tick **Also add a two-sided copy**.
 - **Print on both sides by default** sets the CUPS queue's default to
   two-sided (`sides-default=two-sided-long-edge`, plus the driver's own
   `Duplex` option and, for vendor drivers, its *duplex unit installed*
@@ -865,6 +865,7 @@ The format of each document is identified from its first bytes:
 | PDF | `%PDF` | `pdfinfo` (exact). Runs with an argument list and a timeout |
 | PostScript (e.g. Windows **Microsoft PS Class Driver**) | `%!PS` / `%!PS-Adobe` | The last positive `%%Pages:` value (the trailer beats a header placeholder), else the number of `%%Page:` markers |
 | Apple raster (AirPrint) | `UNIRAST` | Page count stored in the header (exact) |
+| Ricoh GDI (Windows Ricoh **DDST** drivers, e.g. MP 2014AD DDST) | `GDIJ` | Page blocks in the job (exact). The job header also gives the copies the printer makes and whether it prints two-sided, which override the queue's own default |
 | PCL | `ESC%-12345X` or `ESC E` | Number of form feeds (PCL XL has none, so it falls back) |
 | Plain text | ≥ 90 % printable bytes | Lines ÷ 60, rounded up |
 | PWG raster, ESC/P, binary, unparseable, empty | — | **Falls back to 1 page per copy** |

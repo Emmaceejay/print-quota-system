@@ -56,6 +56,29 @@ Initial release.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.6.0] - 2026-10-06
+
+### Added
+
+- **Exact counting for Ricoh DDST drivers.** Jobs from Ricoh's Windows DDST
+  drivers (Ricoh GDI format, e.g. RICOH MP 2014AD DDST) are now counted
+  from the job itself: pages, the copies the printer makes, and whether the
+  job is one- or two-sided. Users can install the Ricoh driver, choose
+  *Print on both sides* in the print dialog, and each job is charged
+  correctly. Before, these jobs were counted as 1 page (`binary:fallback`).
+
+### Fixed
+
+- **One-sided jobs were charged as two-sided** when the queue's default was
+  two-sided but the job's own data was one-sided (printer-ready jobs, such
+  as from a Ricoh DDST driver, print the way their data says). The data's
+  own setting now decides.
+
+### Changed
+
+- **Nothing is two-sided by default.** **Also add a two-sided copy** in
+  **Add a new printer to CUPS** is no longer ticked by default.
+
 ## [0.5.1] - 2026-10-06
 
 ### Fixed

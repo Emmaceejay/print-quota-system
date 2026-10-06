@@ -110,7 +110,17 @@ drivers. The CUPS queue converts the job for the printer, and printquota
 counts its pages, so the job must arrive in a format both can read.
 
 **Resolution.** Use **Microsoft PS Class Driver** (PostScript). If it isn't
-listed, use **Generic → MS Publisher Imagesetter**. Don't use:
+listed, use **Generic → MS Publisher Imagesetter**.
+
+For a Ricoh printer that uses a **DDST** driver (for example RICOH MP
+2014AD), you can instead install Ricoh's own DDST driver on the computers and
+connect it to the server queue by address. Users then get Ricoh's full
+options, including *Print on both sides* (long or short edge), and printquota
+counts these jobs exactly: pages, copies and one- or two-sided are read from
+the job itself (`method='spool:ricoh-gdi'` in the log). The server passes the
+job to the printer unchanged.
+
+Don't use:
 
 | Driver | Why not |
 |---|---|
@@ -136,7 +146,8 @@ Then click **Turn on** for the queue again in **Printers & queues**.
 
 Windows programs may offer only *Print on both sides manually*.
 
-**Cause.** Two-sided printing is decided by the CUPS queue on the server.
+**Cause.** With the Microsoft PS Class Driver, two-sided printing is
+decided by the CUPS queue on the server.
 Queues print one-sided unless set otherwise, and a Windows computer
 connected by address doesn't pass its own two-sided choice to the server.
 The Microsoft PS Class Driver has no two-sided option, which is why Windows

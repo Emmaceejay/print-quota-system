@@ -138,3 +138,46 @@ def test_control_file_parsing_tolerates_junk(seeded):
     assert cups_spool.read_job_attributes(seeded["spool_dir"], 60) == {}
     assert cups_spool.read_job_attributes(seeded["spool_dir"], 61) == {}
     assert cups_spool.document_paths(seeded["spool_dir"], 61) == []
+
+
+# ------------------------------------------------------------ Ricoh DDST clients
+RICOH = os.path.join(os.path.dirname(__file__), "..", "fixtures", "ricoh-gdi")
+
+
+def ricoh_job(name: str) -> bytes:
+    with open(os.path.join(RICOH, f"{name}.prn"), "rb") as handle:
+        return handle.read()
+
+
+def run_raw(env, monkeypatch, data: bytes, job_id: int, options: str) -> int:
+    """A raw job from a Windows Ricoh driver: the data reaches the backend unchanged."""
+    put_job(env, job_id, [data])
+    received = env["tmp_path"] / f"raw-{job_id}.bin"
+    received.write_bytes(data)
+    monkeypatch.setattr(qb, "_stdin_to_tempfile", lambda: received)
+    argv = ["quota", str(job_id), "alex", "Quarterly report", "1", options]
+    environ = {**os.environ, "PRINTER": "hp-mono", "DEVICE_URI": "quota:socket://10.0.0.5:9100"}
+    return qb.run(argv, environ)
+
+
+def test_a_one_sided_ricoh_job_on_a_two_sided_queue_is_charged_per_page(seeded, monkeypatch):
+    """The queue default says two-sided, but the Ricoh data says one-sided: the data wins."""
+    run_raw(seeded, monkeypatch, ricoh_job("simplex-3"), 51, "sides=two-sided-long-edge")
+    with db_session.session_scope() as session:
+        job = session.query(PrintJob).one()
+        assert job.estimated_pages == 3 and not job.is_duplex
+        assert session.get(User, "alex").pages_used == 3
+
+
+def test_a_two_sided_ricoh_job_is_charged_per_sheet(seeded, monkeypatch):
+    run_raw(seeded, monkeypatch, ricoh_job("duplex-long-3"), 52, "")
+    with db_session.session_scope() as session:
+        job = session.query(PrintJob).one()
+        assert job.estimated_pages == 3 and job.is_duplex
+        assert session.get(User, "alex").pages_used == 2  # 3 pages on 2 sheets
+
+
+def test_copies_made_by_the_ricoh_printer_are_charged(seeded, monkeypatch):
+    run_raw(seeded, monkeypatch, ricoh_job("simplex-2-copies2"), 53, "")
+    with db_session.session_scope() as session:
+        assert session.get(User, "alex").pages_used == 4  # 2 pages x 2 copies

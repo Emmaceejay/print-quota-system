@@ -110,7 +110,7 @@
     <div><label for="qc">Cost / colour page</label><input id="qc" name="cost_per_page_color" type="number" step="0.01" min="0" value="{{ settings.get('printing.default_cost_per_page_color') }}"></div>
     <div><label for="qx">Duplex discount</label><input id="qx" name="duplex_discount" type="number" step="0.05" min="0" max="0.95" value="0"></div>
     <div class="wide"><label class="check"><input name="supports_duplex" type="checkbox" value="true"> Printer supports duplex</label></div>
-    <div class="wide"><label class="check"><input name="two_sided_copy" type="checkbox" value="true" checked {{ 'disabled' if not backend_ok }}>
+    <div class="wide"><label class="check"><input name="two_sided_copy" type="checkbox" value="true" {{ 'disabled' if not backend_ok }}>
       Also add a two-sided copy (<em>name</em>-2sided), so users can choose one- or two-sided</label></div>
     <div class="wide"><label class="check"><input name="duplex_default" type="checkbox" value="true">
       Make this queue itself print on both sides by default</label></div>

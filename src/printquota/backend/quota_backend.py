@@ -221,6 +221,10 @@ def run(argv: list[str], environ: Optional[dict[str, str]] = None) -> int:
         pages = estimate.total_pages
         method = estimate.method
         copies = estimate.copies
+        if estimate.two_sided is not None:
+            # Printer-ready data (e.g. from a Ricoh DDST driver) prints the way
+            # it says, whatever sides CUPS's queue default put in the options.
+            is_duplex = estimate.two_sided
     except Exception as exc:  # estimation must never crash the queue
         log.warning("page estimation failed", extra={"error": str(exc), "job": cups_job_id})
         pages = copies

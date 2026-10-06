@@ -124,7 +124,12 @@ prefix.
 
 ### Two-sided printing
 
-Give each printer **two queues**: the normal one-sided queue, and a
+**Ricoh printers with a DDST driver:** install Ricoh's DDST driver on the
+computers (see [step 8](#8-connect-client-computers)). Users choose *Print on
+both sides* in the print dialog, and printquota reads the choice from each
+job. One queue is enough, and the rest of this section isn't needed.
+
+**Other printers:** give each printer **two queues**: the normal one-sided queue, and a
 **two-sided copy** for the same printer. Users choose for each document by
 picking the printer in the print dialog: `Office_Printer` for one-sided,
 `Office_Printer-2sided` for both sides.
@@ -134,8 +139,9 @@ Two queues are needed because a Windows computer connected as in
 document. Its driver has no two-sided option, and Windows doesn't pass the
 choice to the server.
 
-- **New printer:** in **Add a new printer to CUPS**, leave **Also add a
-  two-sided copy** ticked. Both queues are created, with quota enforcement on.
+- **New printer:** in **Add a new printer to CUPS**, tick **Also add a
+  two-sided copy**. Both queues are created, with quota enforcement on.
+  Nothing is two-sided unless you choose it.
 - **Existing printer:** on its row, open **Add a two-sided copy**, keep or
   change the suggested name (`<queue>-2sided`) and click **Create**. The copy
   uses the same driver and costs as the original.
@@ -219,7 +225,10 @@ server ([details](known-issues.md#a-users-jobs-never-reach-the-server)).
    address. The queue name is case-sensitive.
 4. Driver: **Microsoft → Microsoft PS Class Driver**. If it isn't listed, use
    **Generic → MS Publisher Imagesetter**. Don't use the PCL6 or XPS class
-   drivers ([why](known-issues.md#which-windows-driver-to-use)).
+   drivers ([why](known-issues.md#which-windows-driver-to-use)). For a Ricoh
+   printer with a **DDST** driver, you can install Ricoh's DDST driver
+   instead: users get *Print on both sides* in the print dialog, and jobs
+   are still counted exactly.
 5. In **Printing preferences**, set the paper size (e.g. A4).
 
 **macOS:** System Settings → Printers & Scanners → **Add Printer** → **IP**:
