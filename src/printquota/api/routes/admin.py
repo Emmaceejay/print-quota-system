@@ -29,6 +29,7 @@ from ...services.audit import record_audit
 from ...services.quota import reset_user, usage_rows
 from ..auth import get_db, hash_password, require_admin
 from ..deps import redirect, render
+from .queues import apply_duplex_default
 
 router = APIRouter(prefix="/admin")
 
@@ -418,11 +419,16 @@ def printers_save(
     cost_per_page_color: float = Form(0.0),
     duplex_discount: float = Form(0.0),
     supports_duplex: bool = Form(False),
+    duplex_default: bool = Form(False),
     is_active: bool = Form(True),
     admin: User = Depends(require_admin),
     session: Session = Depends(get_db),
 ):
-    """Create or update a printer row (upsert by queue name)."""
+    """Create or update a printer row (upsert by queue name).
+
+    A change to the two-sided default is applied to the CUPS queue. If CUPS
+    refuses it, the other changes are still saved and the error is shown.
+    """
     name = name.strip()
     if not name:
         return redirect("/admin/printers", error="Printer name is required.")
@@ -442,6 +448,15 @@ def printers_save(
     record_audit(
         session, admin.username, "printer.add" if created else "printer.update", name, source="web"
     )
+    if bool(duplex_default) != bool(printer.duplex_default):
+        session.flush()
+        note, error = apply_duplex_default(session, admin, printer, bool(duplex_default))
+        if error:
+            return redirect("/admin/printers", error=f"Saved the costs for {name}. {error}")
+        sides = "on both sides" if printer.duplex_default else "on one side"
+        return redirect("/admin/printers", message=" ".join(
+            filter(None, [f"Saved {name}. It now prints {sides} by default.", note])
+        ))
     return redirect("/admin/printers", message=f"Saved {name}.")
 
 

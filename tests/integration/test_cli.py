@@ -89,6 +89,31 @@ def test_group_commands(run):
         assert session.get(Group, "finance").pages_used == 0
 
 
+def test_printer_sides_sets_the_cups_queue_default(run, monkeypatch):
+    import subprocess
+
+    from printquota.services import cups_queues
+
+    calls = []
+
+    def fake(args, timeout):
+        calls.append(list(args))
+        if args[:2] == ["lpstat", "-v"]:
+            return subprocess.CompletedProcess(args, 0, "device for hp-mono: quota:socket://10.0.0.5:9100\n", "")
+        if args[0] == "lpoptions":
+            return subprocess.CompletedProcess(args, 0, "Duplex/2-Sided: *None DuplexNoTumble DuplexTumble\n", "")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(cups_queues, "runner", fake)
+    assert "two-sided" in run("printer", "sides", "hp-mono", "two-sided").output
+    assert ["lpadmin", "-p", "hp-mono", "-o", "sides-default=two-sided-long-edge",
+            "-o", "Duplex=DuplexNoTumble"] in calls
+    with db_session.session_scope() as session:
+        assert session.get(Printer, "hp-mono").duplex_default
+    assert "two-sided" in run("printer", "list").output
+    assert "no such printer" in run("printer", "sides", "nope", "two-sided", expect_success=False).output
+
+
 def test_printer_commands_and_cost_validation(run):
     run("printer", "add", "lab", "--device-uri", "socket://1.2.3.4:9100", "--mono", "1.5", "--duplex")
     assert "lab" in run("printer", "list").output

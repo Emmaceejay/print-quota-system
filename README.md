@@ -118,6 +118,10 @@ running out of quota would then take the printer offline for everyone.
 - **Per-user quotas**, counted in pages over a rolling period (30 days by default).
 - **Group / department shared budgets.** These are enforced *in addition to*
   each member's own quota, so a job must fit both.
+- **Two-sided printing by default.** Any queue can be set to print on both
+  sides of the paper unless a job asks for one-sided. printquota configures
+  the CUPS queue itself, so it works whatever computer or driver sends the
+  job.
 - **Cost tracking.** Separate mono and colour rates, plus a per-printer duplex
   discount, so reports show money as well as pages.
 - **Print policies**: block colour, force duplex, cap pages or copies per
@@ -406,8 +410,14 @@ printquota's cost model for each one:
 - **Turn off** (with the *confirm* tick) restores the real device URI. The
   queue keeps printing, but is no longer metered.
 - **Edit costs** sets the mono and colour rates, the duplex discount,
-  *supports duplex*, and *Accept jobs*. Unticking *Accept jobs* makes every
-  job on that queue be denied.
+  *supports duplex*, *Print on both sides by default*, and *Accept jobs*.
+  Unticking *Accept jobs* makes every job on that queue be denied.
+- **Print on both sides by default** sets the CUPS queue's default to
+  two-sided (`sides-default=two-sided-long-edge`, plus the driver's own
+  `Duplex` option and, for vendor drivers, its *duplex unit installed*
+  option). Jobs that ask for one-sided still print one-sided. The **Sides**
+  column shows each queue's setting. See
+  [Two-sided printing](docs/setup.md#two-sided-printing).
 - **Add a new printer to CUPS** creates a queue from a device URI
   (`ipp://…`, `ipps://…`, `socket://…:9100`, `lpd://…`, `usb://…`) with
   **IPP Everywhere** (driverless, recommended for network printers) or as a
@@ -756,7 +766,7 @@ A policy is one rule attached to a scope.
 | `block_filetype` | Comma-separated extensions, e.g. `exe,zip` | Deny jobs whose spool file name has one of these extensions (case- and dot-insensitive). See the limitation in §23 |
 | `max_copies_per_job` | Positive integer | Deny jobs with more copies than this |
 | `max_pages_per_job` | Positive integer | Deny jobs whose estimated total pages exceed this |
-| `force_duplex` | `true` / `false` | **Modifies instead of denying:** adds `sides=two-sided-long-edge` to the options passed to the real backend, and charges the job as duplex |
+| `force_duplex` | `true` / `false` | **Modifies instead of denying:** adds `sides=two-sided-long-edge` to the options passed to the real backend, and charges the job as duplex. Only `ipp://` and `ipps://` printers act on it, because the job is already rendered; on other printers the rule is skipped and the job is charged as printed. To make a whole queue two-sided, use *Print on both sides by default* instead |
 
 The truthy values for boolean rules are `1`, `true`, `yes`, `on`, and the
 empty string. Rules are validated when they are created (via the CLI or the
@@ -941,7 +951,8 @@ if that isn't set.
 | Command | Description |
 |---|---|
 | `printer add NAME [--device-uri URI] [--mono X] [--color X] [--duplex/--no-duplex] [--duplex-discount D] [--description]` | Register a queue. `D` must satisfy 0 ≤ D < 1 |
-| `printer list` | URI, rates, duplex, discount, active |
+| `printer list` | URI, rates, duplex, sides, discount, active |
+| `printer sides NAME two-sided\|one-sided` | Set the CUPS queue's default sides (run as root or a member of `lpadmin`) |
 | `printer set-cost NAME [--mono X] [--color X] [--duplex-discount D]` | Update the cost model |
 | `printer disable NAME` / `printer enable NAME` | While disabled, every job to the queue is denied |
 
@@ -1101,7 +1112,7 @@ so SQLite and PostgreSQL behave the same.
 |---|---|---|
 | `groups` | `name` | `description`, `shared_quota` (NULL = no pool, ≥ 0), `pages_used`, `period_start` |
 | `users` | `username` (= CUPS user name) | `display_name`, `email`, `group_name` → groups (SET NULL on delete), `quota_limit` ≥ 0, `pages_used`, `period_start`, `low_balance_threshold`, `is_active`, `is_admin`, `password_hash` |
-| `printers` | `name` (= CUPS queue) | `description`, `real_device_uri`, `cost_per_page_mono`, `cost_per_page_color`, `supports_duplex`, `duplex_discount` (0 ≤ d < 1), `is_active` |
+| `printers` | `name` (= CUPS queue) | `description`, `real_device_uri`, `cost_per_page_mono`, `cost_per_page_color`, `supports_duplex`, `duplex_default`, `duplex_discount` (0 ≤ d < 1), `is_active` |
 | `print_policies` | `id` | `scope_type` (user/group/printer/global), `scope_value`, `rule_type`, `rule_value`, `is_active` |
 | `print_jobs` | `id` (surrogate) | `cups_job_id`, `username` → users (CASCADE), `printer` → printers (CASCADE), `title`, `copies`, `is_color`, `is_duplex`, `estimated_pages`, `actual_pages`, `charged_pages`, `cost`, `status` (allowed/denied/completed/error), `denial_reason`, `reconciled`, `submitted_at`, `completed_at` |
 | `alerts_log` | `id` | `username`, `alert_type`, `channel`, `message`, `delivered`, `sent_at` |

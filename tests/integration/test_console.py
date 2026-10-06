@@ -419,6 +419,10 @@ class FakeCups:
         self.queues: dict[str, str] = dict(queues or {})
         self.calls: list[list[str]] = []
         self.forbid = False
+        #: queue -> `lpoptions -l` output; a queue without one is a raw queue
+        self.ppd_options: dict[str, str] = {}
+        #: queue -> options set with `lpadmin -o`
+        self.options: dict[str, dict[str, str]] = {}
 
     def __call__(self, args, timeout):
         self.calls.append(list(args))
@@ -436,8 +440,18 @@ class FakeCups:
             if self.forbid:
                 return done(err="lpadmin: Forbidden", code=1)
             name = args[args.index("-p") + 1]
-            self.queues[name] = args[args.index("-v") + 1]
+            if "-v" in args:
+                self.queues[name] = args[args.index("-v") + 1]
+            for i, arg in enumerate(args):
+                if arg == "-o":
+                    key, _, value = args[i + 1].partition("=")
+                    self.options.setdefault(name, {})[key] = value
             return done()
+        if args[0] == "lpoptions":
+            name = args[args.index("-p") + 1]
+            if name not in self.ppd_options:
+                return done(err=f"lpoptions: Unable to get PPD file for {name}: Not Found", code=1)
+            return done(self.ppd_options[name])
         return done(err="unexpected", code=1)
 
 
@@ -518,3 +532,100 @@ def test_dashboard_shows_the_getting_started_checklist(admin_client, fake_cups):
 def test_admin_json_endpoint_answers_401_in_json(seeded):
     response = TestClient(create_app()).get("/admin/api/summary", follow_redirects=False)
     assert response.status_code == 401 and response.json()["detail"] == "not signed in"
+
+
+# --------------------------------------------------------------------- two-sided
+EVERYWHERE_PPD = (
+    "PageSize/Media Size: *A4 Letter Legal\n"
+    "Duplex/2-Sided Printing: *None DuplexNoTumble DuplexTumble\n"
+    "ColorModel/Output Mode: *Gray RGB\n"
+)
+
+
+def printer_form(name, **overrides):
+    form = {"name": name, "cost_per_page_mono": "1", "cost_per_page_color": "5", "duplex_discount": "0.5",
+            "supports_duplex": "true", "is_active": "true"}
+    form.update(overrides)
+    return form
+
+
+def register(name):
+    with db_session.session_scope() as session:
+        if session.get(Printer, name) is None:  # hp-mono is seeded
+            session.add(Printer(name=name, cost_per_page_mono=1, cost_per_page_color=5))
+
+
+def test_turning_on_two_sided_sets_the_cups_queue_default(admin_client, fake_cups):
+    register("front-desk")
+    fake_cups.ppd_options["front-desk"] = EVERYWHERE_PPD
+    body = admin_client.post("/admin/printers/save", data=printer_form("front-desk", duplex_default="true"),
+                             follow_redirects=True).text
+    assert "prints on both sides by default" in body
+    assert fake_cups.options["front-desk"] == {"sides-default": "two-sided-long-edge", "Duplex": "DuplexNoTumble"}
+    with db_session.session_scope() as session:
+        printer = session.get(Printer, "front-desk")
+        assert printer.duplex_default and printer.supports_duplex
+    assert "printer.duplex_default" in audit_actions()
+
+    admin_client.post("/admin/printers/save", data=printer_form("front-desk"))
+    assert fake_cups.options["front-desk"] == {"sides-default": "one-sided", "Duplex": "None"}
+    with db_session.session_scope() as session:
+        assert not session.get(Printer, "front-desk").duplex_default
+
+
+def test_saving_costs_alone_does_not_touch_cups(admin_client, fake_cups):
+    register("front-desk")
+    admin_client.post("/admin/printers/save", data=printer_form("front-desk", cost_per_page_mono="3"))
+    assert not any(c[0] == "lpadmin" for c in fake_cups.calls)
+
+
+def test_a_vendor_driver_gets_its_duplex_unit_marked_installed(admin_client, fake_cups):
+    register("hp-mono")
+    fake_cups.ppd_options["hp-mono"] = (
+        "HPOption_Duplexer/Duplex Unit: *False True\n"
+        "Duplex/Print on both sides: *None DuplexNoTumble DuplexTumble\n"
+    )
+    admin_client.post("/admin/printers/save", data=printer_form("hp-mono", duplex_default="true"))
+    assert fake_cups.options["hp-mono"]["HPOption_Duplexer"] == "True"
+    assert fake_cups.options["hp-mono"]["Duplex"] == "DuplexNoTumble"
+
+
+def test_a_raw_queue_is_set_but_the_admin_is_told_why_it_may_not_work(admin_client, fake_cups):
+    register("hp-mono")
+    body = admin_client.post("/admin/printers/save", data=printer_form("hp-mono", duplex_default="true"),
+                             follow_redirects=True).text
+    assert fake_cups.options["hp-mono"] == {"sides-default": "two-sided-long-edge"}
+    assert "raw queue" in body
+
+
+def test_a_driver_without_two_sided_is_reported(admin_client, fake_cups):
+    register("hp-mono")
+    fake_cups.ppd_options["hp-mono"] = "PageSize/Media Size: *A4 Letter\n"
+    body = admin_client.post("/admin/printers/save", data=printer_form("hp-mono", duplex_default="true"),
+                             follow_redirects=True).text
+    assert "no two-sided option" in body
+
+
+def test_cups_refusing_two_sided_keeps_the_cost_change(admin_client, fake_cups):
+    register("front-desk")
+    fake_cups.forbid = True
+    body = admin_client.post("/admin/printers/save",
+                             data=printer_form("front-desk", cost_per_page_mono="4", duplex_default="true"),
+                             follow_redirects=True).text
+    assert "Could not make front-desk print two-sided" in body
+    with db_session.session_scope() as session:
+        printer = session.get(Printer, "front-desk")
+        assert printer.cost_per_page_mono == 4 and not printer.duplex_default
+
+
+def test_a_new_queue_can_be_two_sided_from_the_start(admin_client, fake_cups):
+    fake_cups.ppd_options["lab-mfp"] = EVERYWHERE_PPD
+    body = admin_client.post("/admin/printers/add-queue", data={
+        "name": "lab-mfp", "device_uri": "ipp://10.0.0.20/ipp/print", "driver": "everywhere",
+        "duplex_default": "true", "enforce": "true"}, follow_redirects=True).text
+    assert "prints on both sides by default" in body
+    assert fake_cups.queues["lab-mfp"] == "quota:ipp://10.0.0.20/ipp/print"
+    assert fake_cups.options["lab-mfp"]["sides-default"] == "two-sided-long-edge"
+    with db_session.session_scope() as session:
+        assert session.get(Printer, "lab-mfp").duplex_default
+

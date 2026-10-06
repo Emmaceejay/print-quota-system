@@ -40,5 +40,8 @@
     <code>max_pages_per_job</code> and <code>max_copies_per_job</code> take a number.
     <code>block_filetype</code> takes a comma-separated extension list.
   </p>
+  <p class="muted"><code>force_duplex</code> can only change printers reached over <code>ipp://</code> or <code>ipps://</code>.
+    To make everyone print on both sides, set the queue to two-sided on the
+    <a href="/admin/printers">Printers &amp; queues</a> page instead; it works for every printer with a duplex unit.</p>
 </div>
 {% endblock %}

@@ -210,3 +210,125 @@ def add_queue(
         args += ["-L", location.strip()[:127]]
     # IPP Everywhere queries the printer to build its driver, which can take a while.
     _run(args, timeout=90)
+
+
+# ------------------------------------------------------------------ two-sided
+#: IPP ``sides`` values. Long-edge binding is what "print on both sides"
+#: means for portrait documents, and what every duplex printer supports.
+SIDES_TWO = "two-sided-long-edge"
+SIDES_ONE = "one-sided"
+
+_PPD_OPTION_RE = re.compile(r"^(?P<key>[^/:\s]+)(?:/(?P<label>[^:]*))?:\s*(?P<choices>.*)$")
+#: Choices a driver uses to say "the duplex unit is fitted".
+_INSTALLED_CHOICES = ("True", "Installed")
+
+
+@dataclass
+class PpdOption:
+    key: str
+    label: str
+    choices: list[str]
+    default: Optional[str]
+
+
+@dataclass
+class DuplexResult:
+    """What :func:`set_duplex_default` changed, and anything to tell the admin."""
+
+    two_sided: bool
+    ppd_settings: dict[str, str]
+    warning: Optional[str] = None
+
+
+def queue_options(name: str) -> dict[str, PpdOption]:
+    """The driver (PPD) options of a queue, from ``lpoptions -l``.
+
+    A raw queue has no driver and therefore no options; that is reported as
+    an empty dict rather than an error.
+    """
+    name = validate_queue_name(name)
+    try:
+        output = _run(["lpoptions", "-p", name, "-l"])
+    except CupsError:
+        return {}
+    options: dict[str, PpdOption] = {}
+    for line in output.splitlines():
+        match = _PPD_OPTION_RE.match(line.strip())
+        if not match:
+            continue
+        default = None
+        choices = []
+        for choice in match.group("choices").split():
+            if choice.startswith("*"):
+                choice = choice[1:]
+                default = choice
+            choices.append(choice)
+        key = match.group("key")
+        options[key] = PpdOption(key, (match.group("label") or key).strip(), choices, default)
+    return options
+
+
+def _duplex_choice_option(options: dict[str, PpdOption]) -> Optional[PpdOption]:
+    """The driver option that selects one- or two-sided printing, if any."""
+    if "Duplex" in options and "DuplexNoTumble" in options["Duplex"].choices:
+        return options["Duplex"]
+    for option in options.values():
+        if "duplex" in option.key.lower() and "DuplexNoTumble" in option.choices:
+            return option
+    return None
+
+
+def _duplex_unit_options(options: dict[str, PpdOption]) -> list[PpdOption]:
+    """Installable-option switches such as ``OptionDuplex: *False True``."""
+    return [
+        option
+        for option in options.values()
+        if ("duplex" in option.key.lower() or "duplex" in option.label.lower())
+        and any(choice in option.choices for choice in _INSTALLED_CHOICES)
+        and "DuplexNoTumble" not in option.choices
+    ]
+
+
+def set_duplex_default(name: str, two_sided: bool) -> DuplexResult:
+    """Make a queue print two-sided (or one-sided) unless a job asks otherwise.
+
+    Sets the IPP default ``sides-default``, which CUPS applies to every job
+    that does not carry its own ``sides`` and maps onto the driver. For
+    queues with a driver it also sets the driver's own duplex option and,
+    when turning two-sided on, marks an optional duplex unit as installed,
+    because many vendor drivers ship with it "not installed".
+    """
+    name = validate_queue_name(name)
+    get_queue(name)  # a clear error if CUPS has no such queue
+    options = queue_options(name)
+    ppd_settings: dict[str, str] = {}
+    warning: Optional[str] = None
+
+    choice_option = _duplex_choice_option(options)
+    if two_sided:
+        for unit in _duplex_unit_options(options):
+            ppd_settings[unit.key] = next(c for c in _INSTALLED_CHOICES if c in unit.choices)
+    if choice_option is not None:
+        if two_sided:
+            ppd_settings[choice_option.key] = "DuplexNoTumble"
+        elif "None" in choice_option.choices:
+            ppd_settings[choice_option.key] = "None"
+
+    if two_sided and choice_option is None:
+        if options:
+            warning = (
+                f"CUPS's driver for {name} has no two-sided option, so the printer may not "
+                "have a duplex unit. Check the printer, or recreate the queue with the "
+                "IPP Everywhere driver so CUPS reads its capabilities."
+            )
+        else:
+            warning = (
+                f"{name} is a raw queue: CUPS passes jobs through unchanged, so two-sided "
+                "printing depends on each computer's own printer driver."
+            )
+
+    args = ["lpadmin", "-p", name, "-o", f"sides-default={SIDES_TWO if two_sided else SIDES_ONE}"]
+    for key, value in ppd_settings.items():
+        args += ["-o", f"{key}={value}"]
+    _run(args)
+    return DuplexResult(two_sided, ppd_settings, warning)

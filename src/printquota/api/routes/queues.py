@@ -72,6 +72,31 @@ def _upsert_printer(session: Session, name: str, device_uri: Optional[str]) -> t
     return printer, created
 
 
+def apply_duplex_default(
+    session: Session, admin: User, printer: Printer, two_sided: bool
+) -> tuple[Optional[str], Optional[str]]:
+    """Set a queue's two-sided default in CUPS, then record it.
+
+    Returns ``(note, error)``: a note for the admin (e.g. the printer seems
+    to lack a duplex unit) on success, or the error that left the setting
+    unchanged.
+    """
+    try:
+        result = cups_queues.set_duplex_default(printer.name, two_sided)
+    except cups_queues.CupsError as exc:
+        what = "two-sided" if two_sided else "one-sided"
+        return None, f"Could not make {printer.name} print {what} by default: {exc}"
+    printer.duplex_default = two_sided
+    if two_sided:
+        printer.supports_duplex = True
+    record_audit(
+        session, admin.username, "printer.duplex_default", printer.name,
+        {"two_sided": two_sided, "driver_options": result.ppd_settings}, source="web",
+    )
+    log.info("duplex default changed", extra={"queue": printer.name, "two_sided": two_sided})
+    return result.warning, None
+
+
 @router.get("/printers", include_in_schema=False)
 def printers_page(
     request: Request, admin: User = Depends(require_admin), session: Session = Depends(get_db)
@@ -147,6 +172,7 @@ def queue_add(
     cost_per_page_color: float = Form(0.0),
     duplex_discount: float = Form(0.0),
     supports_duplex: bool = Form(False),
+    duplex_default: bool = Form(False),
     enforce: bool = Form(False),
     admin: User = Depends(require_admin),
     session: Session = Depends(get_db),
@@ -184,14 +210,28 @@ def queue_add(
         {"device_uri": device_uri.strip(), "driver": driver}, source="web",
     )
 
+    problems: list[str] = []
+    notes: list[str] = []
+    if duplex_default:
+        note, error = apply_duplex_default(session, admin, printer, True)
+        problems += [error] if error else []
+        notes += [note] if note else []
+
     if enforce:
         try:
             cups_queues.enforce(name, _backend_dir())
         except cups_queues.CupsError as exc:
-            return redirect(
-                "/admin/printers",
-                error=f"Created {name}, but could not enforce quotas on it: {exc}",
+            problems.append(f"Could not enforce quotas on it: {exc}")
+        else:
+            record_audit(
+                session, admin.username, "queue.enforce", name,
+                {"real_uri": device_uri.strip()}, source="web",
             )
-        record_audit(session, admin.username, "queue.enforce", name, {"real_uri": device_uri.strip()}, source="web")
-        return redirect("/admin/printers", message=f"Created {name} with quota enforcement on.")
-    return redirect("/admin/printers", message=f"Created {name}. Quota enforcement is off until you turn it on.")
+
+    if problems:
+        return redirect("/admin/printers", error=f"Created {name}, but: " + " ".join(problems))
+    message = f"Created {name}" + (" with quota enforcement on." if enforce else
+                                   ". Quota enforcement is off until you turn it on.")
+    if printer.duplex_default:
+        message += " It prints on both sides by default."
+    return redirect("/admin/printers", message=" ".join([message, *notes]))

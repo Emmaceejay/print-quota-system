@@ -21,6 +21,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    false,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -131,6 +132,11 @@ class Printer(TimestampMixin, Base):
     cost_per_page_mono: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     cost_per_page_color: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     supports_duplex: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    #: The CUPS queue prints two-sided unless a job asks for one-sided
+    #: (``sides-default`` on the queue; see services.cups_queues).
+    duplex_default: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false(), nullable=False
+    )
     #: ``0.5`` means a duplex page costs half as much (two sides, one sheet).
     duplex_discount: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

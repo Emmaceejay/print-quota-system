@@ -67,6 +67,10 @@ class JobContext:
     filetype: Optional[str] = None
     group_name: Optional[str] = None
     title: Optional[str] = None
+    #: Whether a forced ``sides`` option can still reach the printer. It
+    #: is added after CUPS has rendered the job, so only the IPP backends
+    #: (which send it as a job attribute) act on it.
+    can_force_sides: bool = True
 
 
 @dataclass(frozen=True)
@@ -203,8 +207,15 @@ def evaluate_policies(rules: Sequence[PolicyRule], ctx: JobContext) -> Decision:
 
     rule = winners.get("force_duplex")
     if rule is not None and _is_on(rule.rule_value) and not ctx.is_duplex:
-        decision.forced_options["sides"] = "two-sided-long-edge"
-        decision.notes.append("duplex forced by policy")
+        if ctx.can_force_sides:
+            decision.forced_options["sides"] = "two-sided-long-edge"
+            decision.notes.append("duplex forced by policy")
+        else:
+            # Charging the job as duplex would bill paper that was not saved.
+            decision.notes.append(
+                "duplex policy not applied: this printer's connection cannot change "
+                "sides after rendering; set the queue to two-sided instead"
+            )
 
     return decision
 

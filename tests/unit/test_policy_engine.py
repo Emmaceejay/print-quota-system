@@ -41,6 +41,12 @@ def test_force_duplex_sets_a_forced_option_rather_than_denying():
     assert decision.forced_options["sides"] == "two-sided-long-edge"
 
 
+def test_force_duplex_is_not_applied_where_the_printer_cannot_act_on_it():
+    rules = [PolicyRule("printer", "hp-mono", "force_duplex", "true")]
+    decision = evaluate_policies(rules, ctx(is_duplex=False, can_force_sides=False))
+    assert decision.allowed and "sides" not in decision.forced_options
+
+
 def test_max_pages_and_copies_limits():
     rules = [
         PolicyRule("global", None, "max_pages_per_job", "20"),

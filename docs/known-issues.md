@@ -129,6 +129,39 @@ sudo lpadmin -p <queue> -E -v ipp://<printer-ip>/ipp/print -m everywhere
 
 Then click **Turn on** for the queue again in **Printers & queues**.
 
+### Jobs print on one side only
+
+**Symptom.** Jobs print on one side of the paper, even when the user chose
+*Print on both sides*, or the option is missing on the computer.
+
+**Cause.** Two-sided printing is decided by the CUPS queue on the server.
+Queues print one-sided unless set otherwise, and a Windows computer
+connected by address doesn't pass its own two-sided choice to the server.
+Before 0.3.0, the *Supports duplex* tick in the console was only recorded
+and didn't change the queue.
+
+**Resolution.**
+
+1. Upgrade to 0.3.0 or later.
+2. In **Printers & queues**, open **Edit costs** for the queue, tick
+   **Print on both sides by default** and click **Save**. See
+   [Two-sided printing](setup.md#two-sided-printing).
+3. Read the message shown after saving:
+   - *raw queue*: CUPS passes jobs through unchanged, so only the computer's
+     driver can print two-sided. Convert the queue to a driverless one (see
+     [Which Windows driver to use](#which-windows-driver-to-use)), then set
+     it again.
+   - *no two-sided option*: the printer didn't report a duplex unit. Check
+     that it has one. For a driverless queue, recreate it with the
+     **IPP Everywhere** driver so CUPS reads the printer's capabilities
+     again.
+4. Check the queue with `lpoptions -p <queue> -l | grep -i duplex`. The
+   starred choice should be `DuplexNoTumble`.
+
+A `force_duplex` policy can't fix this on `socket://`, `lpd://` or `usb://`
+printers. It is applied after the job is rendered, and only IPP printers act
+on it then. Use the queue setting.
+
 ### Jobs are counted as one page
 
 **Symptom.** Multi-page jobs are charged as one page, and over-quota jobs

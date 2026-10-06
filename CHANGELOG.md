@@ -56,6 +56,31 @@ Initial release.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [0.3.0] - 2026-10-06
+
+### Added
+
+- **Two-sided (duplex) printing.** *Print on both sides by default* in
+  **Printers & queues** (on new printers and in **Edit costs**), and
+  `quotactl printer sides <queue> two-sided|one-sided`, set the CUPS queue to
+  print on both sides unless a job asks for one-sided. printquota sets the
+  queue's `sides-default`, the driver's `Duplex` default and, on vendor
+  drivers, the *duplex unit installed* option. It warns when the queue is raw
+  or its driver has no two-sided option. A new **Sides** column shows each
+  queue's setting. New printers added from the console are two-sided by
+  default. Database migration `9e2f4c1a7b30` adds `printers.duplex_default`;
+  existing queues stay one-sided until set.
+
+### Fixed
+
+- **Two-sided printing couldn't be turned on.** The *Supports duplex* tick
+  was only recorded and never changed the CUPS queue, so every job printed
+  one-sided.
+- **`force_duplex` charged one-sided jobs as duplex.** On `socket://`,
+  `lpd://` and `usb://` printers the forced option arrives after rendering
+  and has no effect, but the job still got the duplex discount. The rule now
+  applies only to `ipp://` and `ipps://` printers.
+
 ## [0.2.5] - 2026-09-26
 
 ### Added

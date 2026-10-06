@@ -112,7 +112,7 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
   .side>details>summary{display:none}
 }
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup" aria-current="page">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-setup" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#1-install-printquota-server-shell">1. Install printquota (server shell)</a></li><li><a href="#2-create-the-first-administrator-web-console">2. Create the first administrator (web console)</a></li><li><a href="#3-share-the-printer-queues-on-the-network-server-shell">3. Share the printer queues on the network (server shell)</a></li><li><a href="#4-tidy-up-the-cups-queues-server-shell">4. Tidy up the CUPS queues (server shell)</a></li><li><a href="#5-add-printers-and-turn-on-quota-enforcement-web-console">5. Add printers and turn on quota enforcement (web console)</a></li><li><a href="#6-create-users-web-console">6. Create users (web console)</a></li><li><a href="#7-configure-settings-and-alerts-web-console">7. Configure settings and alerts (web console)</a></li><li><a href="#8-connect-client-computers">8. Connect client computers</a></li><li><a href="#9-test-the-setup">9. Test the setup</a></li><li><a href="#10-secure-the-deployment">10. Secure the deployment</a></li><li><a href="#upgrading">Upgrading</a></li><li><a href="#health-checks">Health checks</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Setup</div><h1>Setup guide</h1><p>Start here: step-by-step setup, from a fresh server to working print quotas.</p></header><div class="content"><h1 id="setup-guide">Setup guide</h1>
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.3.0</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup" aria-current="page">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-setup" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#1-install-printquota-server-shell">1. Install printquota (server shell)</a></li><li><a href="#2-create-the-first-administrator-web-console">2. Create the first administrator (web console)</a></li><li><a href="#3-share-the-printer-queues-on-the-network-server-shell">3. Share the printer queues on the network (server shell)</a></li><li><a href="#4-tidy-up-the-cups-queues-server-shell">4. Tidy up the CUPS queues (server shell)</a></li><li><a href="#5-add-printers-and-turn-on-quota-enforcement-web-console">5. Add printers and turn on quota enforcement (web console)</a><ul><li><a href="#two-sided-printing">Two-sided printing</a></li></ul></li><li><a href="#6-create-users-web-console">6. Create users (web console)</a></li><li><a href="#7-configure-settings-and-alerts-web-console">7. Configure settings and alerts (web console)</a></li><li><a href="#8-connect-client-computers">8. Connect client computers</a></li><li><a href="#9-test-the-setup">9. Test the setup</a></li><li><a href="#10-secure-the-deployment">10. Secure the deployment</a></li><li><a href="#upgrading">Upgrading</a></li><li><a href="#health-checks">Health checks</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.3.0 · Setup</div><h1>Setup guide</h1><p>Start here: step-by-step setup, from a fresh server to working print quotas.</p></header><div class="content"><h1 id="setup-guide">Setup guide</h1>
 <p>This guide takes you from a fresh Ubuntu server to working print quotas, in
 order. Each step says where it is done: the <strong>server shell</strong> (a few one-time
 commands) or the <strong>web console</strong> (everything else).</p>
@@ -200,9 +200,36 @@ without spaces (e.g. <code>Office_Printer</code>), the device URI
 <li><strong>Prices:</strong> use <strong>Edit costs</strong> on each printer. A printer's own price takes
 priority over the default on the Settings page, and applies to jobs
 printed after the change.</li>
+<li><strong>Two-sided printing:</strong> see below.</li>
 </ul>
 <p>When a queue is enforced, <code>lpstat -v</code> shows its device URI with a <code>quota:</code>
 prefix.</p>
+<h3 id="two-sided-printing">Two-sided printing<a class="anchor" href="#two-sided-printing" aria-label="Link to this section">#</a></h3>
+<p>To save paper, make queues print on both sides by default. New printers
+added from the console are two-sided by default (the <strong>Print on both sides
+by default</strong> tick). For an existing queue, open <strong>Edit costs</strong>, tick <strong>Print
+on both sides by default</strong> and click <strong>Save</strong>. The <strong>Sides</strong> column then
+shows <em>two-sided</em>. From the server shell, the equivalent is
+<code>sudo /opt/printquota/bin/quotactl printer sides &lt;queue&gt; two-sided</code>.</p>
+<p>This is set on the CUPS queue, so it applies to every computer and driver.
+The client's own setting isn't enough: a Windows computer connected as in
+<a href="#8-connect-client-computers">step 8</a> doesn't pass its <em>Print on both sides</em>
+choice to the server.</p>
+<ul>
+<li><strong>One-sided when needed.</strong> A job that asks for one-sided still prints
+one-sided (macOS, Linux, and other clients that send the IPP <code>sides</code>
+option). For Windows users who sometimes need one-sided pages (forms,
+labels), add a second queue for the same printer, e.g.
+<code>Office_Printer_1-sided</code>. Leave it one-sided, turn on enforcement for it,
+and connect it on the computers that need it.</li>
+<li><strong>Check the result</strong> with <code>lpoptions -p &lt;queue&gt; -l | grep -i duplex</code>. The
+starred value should be <code>DuplexNoTumble</code>. If the console warns that the
+driver has no two-sided option, the printer has no duplex unit, or the
+queue's driver doesn't know about it
+(<a href="known-issues.html#jobs-print-on-one-side-only">details</a>).</li>
+<li><strong>Prices:</strong> two-sided jobs are recorded as duplex and get the printer's
+duplex discount. Quotas still count printed sides.</li>
+</ul>
 <h2 id="6-create-users-web-console">6. Create users (web console)<a class="anchor" href="#6-create-users-web-console" aria-label="Link to this section">#</a></h2>
 <p>Create each account with the user's <strong>plain logon name</strong>, e.g. <code>j.doe</code>,
 without a <code>DOMAIN\</code> prefix. Print jobs sent as <code>CORP\J.Doe</code>, <code>J.Doe</code> or

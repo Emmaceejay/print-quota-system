@@ -120,7 +120,17 @@ reported as such, rather than surfacing to the user as a confusing balance
 message.
 
 `force_duplex` is the one rule that modifies rather than denies: it appends
-`sides=two-sided-long-edge` to the options handed to the real backend.
+`sides=two-sided-long-edge` to the options handed to the real backend. The
+wrapper runs after CUPS has rendered the job, so only the IPP backends act on
+it, by sending `sides` as a job attribute. On other device URIs the engine
+skips the rule (`JobContext.can_force_sides`) rather than charge as duplex a
+job that prints one-sided.
+
+Paper saving for a whole queue is therefore done in CUPS, not in the
+wrapper. *Print on both sides by default* sets the queue's `sides-default`
+and the driver's `Duplex` default with `lpadmin`. CUPS applies those to every
+job before rendering and passes them to the backend in the job options, so
+the wrapper sees the job as duplex and prices it accordingly.
 
 ## 5. Security model
 

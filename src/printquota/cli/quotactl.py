@@ -30,6 +30,7 @@ from ..db.models import (
     utcnow,
 )
 from ..policies.engine import validate_rule
+from ..services import cups_queues
 from ..services.accounts import delete_user
 from ..services.identity import new_account_problem
 from ..services.audit import record_audit
@@ -466,12 +467,42 @@ def printer_list() -> None:
                 f"{p.cost_per_page_mono:g}",
                 f"{p.cost_per_page_color:g}",
                 "yes" if p.supports_duplex else "no",
+                "two-sided" if p.duplex_default else "one-sided",
                 f"{p.duplex_discount:g}",
                 "yes" if p.is_active else "no",
             ]
             for p in session.scalars(select(Printer).order_by(Printer.name))
         ]
-    _echo_table(["printer", "device uri", "mono", "color", "duplex", "discount", "active"], rows)
+    _echo_table(["printer", "device uri", "mono", "color", "duplex", "sides", "discount", "active"], rows)
+
+
+@printer.command("sides")
+@click.argument("name")
+@click.argument("sides", type=click.Choice(["two-sided", "one-sided"]))
+def printer_sides(name: str, sides: str) -> None:
+    """Make a queue print two-sided (or one-sided) by default.
+
+    Changes the CUPS queue, so run it as root or a member of lpadmin.
+    """
+    two_sided = sides == "two-sided"
+    with db_session.session_scope() as session:
+        record = session.get(Printer, name)
+        if record is None:
+            raise click.ClickException(f"no such printer: {name}")
+        try:
+            result = cups_queues.set_duplex_default(name, two_sided)
+        except cups_queues.CupsError as exc:
+            raise click.ClickException(str(exc)) from None
+        record.duplex_default = two_sided
+        if two_sided:
+            record.supports_duplex = True
+        record_audit(
+            session, _actor(), "printer.duplex_default", name,
+            {"two_sided": two_sided, "driver_options": result.ppd_settings},
+        )
+    click.echo(f"{name}: prints {sides} by default")
+    if result.warning:
+        click.echo(f"warning: {result.warning}", err=True)
 
 
 @printer.command("set-cost")

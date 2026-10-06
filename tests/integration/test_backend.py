@@ -17,14 +17,15 @@ from printquota.db.models import PrintJob, User
 def fake_backend(seeded):
     """Install a stand-in for the real CUPS backend that records its argv."""
     record = seeded["tmp_path"] / "invocation.json"
-    script = seeded["backend_dir"] / "socket"
-    script.write_text(
-        "#!/usr/bin/env python3\n"
-        "import json, os, sys\n"
-        f"json.dump({{'argv': sys.argv, 'device_uri': os.environ.get('DEVICE_URI')}}, open({str(record)!r}, 'w'))\n"
-        "sys.exit(0)\n"
-    )
-    script.chmod(script.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    for scheme in ("socket", "ipp"):
+        script = seeded["backend_dir"] / scheme
+        script.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os, sys\n"
+            f"json.dump({{'argv': sys.argv, 'device_uri': os.environ.get('DEVICE_URI')}}, open({str(record)!r}, 'w'))\n"
+            "sys.exit(0)\n"
+        )
+        script.chmod(script.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
     seeded["record"] = record
     return seeded
 
@@ -96,9 +97,41 @@ def test_force_duplex_policy_is_appended_to_the_child_options(fake_backend):
             PrintPolicy(scope_type="printer", scope_value="hp-mono", rule_type="force_duplex", rule_value="true")
         )
     path = spool(fake_backend)
-    qb.run(cups_argv(path, options="media=A4"), cups_env(fake_backend))
+    qb.run(cups_argv(path, options="media=A4"), cups_env(fake_backend, device_uri="quota:ipp://10.0.0.5/ipp/print"))
     invocation = json.loads(fake_backend["record"].read_text())
     assert "sides=two-sided-long-edge" in invocation["argv"][5]
+    with db_session.session_scope() as session:
+        assert session.query(PrintJob).one().is_duplex
+
+
+def test_force_duplex_is_not_charged_as_duplex_on_a_socket_printer(fake_backend):
+    """socket:// sends the already-rendered job as is, so the policy cannot save paper there."""
+    from printquota.db.models import PrintPolicy
+
+    with db_session.session_scope() as session:
+        session.add(
+            PrintPolicy(scope_type="printer", scope_value="hp-mono", rule_type="force_duplex", rule_value="true")
+        )
+    path = spool(fake_backend)
+    qb.run(cups_argv(path, options="media=A4"), cups_env(fake_backend))
+    with db_session.session_scope() as session:
+        assert not session.query(PrintJob).one().is_duplex
+
+
+def test_a_two_sided_queue_default_is_counted_as_duplex(fake_backend):
+    """CUPS adds the queue's sides-default to every job's options."""
+    path = spool(fake_backend)
+    qb.run(cups_argv(path, options="media=A4 sides=two-sided-long-edge"), cups_env(fake_backend))
+    with db_session.session_scope() as session:
+        assert session.query(PrintJob).one().is_duplex
+
+
+@pytest.mark.parametrize("uri,expected", [
+    ("quota:ipp://10.0.0.5/ipp/print", True), ("quota:ipps://p.local/ipp/print", True),
+    ("quota:socket://10.0.0.5:9100", False), ("quota:usb://HP/LJ", False), ("", False),
+])
+def test_only_ipp_backends_accept_a_forced_sides_option(uri, expected):
+    assert qb.accepts_forced_sides(uri) is expected
 
 
 def test_unknown_user_is_denied(fake_backend):

@@ -112,7 +112,7 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
   .side>details>summary{display:none}
 }
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.2.5</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues" aria-current="page">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-known-issues" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#troubleshooting">Troubleshooting</a><ul><li><a href="#a-users-jobs-never-reach-the-server">A user&#x27;s jobs never reach the server</a></li><li><a href="#adding-a-printer-by-address-fails">Adding a printer by address fails</a></li><li><a href="#jobs-are-cancelled-with-no-print-account-for-this-user">Jobs are cancelled with &quot;no print account for this user&quot;</a></li><li><a href="#jobs-are-refused-with-matches-more-than-one-print-account">Jobs are refused with &quot;matches more than one print account&quot;</a></li><li><a href="#which-windows-driver-to-use">Which Windows driver to use</a></li><li><a href="#jobs-are-counted-as-one-page">Jobs are counted as one page</a></li><li><a href="#there-is-no-page_log-file">There is no page_log file</a></li><li><a href="#a-new-price-doesnt-appear-in-reports">A new price doesn&#x27;t appear in Reports</a></li><li><a href="#forbidden-when-turning-on-a-queue-or-adding-a-printer">&quot;Forbidden&quot; when turning on a queue or adding a printer</a></li><li><a href="#automatic-implicitclass-queues-keep-appearing">Automatic &quot;implicitclass&quot; queues keep appearing</a></li><li><a href="#an-upgrade-doesnt-take-effect">An upgrade doesn&#x27;t take effect</a></li><li><a href="#installer-stops-at-installing-os-dependencies">Installer stops at &quot;Installing OS dependencies&quot;</a></li><li><a href="#the-web-console-is-unavailable-after-a-reboot">The web console is unavailable after a reboot</a></li><li><a href="#nobody-can-sign-in-to-the-console">Nobody can sign in to the console</a></li><li><a href="#permission-denied-when-running-the-scripts">&quot;Permission denied&quot; when running the scripts</a></li><li><a href="#messages-in-the-cups-error-log-that-are-harmless">Messages in the CUPS error log that are harmless</a></li></ul></li><li><a href="#resolved-in-earlier-releases">Resolved in earlier releases</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.2.5 · Known issues</div><h1>Known issues and troubleshooting</h1><p>Problems you may run into, with the cause and the resolution for each.</p></header><div class="content"><h1 id="known-issues-and-troubleshooting">Known issues and troubleshooting</h1>
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.3.0</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues" aria-current="page">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-known-issues" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#troubleshooting">Troubleshooting</a><ul><li><a href="#a-users-jobs-never-reach-the-server">A user&#x27;s jobs never reach the server</a></li><li><a href="#adding-a-printer-by-address-fails">Adding a printer by address fails</a></li><li><a href="#jobs-are-cancelled-with-no-print-account-for-this-user">Jobs are cancelled with &quot;no print account for this user&quot;</a></li><li><a href="#jobs-are-refused-with-matches-more-than-one-print-account">Jobs are refused with &quot;matches more than one print account&quot;</a></li><li><a href="#which-windows-driver-to-use">Which Windows driver to use</a></li><li><a href="#jobs-print-on-one-side-only">Jobs print on one side only</a></li><li><a href="#jobs-are-counted-as-one-page">Jobs are counted as one page</a></li><li><a href="#there-is-no-page_log-file">There is no page_log file</a></li><li><a href="#a-new-price-doesnt-appear-in-reports">A new price doesn&#x27;t appear in Reports</a></li><li><a href="#forbidden-when-turning-on-a-queue-or-adding-a-printer">&quot;Forbidden&quot; when turning on a queue or adding a printer</a></li><li><a href="#automatic-implicitclass-queues-keep-appearing">Automatic &quot;implicitclass&quot; queues keep appearing</a></li><li><a href="#an-upgrade-doesnt-take-effect">An upgrade doesn&#x27;t take effect</a></li><li><a href="#installer-stops-at-installing-os-dependencies">Installer stops at &quot;Installing OS dependencies&quot;</a></li><li><a href="#the-web-console-is-unavailable-after-a-reboot">The web console is unavailable after a reboot</a></li><li><a href="#nobody-can-sign-in-to-the-console">Nobody can sign in to the console</a></li><li><a href="#permission-denied-when-running-the-scripts">&quot;Permission denied&quot; when running the scripts</a></li><li><a href="#messages-in-the-cups-error-log-that-are-harmless">Messages in the CUPS error log that are harmless</a></li></ul></li><li><a href="#resolved-in-earlier-releases">Resolved in earlier releases</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.3.0 · Known issues</div><h1>Known issues and troubleshooting</h1><p>Problems you may run into, with the cause and the resolution for each.</p></header><div class="content"><h1 id="known-issues-and-troubleshooting">Known issues and troubleshooting</h1>
 <p>Problems you may run into when deploying or running printquota, with the
 cause and the resolution for each. Start with the section whose symptom
 matches what you see.</p>
@@ -221,6 +221,38 @@ every client, or convert the queue to a driverless one:</p>
 <pre><code class="language-bash">sudo lpadmin -p &lt;queue&gt; -E -v ipp://&lt;printer-ip&gt;/ipp/print -m everywhere
 </code></pre>
 <p>Then click <strong>Turn on</strong> for the queue again in <strong>Printers &amp; queues</strong>.</p>
+<h3 id="jobs-print-on-one-side-only">Jobs print on one side only<a class="anchor" href="#jobs-print-on-one-side-only" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> Jobs print on one side of the paper, even when the user chose
+<em>Print on both sides</em>, or the option is missing on the computer.</p>
+<p><strong>Cause.</strong> Two-sided printing is decided by the CUPS queue on the server.
+Queues print one-sided unless set otherwise, and a Windows computer
+connected by address doesn't pass its own two-sided choice to the server.
+Before 0.3.0, the <em>Supports duplex</em> tick in the console was only recorded
+and didn't change the queue.</p>
+<p><strong>Resolution.</strong></p>
+<ol>
+<li>Upgrade to 0.3.0 or later.</li>
+<li>In <strong>Printers &amp; queues</strong>, open <strong>Edit costs</strong> for the queue, tick
+<strong>Print on both sides by default</strong> and click <strong>Save</strong>. See
+<a href="setup.html#two-sided-printing">Two-sided printing</a>.</li>
+<li>Read the message shown after saving:
+<ul>
+<li><em>raw queue</em>: CUPS passes jobs through unchanged, so only the computer's
+driver can print two-sided. Convert the queue to a driverless one (see
+<a href="#which-windows-driver-to-use">Which Windows driver to use</a>), then set
+it again.</li>
+<li><em>no two-sided option</em>: the printer didn't report a duplex unit. Check
+that it has one. For a driverless queue, recreate it with the
+<strong>IPP Everywhere</strong> driver so CUPS reads the printer's capabilities
+again.</li>
+</ul>
+</li>
+<li>Check the queue with <code>lpoptions -p &lt;queue&gt; -l | grep -i duplex</code>. The
+starred choice should be <code>DuplexNoTumble</code>.</li>
+</ol>
+<p>A <code>force_duplex</code> policy can't fix this on <code>socket://</code>, <code>lpd://</code> or <code>usb://</code>
+printers. It is applied after the job is rendered, and only IPP printers act
+on it then. Use the queue setting.</p>
 <h3 id="jobs-are-counted-as-one-page">Jobs are counted as one page<a class="anchor" href="#jobs-are-counted-as-one-page" aria-label="Link to this section">#</a></h3>
 <p><strong>Symptom.</strong> Multi-page jobs are charged as one page, and over-quota jobs
 print.</p>

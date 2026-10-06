@@ -108,6 +108,20 @@ def detect_number_up(options: dict[str, str]) -> int:
         return 1
 
 
+def accepts_forced_sides(device_uri: str) -> bool:
+    """Whether the real backend will act on a ``sides`` option added here.
+
+    By the time this wrapper runs, CUPS has already rendered the job. Only
+    the IPP backends send ``sides`` to the printer as a job attribute; the
+    others (socket, lpd, usb) send the rendered bytes as they are.
+    """
+    try:
+        scheme = split_device_uri(device_uri).split(":", 1)[0].lower()
+    except ValueError:
+        return False
+    return scheme in ("ipp", "ipps")
+
+
 def split_device_uri(device_uri: str) -> str:
     """Return the real device URI carried inside a ``quota:`` URI."""
     if not device_uri:
@@ -221,6 +235,7 @@ def run(argv: list[str], environ: Optional[dict[str, str]] = None) -> int:
         is_duplex=is_duplex,
         filetype=(spool_path.suffix.lstrip(".") if spool_path else None),
         title=title,
+        can_force_sides=accepts_forced_sides(environ.get("DEVICE_URI", "")),
     )
 
     try:

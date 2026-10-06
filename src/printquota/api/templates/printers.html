@@ -18,7 +18,7 @@
 <div class="card">
   <table>
     <tr><th>Queue</th><th>Device</th><th>Quota enforcement</th><th class="num">Mono</th><th class="num">Colour</th>
-        <th class="num">Duplex discount</th><th>Accounting</th><th></th></tr>
+        <th>Sides</th><th class="num">Duplex discount</th><th>Accounting</th><th></th></tr>
     {% for row in rows %}
     <tr>
       <td><strong>{{ row.name }}</strong>
@@ -44,6 +44,7 @@
       {% if row.printer %}
       <td class="num">{{ '%g'|format(row.printer.cost_per_page_mono) }}</td>
       <td class="num">{{ '%g'|format(row.printer.cost_per_page_color) }}</td>
+      <td>{% if row.printer.duplex_default %}<span class="pill ok">two-sided</span>{% else %}<span class="pill">one-sided</span>{% endif %}</td>
       <td class="num">{{ '%g'|format(row.printer.duplex_discount) }}</td>
       <td>{% if row.printer.is_active %}<span class="pill ok">accepting</span>{% else %}<span class="pill bad">jobs denied</span>{% endif %}</td>
       <td>
@@ -56,23 +57,29 @@
             <div><label>Cost / colour page</label><input name="cost_per_page_color" type="number" step="0.01" min="0" value="{{ row.printer.cost_per_page_color }}"></div>
             <div><label>Duplex discount (0&ndash;0.95)</label><input name="duplex_discount" type="number" step="0.05" min="0" max="0.95" value="{{ row.printer.duplex_discount }}"></div>
             <label class="check"><input name="supports_duplex" type="checkbox" value="true" {{ 'checked' if row.printer.supports_duplex }}> Supports duplex</label>
+            <label class="check"><input name="duplex_default" type="checkbox" value="true"
+              {{ 'checked' if row.printer.duplex_default }} {{ 'disabled' if not row.cups }}> Print on both sides by default</label>
+            {% if not row.cups and row.printer.duplex_default %}<input type="hidden" name="duplex_default" value="true">{% endif %}
             <label class="check"><input name="is_active" type="checkbox" value="true" {{ 'checked' if row.printer.is_active }}> Accept jobs</label>
             <button type="submit" class="secondary">Save</button>
           </form>
         </details>
       </td>
       {% else %}
-      <td class="num muted">-</td><td class="num muted">-</td><td class="num muted">-</td>
+      <td class="num muted">-</td><td class="num muted">-</td><td class="muted">-</td><td class="num muted">-</td>
       <td class="muted">default rates</td>
       <td class="muted" style="font-size:12px">Registered automatically when you turn enforcement on.</td>
       {% endif %}
     </tr>
     {% else %}
-    <tr><td colspan="8" class="muted">No printers yet. Add one below.</td></tr>
+    <tr><td colspan="9" class="muted">No printers yet. Add one below.</td></tr>
     {% endfor %}
   </table>
   <p class="hint" style="margin-top:12px">Costs are in {{ currency }}. A rate of 0 falls back to the default rate on the
     <a href="/admin/settings">Settings</a> page. Jobs on a queue whose accounting is off are denied.</p>
+  <p class="hint"><strong>Sides:</strong> a two-sided queue prints every job on both sides of the paper unless the job
+    asks for one-sided. Many computers can't ask, so for occasional one-sided printing add a second queue for the same
+    printer and leave it one-sided.</p>
 </div>
 
 <div class="card">
@@ -91,6 +98,8 @@
     <div><label for="qc">Cost / colour page</label><input id="qc" name="cost_per_page_color" type="number" step="0.01" min="0" value="{{ settings.get('printing.default_cost_per_page_color') }}"></div>
     <div><label for="qx">Duplex discount</label><input id="qx" name="duplex_discount" type="number" step="0.05" min="0" max="0.95" value="0"></div>
     <div class="wide"><label class="check"><input name="supports_duplex" type="checkbox" value="true"> Printer supports duplex</label></div>
+    <div class="wide"><label class="check"><input name="duplex_default" type="checkbox" value="true" checked>
+      Print on both sides by default (saves paper)</label></div>
     <div class="wide"><label class="check"><input name="enforce" type="checkbox" value="true" checked {{ 'disabled' if not backend_ok }}>
       Turn on quota enforcement straight away</label></div>
     <div class="wide"><button type="submit">Add printer</button>
