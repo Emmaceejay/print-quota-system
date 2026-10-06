@@ -112,7 +112,7 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
   .side>details>summary{display:none}
 }
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.3.0</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues" aria-current="page">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-known-issues" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#troubleshooting">Troubleshooting</a><ul><li><a href="#a-users-jobs-never-reach-the-server">A user&#x27;s jobs never reach the server</a></li><li><a href="#adding-a-printer-by-address-fails">Adding a printer by address fails</a></li><li><a href="#jobs-are-cancelled-with-no-print-account-for-this-user">Jobs are cancelled with &quot;no print account for this user&quot;</a></li><li><a href="#jobs-are-refused-with-matches-more-than-one-print-account">Jobs are refused with &quot;matches more than one print account&quot;</a></li><li><a href="#which-windows-driver-to-use">Which Windows driver to use</a></li><li><a href="#jobs-print-on-one-side-only">Jobs print on one side only</a></li><li><a href="#jobs-are-counted-as-one-page">Jobs are counted as one page</a></li><li><a href="#there-is-no-page_log-file">There is no page_log file</a></li><li><a href="#a-new-price-doesnt-appear-in-reports">A new price doesn&#x27;t appear in Reports</a></li><li><a href="#forbidden-when-turning-on-a-queue-or-adding-a-printer">&quot;Forbidden&quot; when turning on a queue or adding a printer</a></li><li><a href="#automatic-implicitclass-queues-keep-appearing">Automatic &quot;implicitclass&quot; queues keep appearing</a></li><li><a href="#an-upgrade-doesnt-take-effect">An upgrade doesn&#x27;t take effect</a></li><li><a href="#installer-stops-at-installing-os-dependencies">Installer stops at &quot;Installing OS dependencies&quot;</a></li><li><a href="#the-web-console-is-unavailable-after-a-reboot">The web console is unavailable after a reboot</a></li><li><a href="#nobody-can-sign-in-to-the-console">Nobody can sign in to the console</a></li><li><a href="#permission-denied-when-running-the-scripts">&quot;Permission denied&quot; when running the scripts</a></li><li><a href="#messages-in-the-cups-error-log-that-are-harmless">Messages in the CUPS error log that are harmless</a></li></ul></li><li><a href="#resolved-in-earlier-releases">Resolved in earlier releases</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.3.0 · Known issues</div><h1>Known issues and troubleshooting</h1><p>Problems you may run into, with the cause and the resolution for each.</p></header><div class="content"><h1 id="known-issues-and-troubleshooting">Known issues and troubleshooting</h1>
+</style></head><body><header class="topbar"><div class="topbar-inner"><a class="brand" href="setup.html"><b>printquota</b><span>docs 0.3.0</span></a><nav aria-label="Documents"><ul class="tabs"><li><a href="setup.html" data-doc="doc-setup">Setup</a></li><li><a href="known-issues.html" data-doc="doc-known-issues" aria-current="page">Known issues</a></li><li><a href="index.html" data-doc="doc-index">Reference</a></li><li><a href="architecture.html" data-doc="doc-architecture">Architecture</a></li><li><a href="operations.html" data-doc="doc-operations">Operations</a></li><li><a href="changelog.html" data-doc="doc-changelog">Changelog</a></li></ul></nav></div></header><div class="layout"><aside class="side" aria-label="Contents"><details open><summary>Contents</summary><div class="toc-body"><input class="find" type="search" id="find-known-issues" placeholder="Filter contents (e.g. TLS, driver, price)" aria-label="Filter the contents list"><ul class="toc"><li><a href="#troubleshooting">Troubleshooting</a><ul><li><a href="#a-users-jobs-never-reach-the-server">A user&#x27;s jobs never reach the server</a></li><li><a href="#adding-a-printer-by-address-fails">Adding a printer by address fails</a></li><li><a href="#jobs-are-cancelled-with-no-print-account-for-this-user">Jobs are cancelled with &quot;no print account for this user&quot;</a></li><li><a href="#jobs-are-refused-with-matches-more-than-one-print-account">Jobs are refused with &quot;matches more than one print account&quot;</a></li><li><a href="#which-windows-driver-to-use">Which Windows driver to use</a></li><li><a href="#jobs-print-on-one-side-only">Jobs print on one side only</a></li><li><a href="#jobs-are-counted-as-one-page">Jobs are counted as one page</a></li><li><a href="#there-is-no-page_log-file">There is no page_log file</a></li><li><a href="#a-new-price-doesnt-appear-in-reports">A new price doesn&#x27;t appear in Reports</a></li><li><a href="#forbidden-when-turning-on-a-queue-or-adding-a-printer">&quot;Forbidden&quot; when turning on a queue or adding a printer</a></li><li><a href="#automatic-implicitclass-queues-keep-appearing">Automatic &quot;implicitclass&quot; queues keep appearing</a></li><li><a href="#git-pull-fails-with-divergent-branches">git pull fails with divergent branches</a></li><li><a href="#an-upgrade-doesnt-take-effect">An upgrade doesn&#x27;t take effect</a></li><li><a href="#installer-stops-at-installing-os-dependencies">Installer stops at &quot;Installing OS dependencies&quot;</a></li><li><a href="#the-web-console-is-unavailable-after-a-reboot">The web console is unavailable after a reboot</a></li><li><a href="#nobody-can-sign-in-to-the-console">Nobody can sign in to the console</a></li><li><a href="#permission-denied-when-running-the-scripts">&quot;Permission denied&quot; when running the scripts</a></li><li><a href="#messages-in-the-cups-error-log-that-are-harmless">Messages in the CUPS error log that are harmless</a></li></ul></li><li><a href="#resolved-in-earlier-releases">Resolved in earlier releases</a></li></ul><p class="none" hidden>No section matches.</p></div></details></aside><main class="doc"><header class="doc-head"><div class="kicker">printquota 0.3.0 · Known issues</div><h1>Known issues and troubleshooting</h1><p>Problems you may run into, with the cause and the resolution for each.</p></header><div class="content"><h1 id="known-issues-and-troubleshooting">Known issues and troubleshooting</h1>
 <p>Problems you may run into when deploying or running printquota, with the
 cause and the resolution for each. Start with the section whose symptom
 matches what you see.</p>
@@ -302,6 +302,36 @@ discovers. They aren't enforced, and CUPS can recreate them at any time.</p>
 <p><strong>Resolution.</strong> Create one permanent queue per printer
 (<a href="setup.html#5-add-printers-and-turn-on-quota-enforcement-web-console">setup step 5</a>),
 then run <code>sudo systemctl disable --now cups-browsed</code>.</p>
+<h3 id="git-pull-fails-with-divergent-branches">git pull fails with divergent branches<a class="anchor" href="#git-pull-fails-with-divergent-branches" aria-label="Link to this section">#</a></h3>
+<p><strong>Symptom.</strong> <code>git pull</code> prints <code>(forced update)</code>, then
+<code>fatal: Need to specify how to reconcile divergent branches</code> (or, with
+<code>pull.ff only</code>, <code>fatal: Not possible to fast-forward, aborting</code>). If the
+installer was run afterwards, it reinstalled the old version.</p>
+<p><strong>Cause.</strong> The repository's history was rewritten after the server cloned
+it, so the server's copy and the repository no longer share a history. Git
+won't guess which one to keep.</p>
+<p><strong>Resolution.</strong> Make the server's copy match the repository. Settings
+(<code>/etc/printquota/</code>) and the database (<code>/var/lib/printquota/</code>) are outside
+the checkout and aren't affected. First check that the server has nothing
+of its own:</p>
+<pre><code class="language-bash">cd ~/print-quota-system
+git fetch origin
+git status --short                     # must print nothing
+git log --oneline origin/main..main    # commits only on the server
+</code></pre>
+<p>If <code>git status</code> prints nothing and the log lists only older copies of
+commits that are already in the repository, run:</p>
+<pre><code class="language-bash">git reset --hard origin/main
+git config pull.ff only
+sudo ./scripts/install.sh 2&gt;&amp;1 | tail -25
+/opt/printquota/bin/pip show printquota | grep Version
+</code></pre>
+<p>If there are local changes or commits you don't recognise, save them first
+(for example <code>git branch local-backup</code>), since <code>reset --hard</code> discards them.</p>
+<p><strong>Prevention.</strong> Set <code>git config pull.ff only</code> on every server (it's part of
+<a href="setup.html#1-install-printquota-server-shell">setup step 1</a>), and upgrade with
+<code>git pull --ff-only origin main &amp;&amp; sudo ./scripts/install.sh</code>, so the
+installer never runs after a failed pull.</p>
 <h3 id="an-upgrade-doesnt-take-effect">An upgrade doesn't take effect<a class="anchor" href="#an-upgrade-doesnt-take-effect" aria-label="Link to this section">#</a></h3>
 <p><strong>Symptom.</strong> After <code>git pull</code> and reinstalling, the old behaviour remains.</p>
 <p><strong>Diagnosis.</strong></p>
@@ -309,8 +339,10 @@ then run <code>sudo systemctl disable --now cups-browsed</code>.</p>
 /opt/printquota/bin/pip show printquota | grep Version    # new version installed?
 systemctl status quota-api --no-pager | grep Active       # restarted after the upgrade?
 </code></pre>
-<p><strong>Cause.</strong> Usually the installer stopped before installing the new version
-(see the next entry), so the old version is still installed and running.</p>
+<p><strong>Cause.</strong> Usually either <code>git pull</code> failed, so the new code never arrived
+(see <a href="#git-pull-fails-with-divergent-branches">git pull fails with divergent branches</a>),
+or the installer stopped before installing the new version (see the next
+entry). Either way, the old version is still installed and running.</p>
 <p><strong>Resolution.</strong> Re-run the installer and check that it finishes. Or, when a
 release has no database changes, install and restart directly:</p>
 <pre><code class="language-bash">sudo /opt/printquota/bin/pip install --upgrade ~/print-quota-system

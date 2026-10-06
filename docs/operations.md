@@ -104,9 +104,13 @@ backups off the VM as well.
 
 ```bash
 cd /path/to/print-quota-system
-git pull
-sudo ./scripts/install.sh          # idempotent: re-installs and migrates
+git config pull.ff only            # once per server
+git pull --ff-only && sudo ./scripts/install.sh   # idempotent: re-installs and migrates
 ```
+
+The installer runs only if the pull succeeded, so a failed pull can't
+silently reinstall the old version. For *divergent branches*, see
+[known issues](known-issues.md#git-pull-fails-with-divergent-branches).
 
 `install.sh` keeps your existing `settings.yaml` and `env`, reinstalls the
 package, runs `alembic upgrade head` and restarts the units. Schema changes

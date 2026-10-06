@@ -32,9 +32,15 @@ folder from a Windows PC can strip the scripts' executable permissions.
 ```bash
 git clone https://github.com/Emmaceejay/print-quota-system.git
 cd print-quota-system
+git config pull.ff only
 chmod +x scripts/*.sh
 sudo ./scripts/install.sh 2>&1 | tail -30
 ```
+
+`git config pull.ff only` makes a later `git pull` stop with an error,
+instead of merging or asking how to reconcile, when the server's copy
+doesn't match the repository
+([details](known-issues.md#git-pull-fails-with-divergent-branches)).
 
 The installer must finish with **"printquota is installed."** and a setup
 link. Confirm the installation:
@@ -243,11 +249,15 @@ Before relying on the numbers, close the two ways around the quota:
 
 ```bash
 cd ~/print-quota-system
-git pull origin main
-sudo ./scripts/install.sh 2>&1 | tail -25
+git config pull.ff only                    # once per server; harmless to repeat
+git pull --ff-only origin main && sudo ./scripts/install.sh 2>&1 | tail -25
 /opt/printquota/bin/pip show printquota | grep Version    # must show the new version
 ```
 
+The `&&` runs the installer only if the pull succeeded. Otherwise the
+installer would reinstall the old version. If the pull fails with
+*divergent branches* or *Not possible to fast-forward*, see
+[git pull fails with divergent branches](known-issues.md#git-pull-fails-with-divergent-branches).
 If the version doesn't change, see
 [An upgrade doesn't take effect](known-issues.md#an-upgrade-doesnt-take-effect).
 

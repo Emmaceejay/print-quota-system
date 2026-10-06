@@ -228,6 +228,7 @@ Extras: `dev` (pytest, httpx) and `ldap` (ldap3).
 ```bash
 git clone <your-repo-url> print-quota-system
 cd print-quota-system
+git config pull.ff only                      # upgrades stop instead of merging if histories differ
 chmod +x scripts/*.sh scripts/seed_demo.py   # needed if the checkout lost the exec bit (e.g. copied via Windows)
 sudo ./scripts/install.sh
 ```
@@ -1214,9 +1215,13 @@ backups off the VM as well.**
 
 ```bash
 cd /path/to/print-quota-system
-git pull
-sudo ./scripts/install.sh          # reinstalls the package, migrates, restarts units
+git config pull.ff only            # once per server
+git pull --ff-only && sudo ./scripts/install.sh   # reinstalls the package, migrates, restarts units
 ```
+
+The installer runs only if the pull succeeded. If the pull reports
+*divergent branches*, see
+[docs/known-issues.md](docs/known-issues.md#git-pull-fails-with-divergent-branches).
 
 `install.sh` keeps your existing `settings.yaml` and `env`. Schema changes
 always ship as Alembic migrations in

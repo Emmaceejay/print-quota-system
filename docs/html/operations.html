@@ -184,9 +184,12 @@ sudo systemctl start quota-accounting quota-api
 backups off the VM as well.</p>
 <h2 id="upgrades">Upgrades<a class="anchor" href="#upgrades" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">cd /path/to/print-quota-system
-git pull
-sudo ./scripts/install.sh          # idempotent: re-installs and migrates
+git config pull.ff only            # once per server
+git pull --ff-only &amp;&amp; sudo ./scripts/install.sh   # idempotent: re-installs and migrates
 </code></pre>
+<p>The installer runs only if the pull succeeded, so a failed pull can't
+silently reinstall the old version. For <em>divergent branches</em>, see
+<a href="known-issues.html#git-pull-fails-with-divergent-branches">known issues</a>.</p>
 <p><code>install.sh</code> keeps your existing <code>settings.yaml</code> and <code>env</code>, reinstalls the
 package, runs <code>alembic upgrade head</code> and restarts the units. Schema changes
 always ship as an Alembic migration — never edit the schema by hand.</p>

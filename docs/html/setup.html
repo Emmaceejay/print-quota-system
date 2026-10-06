@@ -140,9 +140,14 @@ Substitute your own values.</p>
 folder from a Windows PC can strip the scripts' executable permissions.</p>
 <pre><code class="language-bash">git clone https://github.com/Emmaceejay/print-quota-system.git
 cd print-quota-system
+git config pull.ff only
 chmod +x scripts/*.sh
 sudo ./scripts/install.sh 2&gt;&amp;1 | tail -30
 </code></pre>
+<p><code>git config pull.ff only</code> makes a later <code>git pull</code> stop with an error,
+instead of merging or asking how to reconcile, when the server's copy
+doesn't match the repository
+(<a href="known-issues.html#git-pull-fails-with-divergent-branches">details</a>).</p>
 <p>The installer must finish with <strong>&quot;printquota is installed.&quot;</strong> and a setup
 link. Confirm the installation:</p>
 <pre><code class="language-bash">/opt/printquota/bin/pip show printquota | grep Version    # the version you installed
@@ -316,11 +321,15 @@ users authenticate with their domain accounts.</li>
 <hr />
 <h2 id="upgrading">Upgrading<a class="anchor" href="#upgrading" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">cd ~/print-quota-system
-git pull origin main
-sudo ./scripts/install.sh 2&gt;&amp;1 | tail -25
+git config pull.ff only                    # once per server; harmless to repeat
+git pull --ff-only origin main &amp;&amp; sudo ./scripts/install.sh 2&gt;&amp;1 | tail -25
 /opt/printquota/bin/pip show printquota | grep Version    # must show the new version
 </code></pre>
-<p>If the version doesn't change, see
+<p>The <code>&amp;&amp;</code> runs the installer only if the pull succeeded. Otherwise the
+installer would reinstall the old version. If the pull fails with
+<em>divergent branches</em> or <em>Not possible to fast-forward</em>, see
+<a href="known-issues.html#git-pull-fails-with-divergent-branches">git pull fails with divergent branches</a>.
+If the version doesn't change, see
 <a href="known-issues.html#an-upgrade-doesnt-take-effect">An upgrade doesn't take effect</a>.</p>
 <h2 id="health-checks">Health checks<a class="anchor" href="#health-checks" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash"># Version and services

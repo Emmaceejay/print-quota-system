@@ -56,6 +56,16 @@ Initial release.
 - `install.sh` now checks the interpreter version up front and fails with a
   clear message instead of letting pip reject the package mid-install.
 
+## [Unreleased]
+
+### Documentation
+
+- **Upgrades no longer reinstall the old version after a failed pull.** The
+  install steps set `git config pull.ff only`, the upgrade steps run
+  `git pull --ff-only … && sudo ./scripts/install.sh`, and a new known issue,
+  *git pull fails with divergent branches*, explains how to recover a server
+  whose copy no longer matches the repository.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added

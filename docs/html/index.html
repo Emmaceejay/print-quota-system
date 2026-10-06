@@ -414,6 +414,7 @@ Extras: <code>dev</code> (pytest, httpx) and <code>ldap</code> (ldap3).</p>
 <h2 id="5-installation">5. Installation<a class="anchor" href="#5-installation" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">git clone &lt;your-repo-url&gt; print-quota-system
 cd print-quota-system
+git config pull.ff only                      # upgrades stop instead of merging if histories differ
 chmod +x scripts/*.sh scripts/seed_demo.py   # needed if the checkout lost the exec bit (e.g. copied via Windows)
 sudo ./scripts/install.sh
 </code></pre>
@@ -2095,9 +2096,12 @@ backups off the VM as well.</strong></p>
 <hr />
 <h2 id="19-upgrades-and-database-migrations">19. Upgrades and database migrations<a class="anchor" href="#19-upgrades-and-database-migrations" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">cd /path/to/print-quota-system
-git pull
-sudo ./scripts/install.sh          # reinstalls the package, migrates, restarts units
+git config pull.ff only            # once per server
+git pull --ff-only &amp;&amp; sudo ./scripts/install.sh   # reinstalls the package, migrates, restarts units
 </code></pre>
+<p>The installer runs only if the pull succeeded. If the pull reports
+<em>divergent branches</em>, see
+<a href="known-issues.html#git-pull-fails-with-divergent-branches">docs/known-issues.md</a>.</p>
 <p><code>install.sh</code> keeps your existing <code>settings.yaml</code> and <code>env</code>. Schema changes
 always ship as Alembic migrations in
 <code>src/printquota/db/migrations/versions/</code>. <strong>Never edit the schema by hand.</strong>

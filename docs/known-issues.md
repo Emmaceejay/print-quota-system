@@ -236,6 +236,47 @@ discovers. They aren't enforced, and CUPS can recreate them at any time.
 ([setup step 5](setup.md#5-add-printers-and-turn-on-quota-enforcement-web-console)),
 then run `sudo systemctl disable --now cups-browsed`.
 
+### git pull fails with divergent branches
+
+**Symptom.** `git pull` prints `(forced update)`, then
+`fatal: Need to specify how to reconcile divergent branches` (or, with
+`pull.ff only`, `fatal: Not possible to fast-forward, aborting`). If the
+installer was run afterwards, it reinstalled the old version.
+
+**Cause.** The repository's history was rewritten after the server cloned
+it, so the server's copy and the repository no longer share a history. Git
+won't guess which one to keep.
+
+**Resolution.** Make the server's copy match the repository. Settings
+(`/etc/printquota/`) and the database (`/var/lib/printquota/`) are outside
+the checkout and aren't affected. First check that the server has nothing
+of its own:
+
+```bash
+cd ~/print-quota-system
+git fetch origin
+git status --short                     # must print nothing
+git log --oneline origin/main..main    # commits only on the server
+```
+
+If `git status` prints nothing and the log lists only older copies of
+commits that are already in the repository, run:
+
+```bash
+git reset --hard origin/main
+git config pull.ff only
+sudo ./scripts/install.sh 2>&1 | tail -25
+/opt/printquota/bin/pip show printquota | grep Version
+```
+
+If there are local changes or commits you don't recognise, save them first
+(for example `git branch local-backup`), since `reset --hard` discards them.
+
+**Prevention.** Set `git config pull.ff only` on every server (it's part of
+[setup step 1](setup.md#1-install-printquota-server-shell)), and upgrade with
+`git pull --ff-only origin main && sudo ./scripts/install.sh`, so the
+installer never runs after a failed pull.
+
 ### An upgrade doesn't take effect
 
 **Symptom.** After `git pull` and reinstalling, the old behaviour remains.
@@ -248,8 +289,10 @@ git log --oneline -1                                      # latest commit presen
 systemctl status quota-api --no-pager | grep Active       # restarted after the upgrade?
 ```
 
-**Cause.** Usually the installer stopped before installing the new version
-(see the next entry), so the old version is still installed and running.
+**Cause.** Usually either `git pull` failed, so the new code never arrived
+(see [git pull fails with divergent branches](#git-pull-fails-with-divergent-branches)),
+or the installer stopped before installing the new version (see the next
+entry). Either way, the old version is still installed and running.
 
 **Resolution.** Re-run the installer and check that it finishes. Or, when a
 release has no database changes, install and restart directly:
